@@ -9,7 +9,7 @@ API backend para gestión de 3 geriátricos (MVP) desarrollada con FastAPI, SQLA
 - **Migraciones**: Alembic
 - **Base de datos**: PostgreSQL
 - **Autenticación**: JWT (python-jose)
-- **Hashing**: bcrypt (passlib)
+- **Hashing**: pbkdf2_sha256 (passlib)
 
 ## Setup Local
 

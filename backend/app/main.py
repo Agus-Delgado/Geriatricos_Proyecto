@@ -22,9 +22,12 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS
+# Permitir orígenes específicos desde CORS_ORIGINS o defaults
+# También permitir previews de Vercel con regex
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
+    allow_origin_regex=r"^https://.*\.vercel\.app$",  # Previews de Vercel
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -48,8 +48,10 @@ API backend para gestión de 3 geriátricos (MVP) desarrollada con FastAPI, SQLA
    JWT_SECRET=your-secret-key-change-in-production
    JWT_ALGORITHM=HS256
    ACCESS_TOKEN_EXPIRE_MINUTES=1440
-   CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+   CORS_ORIGINS=http://localhost:5173,http://localhost:4173
    ```
+   
+   **Nota sobre CORS_ORIGINS**: Esta variable es **opcional**. Si no se define, se usan valores por defecto para desarrollo local (`http://localhost:5173`, `http://localhost:4173`). Además, los previews de Vercel (URLs que terminan en `.vercel.app`) se permiten automáticamente mediante regex.
 
 5. **Crear base de datos PostgreSQL:**
    ```sql
@@ -230,7 +232,11 @@ flake8 app/
 
 - **Upload de documentos**: Preparado para límites de tamaño (configurar en storage provider)
 - **Tokens JWT**: Expiración configurable (default: 1440 minutos)
-- **CORS**: Configurable desde .env
+- **CORS**: 
+  - Variable `CORS_ORIGINS` es opcional (lista separada por comas)
+  - Si no se define, usa defaults: `http://localhost:5173`, `http://localhost:4173`
+  - Previews de Vercel (`.vercel.app`) se permiten automáticamente
+  - En producción, definir `CORS_ORIGINS` con la URL de tu frontend
 
 ## Solución de Problemas
 
@@ -270,8 +276,9 @@ Si encuentras errores como `TypeError: 'Column' object is not callable` o `Inval
 ⚠️ **IMPORTANTE**:
 - Cambiar `JWT_SECRET` en producción
 - Cambiar passwords temporales de usuarios seed
-- Configurar CORS apropiadamente
+- Configurar `CORS_ORIGINS` en producción con la URL de tu frontend (ej: `https://tu-frontend.vercel.app`)
 - Usar variables de entorno seguras
+- Los previews de Vercel se permiten automáticamente (no es necesario agregarlos a `CORS_ORIGINS`)
 - Configurar storage real (S3/R2/Cloudinary) para documentos y certificados
 - Implementar rate limiting en producción
 - Configurar backups de base de datos

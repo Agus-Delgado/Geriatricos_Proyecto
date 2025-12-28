@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useFacility } from '../contexts/FacilityContext';
 import { facilitiesApi } from '../api/facilities';
 import { getGeriatricBySlug } from '../config/geriatrics';
-import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';

@@ -33,6 +33,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Endpoints básicos
+@app.get("/")
+async def root():
+    """Endpoint de bienvenida con información básica de la API"""
+    return {
+        "name": "Geriatricos API",
+        "status": "ok",
+        "docs": "/docs",
+        "openapi": "/openapi.json"
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "ok"}
+
+
 # Routers
 app.include_router(auth.router)
 app.include_router(facilities.router)
@@ -45,9 +63,3 @@ app.include_router(certificates.router)
 app.include_router(external_platforms.router)
 app.include_router(resident_external_events.router)
 app.include_router(finance.router)
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "ok", "environment": settings.ENVIRONMENT}

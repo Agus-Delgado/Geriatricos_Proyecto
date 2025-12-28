@@ -10,7 +10,7 @@ import { SessionExpiredModal } from './SessionExpiredModal';
 export const SessionExpiredHandler: React.FC = () => {
   const { token, loadUser } = useAuth();
   const [showModal, setShowModal] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!token) {

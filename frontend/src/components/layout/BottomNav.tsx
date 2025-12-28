@@ -36,6 +36,24 @@ export const BottomNav: React.FC = () => {
               </svg>
             ),
           },
+          {
+            path: '/staff',
+            label: 'Personal',
+            icon: (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-3-3H5a3 3 0 00-3 3v2h5m16 0v-2a3 3 0 00-3-3H5a3 3 0 00-3 3v2m16 0H9m-7 0h7" />
+              </svg>
+            ),
+          },
+          {
+            path: '/attendance',
+            label: 'Asistencia',
+            icon: (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            ),
+          },
         ]
       : []),
   ];

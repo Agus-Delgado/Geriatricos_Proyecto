@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFacility } from '../contexts/FacilityContext';
+import { useAuth } from '../contexts/AuthContext';
 import { residentsApi } from '../api/residents';
 import { Header } from '../components/layout/Header';
 import { BottomNav } from '../components/layout/BottomNav';
@@ -20,6 +21,7 @@ export const ResidentsListPage: React.FC = () => {
   const [stayStatusFilter, setStayStatusFilter] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { facility } = useFacility();
+  const { isDoctor } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -138,7 +140,7 @@ export const ResidentsListPage: React.FC = () => {
           </div>
         )}
 
-        {facility && (
+        {facility && isDoctor && (
           <div className="fixed bottom-24 right-4 z-30">
             <button
               onClick={() => setShowCreateModal(true)}

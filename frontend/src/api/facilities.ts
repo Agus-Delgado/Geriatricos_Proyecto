@@ -9,4 +9,8 @@ export const facilitiesApi = {
   get: async (facilityId: string): Promise<Facility> => {
     return apiClient.get<Facility>(`/facilities/${facilityId}`);
   },
+
+  getBySlug: async (slug: string): Promise<Facility> => {
+    return apiClient.get<Facility>(`/facilities/by-slug/${slug}`);
+  },
 };

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { residentsApi } from '../api/residents';
 import { Header } from '../components/layout/Header';
 import { Tabs } from '../components/ui/Tabs';
@@ -14,22 +15,39 @@ import { ResidentCertificatesTab } from '../components/resident/ResidentCertific
 import type { Resident } from '../types/residents';
 import type { ApiError } from '../api/client';
 
-const TABS = [
-  { id: 'summary', label: 'Resumen' },
-  { id: 'notes', label: 'Notas' },
-  { id: 'medications', label: 'Medicaciones' },
-  { id: 'contacts', label: 'Contactos' },
-  { id: 'documents', label: 'Documentos' },
-  { id: 'certificates', label: 'Certificados' },
+const ALL_TABS = [
+  { id: 'summary', label: 'Resumen', roles: ['OWNER', 'DOCTOR'] },
+  { id: 'notes', label: 'Notas', roles: ['DOCTOR'] },
+  { id: 'medications', label: 'Medicaciones', roles: ['DOCTOR'] },
+  { id: 'contacts', label: 'Contactos', roles: ['DOCTOR'] },
+  { id: 'documents', label: 'Documentos', roles: ['DOCTOR'] },
+  { id: 'certificates', label: 'Certificados', roles: ['DOCTOR'] },
 ];
 
 export const ResidentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isOwner, isDoctor } = useAuth();
   const [resident, setResident] = useState<Resident | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('summary');
+
+  // Filtrar tabs según rol
+  const availableTabs = useMemo(() => {
+    return ALL_TABS.filter((tab) => {
+      if (tab.roles.includes('OWNER') && isOwner) return true;
+      if (tab.roles.includes('DOCTOR') && isDoctor) return true;
+      return false;
+    });
+  }, [isOwner, isDoctor]);
+
+  // Ajustar activeTab si el tab actual no está disponible
+  useEffect(() => {
+    if (availableTabs.length > 0 && !availableTabs.find((t) => t.id === activeTab)) {
+      setActiveTab(availableTabs[0].id);
+    }
+  }, [availableTabs, activeTab]);
 
   useEffect(() => {
     if (id) {
@@ -86,7 +104,11 @@ export const ResidentDetailPage: React.FC = () => {
       />
 
       <div className="px-4 py-4">
-        <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
+        <Tabs 
+          tabs={availableTabs.map((t) => ({ id: t.id, label: t.label }))} 
+          activeTab={activeTab} 
+          onChange={setActiveTab} 
+        />
 
         <div className="mt-4">
           {activeTab === 'summary' && (

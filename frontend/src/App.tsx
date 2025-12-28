@@ -7,11 +7,14 @@ import { UnauthorizedHandler } from './components/auth/UnauthorizedHandler';
 import { SessionExpiredHandler } from './components/auth/SessionExpiredHandler';
 import { UpdateBanner } from './components/pwa/UpdateBanner';
 import { LoginPage } from './pages/LoginPage';
+import { GeriatricLoginPage } from './pages/GeriatricLoginPage';
 import { SelectFacilityPage } from './pages/SelectFacilityPage';
 import { ResidentsListPage } from './pages/ResidentsListPage';
 import { ResidentDetailPage } from './pages/ResidentDetailPage';
 import { MedicationDuePage } from './pages/MedicationDuePage';
 import { FinancePage } from './pages/FinancePage';
+import { StaffPage } from './pages/StaffPage';
+import { AttendancePage } from './pages/AttendancePage';
 import { DebugPage } from './pages/DebugPage';
 
 function App() {
@@ -25,6 +28,7 @@ function App() {
             <UpdateBanner />
             <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/login/:geriatricSlug" element={<GeriatricLoginPage />} />
             <Route
               path="/select-facility"
               element={
@@ -62,6 +66,22 @@ function App() {
               element={
                 <ProtectedRoute requireOwner={true}>
                   <FinancePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff"
+              element={
+                <ProtectedRoute requireOwner={true}>
+                  <StaffPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/attendance"
+              element={
+                <ProtectedRoute requireOwner={true}>
+                  <AttendancePage />
                 </ProtectedRoute>
               }
             />

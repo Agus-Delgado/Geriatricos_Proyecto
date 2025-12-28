@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string, facilitySlug?: string) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
   isOwner: boolean;
@@ -60,9 +60,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async (username: string, password: string) => {
+  const login = async (username: string, password: string, facilitySlug?: string) => {
     try {
-      const response = await authApi.login({ username, password });
+      const response = await authApi.login({ username, password, facility_slug: facilitySlug });
       const authToken = response.access_token;
       
       localStorage.setItem('token', authToken);

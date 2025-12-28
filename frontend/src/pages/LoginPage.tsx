@@ -1,74 +1,47 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { ErrorMessage } from '../components/ui/ErrorMessage';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { GERIATRICS } from '../config/geriatrics';
 
 export const LoginPage: React.FC = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      await login(username, password);
-      navigate('/select-facility');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
-    } finally {
-      setLoading(false);
-    }
+  const handleSelectGeriatric = (slug: string) => {
+    navigate(`/login/${slug}`);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-700 px-4">
+      <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Geriátricos</h1>
-          <p className="text-gray-600">Inicia sesión para continuar</p>
+          <h1 className="text-4xl font-bold text-white mb-2">Geriátricos</h1>
+          <p className="text-white/90">Selecciona tu geriátrico para continuar</p>
         </div>
 
-        <div className="card">
-          {error && (
-            <div className="mb-4">
-              <ErrorMessage message={error} onDismiss={() => setError(null)} />
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="DNI o Email"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              autoComplete="username"
-              disabled={loading}
-            />
-
-            <Input
-              label="Contraseña"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              disabled={loading}
-            />
-
-            <Button type="submit" fullWidth disabled={loading}>
-              {loading ? <LoadingSpinner size="sm" /> : 'Iniciar sesión'}
-            </Button>
-          </form>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {GERIATRICS.map((geriatric) => (
+            <button
+              key={geriatric.slug}
+              onClick={() => handleSelectGeriatric(geriatric.slug)}
+              className="card hover:shadow-lg transition-all duration-200 hover:scale-105 cursor-pointer"
+              style={{
+                background: `linear-gradient(135deg, ${geriatric.theme.gradientFrom}15, ${geriatric.theme.gradientTo}15)`,
+                borderColor: geriatric.theme.gradientFrom,
+              }}
+            >
+              <div className="text-center">
+                <div
+                  className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-white"
+                  style={{
+                    background: `linear-gradient(135deg, ${geriatric.theme.gradientFrom}, ${geriatric.theme.gradientTo})`,
+                  }}
+                >
+                  {geriatric.displayName.charAt(0)}
+                </div>
+                <h3 className="font-semibold text-gray-900 text-lg">{geriatric.displayName}</h3>
+                <p className="text-sm text-gray-600 mt-2">Haz clic para iniciar sesión</p>
+              </div>
+            </button>
+          ))}
         </div>
       </div>
     </div>

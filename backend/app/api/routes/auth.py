@@ -20,9 +20,17 @@ async def login(
     login_data: LoginRequest,
     db: Session = Depends(get_db)
 ):
-    """Login por DNI o email + password (rate limited: 5 intentos por minuto)"""
-    user = authenticate_user(db, login_data.username, login_data.password)
-    token = create_user_token(user)
+    """Login por DNI o email + password (rate limited: 5 intentos por minuto)
+    
+    Si se proporciona facility_slug, valida que el usuario tenga acceso a esa facility.
+    """
+    user, facility = authenticate_user(
+        db, 
+        login_data.username, 
+        login_data.password,
+        login_data.facility_slug
+    )
+    token = create_user_token(user, facility.id if facility else None, db)
     return TokenResponse(access_token=token)
 
 

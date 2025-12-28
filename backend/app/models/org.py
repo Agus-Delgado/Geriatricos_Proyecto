@@ -26,6 +26,7 @@ class Facility(Base):
     owner_group_id = Column(UUID(as_uuid=True), ForeignKey("owner_groups.id"), nullable=False)
     name = Column(String(120), nullable=False)
     code = Column(String(32), nullable=False)
+    slug = Column(String(80), nullable=True, unique=True, index=True)
     address = Column(String(255), nullable=True)
     phone = Column(String(32), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
@@ -37,6 +38,8 @@ class Facility(Base):
     user_accesses = relationship("FacilityUserAccess", back_populates="facility", cascade="all, delete-orphan")
     residents = relationship("Resident", back_populates="facility", cascade="all, delete-orphan")
     finance_transactions = relationship("FinanceTransaction", back_populates="facility", cascade="all, delete-orphan")
+    staff = relationship("Staff", back_populates="facility", cascade="all, delete-orphan")
+    attendances = relationship("Attendance", back_populates="facility", cascade="all, delete-orphan")
     
     __table_args__ = (
         UniqueConstraint("owner_group_id", "code", name="uq_owner_group_code"),

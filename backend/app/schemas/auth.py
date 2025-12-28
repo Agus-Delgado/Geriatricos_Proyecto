@@ -7,6 +7,7 @@ from uuid import UUID
 class LoginRequest(BaseModel):
     username: str  # DNI o email
     password: str
+    facility_slug: str | None = None  # Slug del geriátrico (opcional por compatibilidad)
 
 
 class TokenResponse(BaseModel):

@@ -8,6 +8,8 @@ from app.models.certificates import Certificate
 from app.models.external import ExternalPlatform, ResidentExternalEvent
 from app.models.finance import FinanceCategory, FinanceTransaction
 from app.models.audit import AuditLog
+from app.models.staff import Staff
+from app.models.attendance import Attendance
 
 __all__ = [
     "User",
@@ -31,4 +33,6 @@ __all__ = [
     "FinanceCategory",
     "FinanceTransaction",
     "AuditLog",
+    "Staff",
+    "Attendance",
 ]

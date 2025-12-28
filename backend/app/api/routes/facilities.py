@@ -28,6 +28,29 @@ async def list_facilities(
     return facilities
 
 
+@router.get("/by-slug/{slug}", response_model=FacilityResponse)
+async def get_facility_by_slug(
+    slug: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Obtener facility por slug (solo si el usuario tiene acceso)"""
+    from app.api.deps import require_facility_access
+    
+    facility = db.query(Facility).filter(Facility.slug == slug).first()
+    if not facility:
+        from fastapi import HTTPException, status
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Geriátrico no encontrado"
+        )
+    
+    # Validar acceso
+    require_facility_access(facility.id)(current_user, db)
+    
+    return facility
+
+
 @router.get("/{facility_id}", response_model=FacilityResponse)
 async def get_facility(
     facility_id: UUID,

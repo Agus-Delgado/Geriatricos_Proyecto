@@ -26,11 +26,23 @@ def seed_database(db: Session):
     else:
         print("→ OwnerGroup ya existe: Grupo Geriátricos")
     
-    # 2. Crear Facilities (3 sedes)
+    # 2. Crear Facilities (3 geriátricos con slugs)
     facilities_data = [
-        {"code": "G1", "name": "Hogar 1"},
-        {"code": "G2", "name": "Hogar 2"},
-        {"code": "G3", "name": "Hogar 3"},
+        {
+            "code": "NSL",
+            "name": "Nuestra Señora de Luján",
+            "slug": "nuestra-senora-de-lujan"
+        },
+        {
+            "code": "ET",
+            "name": "El Trébol",
+            "slug": "el-trebol"
+        },
+        {
+            "code": "EA",
+            "name": "El Amanecer",
+            "slug": "el-amanecer"
+        },
     ]
     
     facilities = {}
@@ -45,13 +57,20 @@ def seed_database(db: Session):
                 id=uuid.uuid4(),
                 owner_group_id=owner_group.id,
                 name=fac_data["name"],
-                code=fac_data["code"]
+                code=fac_data["code"],
+                slug=fac_data["slug"]
             )
             db.add(facility)
             db.flush()
-            print(f"✓ Facility creado: {fac_data['code']} - {fac_data['name']}")
+            print(f"✓ Facility creado: {fac_data['code']} - {fac_data['name']} (slug: {fac_data['slug']})")
         else:
-            print(f"→ Facility ya existe: {fac_data['code']} - {fac_data['name']}")
+            # Actualizar slug si no existe
+            if not facility.slug:
+                facility.slug = fac_data["slug"]
+                db.flush()
+                print(f"→ Facility actualizado con slug: {fac_data['code']} - {fac_data['slug']}")
+            else:
+                print(f"→ Facility ya existe: {fac_data['code']} - {fac_data['name']}")
         
         facilities[fac_data["code"]] = facility
     

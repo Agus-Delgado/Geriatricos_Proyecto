@@ -6,7 +6,8 @@ from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
 from app.api.routes import (
     auth, facilities, residents, resident_contacts, clinical, medications,
-    documents, certificates, external_platforms, resident_external_events, finance
+    documents, certificates, external_platforms, resident_external_events, finance,
+    staff, attendance
 )
 
 # Rate limiter
@@ -63,3 +64,5 @@ app.include_router(certificates.router)
 app.include_router(external_platforms.router)
 app.include_router(resident_external_events.router)
 app.include_router(finance.router)
+app.include_router(staff.router)
+app.include_router(attendance.router)

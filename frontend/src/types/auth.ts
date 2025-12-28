@@ -28,6 +28,7 @@ export interface User {
 export interface LoginRequest {
   username: string; // DNI o email
   password: string;
+  facility_slug?: string; // Slug del geriátrico (opcional por ahora)
 }
 
 export interface TokenResponse {
@@ -39,5 +40,6 @@ export interface Facility {
   id: string;
   name: string;
   code: string;
+  slug: string | null;
   is_active: boolean;
 }

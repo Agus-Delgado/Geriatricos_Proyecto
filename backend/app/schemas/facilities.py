@@ -8,6 +8,7 @@ class FacilityResponse(BaseModel):
     owner_group_id: UUID
     name: str
     code: str
+    slug: str | None
     address: str | None
     phone: str | None
     is_active: bool

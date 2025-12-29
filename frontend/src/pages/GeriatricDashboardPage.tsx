@@ -1,44 +1,32 @@
-import React from 'react';
 import { useParams } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { Header } from '../components/layout/Header';
 
-export const GeriatricDashboardPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const { user, getActiveMembership } = useAuth();
-  const activeMembership = getActiveMembership();
+export default function GeriatricDashboardPage() {
+  const { id } = useParams();
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--facility-bg, #f9fafb)' }}>
-      <Header title="Dashboard" />
-      <div 
-        className="p-8"
-        style={{ background: 'var(--facility-bg, #f9fafb)' }}
+    <div style={{ padding: 24 }}>
+      <div
+        style={{
+          background: 'var(--facility-card)',
+          borderRadius: 16,
+          padding: 24,
+          boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+        }}
       >
-      <div className="max-w-4xl mx-auto">
-        <div 
-          className="rounded-lg shadow-lg p-6"
-          style={{ backgroundColor: 'var(--facility-card, white)' }}
-        >
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Dashboard - {activeMembership?.facility_name || `Geriátrico ${id}`}
-          </h1>
-          
-          <div className="space-y-4">
-            <div>
-              <p className="text-gray-600">Usuario: {user?.full_name}</p>
-              <p className="text-gray-600">Rol: {activeMembership ? activeMembership.role : 'N/A'}</p>
-            </div>
-            
-            <div className="mt-6 p-4 bg-blue-50 rounded">
-              <p className="text-blue-900">
-                Esta es la página de dashboard para administradores. 
-                Funcionalidad completa pendiente de implementar.
-              </p>
-            </div>
+        <h1 style={{ margin: 0 }}>Dashboard</h1>
+        <p style={{ marginTop: 8, opacity: 0.8 }}>
+          Hogar activo: <strong>{id}</strong>
+        </p>
+
+        <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
+          <div style={{ padding: 16, borderRadius: 12, background: 'rgba(255,255,255,0.6)' }}>
+            KPIs y resumen (placeholder)
+          </div>
+          <div style={{ padding: 16, borderRadius: 12, background: 'rgba(255,255,255,0.6)' }}>
+            Acciones rápidas (placeholder)
           </div>
         </div>
       </div>
     </div>
   );
-};
+}

@@ -1,14 +1,9 @@
-import React, { useEffect } from 'react';
 import { PrintDocument } from './PrintDocument';
 import type { CertificateDraft } from '../../types/certificates';
 
 // Esta página debe renderizarse SIN layout general.
 // Ideal: ruta dedicada /doctor/certificados/print?draftId=... o /doctor/certificados/:id/print
 export default function PrintPage({ draft }: { draft: CertificateDraft }) {
-  useEffect(() => {
-    // Auto-opcional: no imprimir automáticamente si preferís control manual.
-    // window.print();
-  }, []);
 
   return (
     <div>

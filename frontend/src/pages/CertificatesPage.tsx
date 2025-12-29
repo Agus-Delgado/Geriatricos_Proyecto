@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
 import { residentsApi } from '../api/residents';
 import { certificatesApi } from '../api/certificates';
 import { facilitiesApi } from '../api/facilities';
@@ -18,7 +18,6 @@ import type { ApiError } from '../api/client';
 
 export default function CertificatesPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { user, activeFacilityId } = useAuth();
   const facilityId = id ?? activeFacilityId ?? '';
 

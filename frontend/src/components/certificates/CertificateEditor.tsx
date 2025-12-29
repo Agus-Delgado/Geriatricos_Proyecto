@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
-import { Select } from '../ui/Select';
 import type { CertificateType, CertificateDraft } from '../../types/certificates';
 import { buildDefaultBodyText, formatDateAR, formatTimeAR } from './templates';
 
@@ -13,7 +12,7 @@ interface CertificateEditorProps {
   onCancel?: () => void;
 }
 
-export const CertificateEditor: React.FC<CertificateEditorProps> = ({
+export const CertificateEditor = ({
   draft: initialDraft,
   onSave,
   onPreview,

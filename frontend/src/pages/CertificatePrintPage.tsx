@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PrintDocument } from '../components/certificates/PrintDocument';
 import type { CertificateDraft } from '../types/certificates';

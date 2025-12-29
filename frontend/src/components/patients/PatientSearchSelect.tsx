@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFacility } from '../../contexts/FacilityContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { residentsApi } from '../../api/residents';
 import type { Resident } from '../../types/residents';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -17,14 +18,18 @@ export const PatientSearchSelect: React.FC<PatientSearchSelectProps> = ({
   stayStatus = 'ACTIVE',
 }) => {
   const { facility } = useFacility();
+  const { activeFacilityId, user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [patients, setPatients] = useState<Resident[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Fallback: usar activeFacilityId si facility es null pero hay activeFacilityId
+  const facilityIdToUse = facility?.id ?? activeFacilityId ?? user?.active_facility_id ?? null;
+
   // Debounce effect
   useEffect(() => {
-    if (!facility) {
+    if (!facilityIdToUse) {
       setPatients([]);
       return;
     }
@@ -38,7 +43,7 @@ export const PatientSearchSelect: React.FC<PatientSearchSelectProps> = ({
       setLoading(true);
       setError(null);
       try {
-        const results = await residentsApi.list(facility.id, {
+        const results = await residentsApi.list(facilityIdToUse, {
           q: searchQuery.trim(),
           stay_status: stayStatus,
         });
@@ -52,7 +57,7 @@ export const PatientSearchSelect: React.FC<PatientSearchSelectProps> = ({
     }, 400); // 400ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, facility, stayStatus]);
+  }, [searchQuery, facilityIdToUse, stayStatus]);
 
   const handleSelectPatient = (patient: Resident) => {
     onSelect(patient);
@@ -72,7 +77,7 @@ export const PatientSearchSelect: React.FC<PatientSearchSelectProps> = ({
     return age;
   };
 
-  if (!facility) {
+  if (!facilityIdToUse) {
     return (
       <div className="text-center py-4 text-gray-500">
         Por favor seleccione una sede primero

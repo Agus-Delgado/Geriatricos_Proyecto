@@ -77,7 +77,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Verificar facility si es requerida
   if (requireFacility) {
-    // Si es platform admin, puede acceder sin facility
+    // Si es platform admin, puede acceder sin facility (no requiere facility)
     if (isPlatformAdmin) {
       return <>{children}</>;
     }
@@ -92,11 +92,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       }
       
       // Si no hay activeFacilityId pero hay urlFacilityId válido, esperar a que se sincronice
-      if (!activeFacilityId && syncingFacility === false) {
+      // Pero solo si no estamos sincronizando ya (para evitar loops)
+      if (!activeFacilityId && syncingFacility === false && hasMembership) {
+        // Dar un pequeño timeout antes de mostrar loading para evitar flashes
         return <LoadingSpinner fullScreen />;
       }
     } else if (!facility && !activeFacilityId) {
-      return <Navigate to="/select-facility" replace />;
+      // Si no es platform admin y no tiene facility, redirigir a selector
+      // Pero solo si ya terminó de cargar (para evitar redirecciones prematuras)
+      if (!authLoading && !facilityLoading) {
+        return <Navigate to="/select-facility" replace />;
+      }
     }
   }
 

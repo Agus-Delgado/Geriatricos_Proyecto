@@ -4,11 +4,11 @@ import type { User, FacilityMembership } from '../types/auth';
 import type { ApiError } from '../api/client';
 
 // Type for user role in impersonation
-type UserRole = 'doctor' | 'owner';
+type UserRole = 'doctor' | 'owner' | 'admin';
 
 // Type guard to validate user role
 function isUserRole(v: unknown): v is UserRole {
-  return v === 'doctor' || v === 'owner';
+  return v === 'doctor' || v === 'owner' || v === 'admin';
 }
 
 // Map role from API/storage to UserRole
@@ -27,7 +27,8 @@ function mapRole(rawRole: unknown): UserRole | undefined {
       return 'doctor';
     case 'owner':
     case 'admin':
-      return 'owner';
+    case 'platform_admin':
+      return 'admin';
     default:
       return undefined;
   }
@@ -121,22 +122,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.debug('[Auth] Sesión rehidratada exitosamente', {
           userId: userData.id,
           email: userData.email,
+          is_platform_admin: userData.is_platform_admin,
         });
       }
       
       // Sincronizar activeFacilityId: priorizar user.active_facility_id, luego localStorage
+      // Para platform admins, active_facility_id puede ser null y es válido
       const storedFacilityId = localStorage.getItem('activeFacilityId');
       const facilityIdToUse = userData.active_facility_id ?? storedFacilityId ?? null;
       
       if (facilityIdToUse) {
         setActiveFacilityId(facilityIdToUse);
         localStorage.setItem('activeFacilityId', facilityIdToUse);
+      } else if (!userData.is_platform_admin) {
+        // Si no es platform admin y no tiene facility, limpiar
+        setActiveFacilityId(null);
+        localStorage.removeItem('activeFacilityId');
       }
     } catch (error) {
       // Logging de error para diagnóstico
       const apiError = error as ApiError;
       const reason = apiError.status === 401 ? 'token_expired' : 
                      apiError.status === 403 ? 'token_invalid' : 
+                     apiError.status === 500 ? 'server_error' :
                      'auth_rehydrate_failed';
       
       if (import.meta.env.DEV) {
@@ -146,7 +154,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
       }
       
-      // Token inválido o expirado, limpiar
+      // Token inválido, expirado o error del servidor: limpiar todo
       localStorage.removeItem('token');
       localStorage.removeItem('original_token');
       localStorage.removeItem('activeFacilityId');
@@ -159,6 +167,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // El error será manejado por el cliente API que redirigirá a login
       // No redirigir aquí para evitar múltiples redirecciones
     } finally {
+      // SIEMPRE finalizar loading, incluso si hay error
       setLoading(false);
     }
   };
@@ -193,14 +202,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       // Sincronizar activeFacilityId: priorizar user.active_facility_id, luego localStorage
+      // Para platform admins, active_facility_id puede ser null y es válido
       const storedFacilityId = localStorage.getItem('activeFacilityId');
       const facilityIdToUse = userData.active_facility_id ?? storedFacilityId ?? null;
       
       if (facilityIdToUse) {
         setActiveFacilityId(facilityIdToUse);
         localStorage.setItem('activeFacilityId', facilityIdToUse);
+      } else if (!userData.is_platform_admin) {
+        // Si no es platform admin y no tiene facility, limpiar
+        setActiveFacilityId(null);
+        localStorage.removeItem('activeFacilityId');
       }
     } catch (error) {
+      // Limpiar token en caso de error para evitar estados inconsistentes
+      localStorage.removeItem('token');
+      localStorage.removeItem('original_token');
+      setToken(null);
+      setUser(null);
+      setActiveFacilityId(null);
+      
       const apiError = error as ApiError;
       
       // Logging de error

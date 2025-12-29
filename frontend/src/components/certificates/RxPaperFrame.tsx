@@ -5,9 +5,17 @@ interface RxPaperFrameProps {
   children: React.ReactNode;
   className?: string;
   headerDate?: string;
+  patientName?: string;
+  patientAddress?: string;
 }
 
-export function RxPaperFrame({ children, className = '', headerDate }: RxPaperFrameProps) {
+export function RxPaperFrame({ 
+  children, 
+  className = '', 
+  headerDate,
+  patientName = '',
+  patientAddress = ''
+}: RxPaperFrameProps) {
   // Formatear fecha si se proporciona
   const formatDate = (dateStr?: string): string => {
     if (!dateStr) return '';
@@ -27,95 +35,41 @@ export function RxPaperFrame({ children, className = '', headerDate }: RxPaperFr
 
   return (
     <div className={`paper ${className}`}>
-      {/* Header con estilo Rx */}
-      <div className="paper-header">
-        {/* Rx grande a la izquierda */}
-        <div className="paper-rx">
-          <svg
-            width="60"
-            height="60"
-            viewBox="0 0 60 60"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <text
-              x="30"
-              y="45"
-              fontSize="48"
-              fontWeight="bold"
-              fill="#000"
-              textAnchor="middle"
-              fontFamily="Arial, sans-serif"
-            >
-              Rx
-            </text>
-          </svg>
+      {/* Header con estilo Rx usando Grid */}
+      <div className="paper-header-grid">
+        {/* Columna 1: Rx */}
+        <div className="paper-rx-mark">
+          <span className="rx-text">Rx</span>
         </div>
 
-        {/* Fecha a la derecha */}
+        {/* Columna 2: Paciente/Domicilio */}
+        <div className="paper-patient-block">
+          <div className="paper-line-row">
+            <span className="paper-line-label">Paciente:</span>
+            <div className="paper-line-field">
+              <span className="paper-line-value">{patientName}</span>
+            </div>
+          </div>
+          <div className="paper-line-row">
+            <span className="paper-line-label">Domicilio:</span>
+            <div className="paper-line-field">
+              <span className="paper-line-value">{patientAddress}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Columna 3: Fecha en box */}
         {formattedDate && (
-          <div className="paper-date">
+          <div className="paper-date-box">
             <span className="paper-date-label">Fecha:</span>
             <span className="paper-date-value">{formattedDate}</span>
           </div>
         )}
-
-        {/* Líneas superiores para Paciente/Domicilio */}
-        <div className="paper-header-lines">
-          <div className="paper-line">
-            <span className="paper-line-label">Paciente:</span>
-            <span className="paper-line-content"></span>
-          </div>
-          <div className="paper-line">
-            <span className="paper-line-label">Domicilio:</span>
-            <span className="paper-line-content"></span>
-          </div>
-        </div>
       </div>
 
       {/* Área de contenido centrado */}
       <div className="paper-content">
         {children}
-      </div>
-
-      {/* Elementos decorativos inferiores */}
-      <div className="paper-footer-decorative">
-        <svg
-          width="100%"
-          height="40"
-          viewBox="0 0 100 40"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="none"
-        >
-          <line
-            x1="0"
-            y1="10"
-            x2="100"
-            y2="10"
-            stroke="#000"
-            strokeWidth="0.5"
-            strokeDasharray="2,2"
-          />
-          <line
-            x1="0"
-            y1="20"
-            x2="100"
-            y2="20"
-            stroke="#000"
-            strokeWidth="0.5"
-            strokeDasharray="2,2"
-          />
-          <rect
-            x="5"
-            y="30"
-            width="90"
-            height="8"
-            stroke="#000"
-            strokeWidth="0.5"
-            fill="none"
-          />
-        </svg>
       </div>
     </div>
   );

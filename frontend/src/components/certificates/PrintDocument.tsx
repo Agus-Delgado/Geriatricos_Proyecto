@@ -22,16 +22,20 @@ export function PrintDocument({ draft }: { draft: CertificateDraft }) {
     }
   }, [forbidden]);
 
-  const footerLeft = `${draft.hogarName}, ${draft.hogarAddress}, Ramos Mejía`;
   const license = draft.doctorLicenseNumber?.trim() ? draft.doctorLicenseNumber.trim() : '(pendiente de configurar)';
-  const footerRight = `${draft.doctorDisplayName} — Matrícula: ${license}`;
+  const facilityAddress = `${draft.hogarName}, ${draft.hogarAddress}, Ramos Mejía`;
 
   return (
-    <RxPaperFrame headerDate={draft.issuedAt}>
+    <RxPaperFrame 
+      headerDate={draft.issuedAt}
+      patientName={draft.patientFullName}
+      patientAddress={draft.patientDni ? `DNI: ${draft.patientDni}` : ''}
+    >
       <div className="print-root">
-        {/* Título neutro opcional. Si querés máxima seguridad, dejalo vacío. */}
-        <div className="print-title">Constancia</div>
+        {/* Título centrado */}
+        <div className="print-title">CONSTANCIA</div>
 
+        {/* Cuerpo del documento */}
         <div className="print-body">
           {draft.bodyText.split('\n').map((line, idx) => (
             <p key={idx} className="print-paragraph">
@@ -40,11 +44,16 @@ export function PrintDocument({ draft }: { draft: CertificateDraft }) {
           ))}
         </div>
 
-        <div className="print-footer">
-          <div className="print-footer-left">{footerLeft}</div>
-          <div className="print-footer-right">
-            <div className="print-signature-line">Firma:</div>
-            <div className="print-doctor">{footerRight}</div>
+        {/* Footer: Firma + Matrícula + Dirección (todo abajo derecha) */}
+        <div className="print-footer-right">
+          <div className="print-signature-section">
+            <div className="print-signature-label">Firma:</div>
+            <div className="print-signature-line"></div>
+            <div className="print-doctor-name">Dr/a. {draft.doctorDisplayName}</div>
+            <div className="print-doctor-license">Matrícula: {license}</div>
+          </div>
+          <div className="print-facility-address">
+            {facilityAddress}
           </div>
         </div>
       </div>

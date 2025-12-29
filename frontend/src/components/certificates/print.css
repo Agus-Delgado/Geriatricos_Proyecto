@@ -10,47 +10,41 @@
   box-sizing: border-box;
 }
 
-.paper-header {
-  position: relative;
+/* Header con Grid - 3 columnas */
+.paper-header-grid {
+  display: grid;
+  grid-template-columns: 24mm 1fr 45mm;
+  gap: 8mm;
   margin-bottom: 20mm;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 8mm;
+  align-items: start;
 }
 
-.paper-rx {
-  position: absolute;
-  top: 0;
-  left: 0;
+/* Columna 1: Rx */
+.paper-rx-mark {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.rx-text {
+  font-size: 48pt;
+  font-weight: bold;
   line-height: 1;
+  color: #000;
+  font-family: Arial, sans-serif;
 }
 
-.paper-date {
-  position: absolute;
-  top: 0;
-  right: 0;
-  text-align: right;
-  font-size: 11pt;
-}
-
-.paper-date-label {
-  font-weight: 600;
-  margin-right: 4px;
-}
-
-.paper-date-value {
-  color: #333;
-}
-
-.paper-header-lines {
-  margin-top: 25mm;
+/* Columna 2: Paciente/Domicilio */
+.paper-patient-block {
   display: flex;
   flex-direction: column;
   gap: 8mm;
 }
 
-.paper-line {
+.paper-line-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  gap: 4mm;
   border-bottom: 1px solid #000;
   padding-bottom: 2mm;
   min-height: 6mm;
@@ -58,88 +52,129 @@
 
 .paper-line-label {
   font-weight: 600;
-  margin-right: 8px;
   font-size: 11pt;
-  min-width: 80px;
+  min-width: 70px;
+  flex-shrink: 0;
 }
 
-.paper-line-content {
+.paper-line-field {
   flex: 1;
-  border-bottom: 1px solid transparent;
+  min-height: 4mm;
+  display: flex;
+  align-items: baseline;
 }
 
+.paper-line-value {
+  font-size: 11pt;
+  color: #000;
+}
+
+/* Columna 3: Fecha en box */
+.paper-date-box {
+  border: 1px solid #000;
+  padding: 3mm;
+  text-align: center;
+  font-size: 11pt;
+  display: flex;
+  flex-direction: column;
+  gap: 1mm;
+}
+
+.paper-date-label {
+  font-weight: 600;
+  font-size: 10pt;
+}
+
+.paper-date-value {
+  color: #000;
+  font-size: 11pt;
+}
+
+/* Área de contenido */
 .paper-content {
   max-width: 170mm;
   margin: 0 auto;
   font-size: 12pt;
   line-height: 1.5;
   color: #111;
+  min-height: 150mm;
 }
 
-.paper-footer-decorative {
-  margin-top: 30mm;
-  width: 100%;
-  opacity: 0.3;
-}
-
-/* Base - Print Root (mantener compatibilidad) */
+/* Base - Print Root */
 .print-root {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   color: #111;
   width: 100%;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
+/* Título centrado */
 .print-title {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20pt;
+  font-weight: 700;
   text-align: center;
-  margin-bottom: 24px;
-  letter-spacing: 0.2px;
+  margin: 12mm 0 8mm 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
+/* Cuerpo del documento */
 .print-body {
   font-size: 12pt;
   line-height: 1.5;
-  margin-bottom: 20mm;
+  margin-bottom: 25mm;
+  flex: 1;
 }
 
 .print-paragraph {
-  margin: 0 0 12px 0;
+  margin: 0 0 8px 0;
   white-space: pre-wrap;
 }
 
-/* Footer dentro del paper */
-.print-footer {
-  position: absolute;
-  bottom: 15mm;
-  left: 15mm;
-  right: 15mm;
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  font-size: 11pt;
-  border-top: 1px solid #ddd;
-  padding-top: 8mm;
-}
-
-.print-footer-left {
-  flex: 1;
-  text-align: left;
-}
-
+/* Footer: Todo abajo a la derecha */
 .print-footer-right {
-  flex: 1;
+  margin-top: auto;
   text-align: right;
+  font-size: 11pt;
+  padding-top: 10mm;
+}
+
+.print-signature-section {
+  display: inline-block;
+  text-align: right;
+  margin-bottom: 6mm;
+}
+
+.print-signature-label {
+  font-weight: 600;
+  margin-bottom: 2mm;
 }
 
 .print-signature-line {
-  margin-bottom: 6px;
-  font-weight: 600;
+  width: 70mm;
+  height: 0;
+  border-bottom: 1px solid #000;
+  margin-bottom: 4mm;
+  margin-left: auto;
 }
 
-.print-doctor {
+.print-doctor-name {
   font-weight: 600;
+  margin-bottom: 2mm;
+}
+
+.print-doctor-license {
+  font-size: 10pt;
+  color: #333;
+}
+
+.print-facility-address {
+  font-size: 10pt;
+  color: #555;
+  margin-top: 4mm;
 }
 
 /* Preview Stage - Para vista previa */
@@ -198,9 +233,9 @@
   .paper {
     box-shadow: none !important;
     margin: 0 !important;
-    padding: 0;
-    width: 100%;
-    min-height: auto;
+    padding: 20mm 15mm;
+    width: 210mm;
+    min-height: 297mm;
   }
 
   /* Evitar cortes feos */
@@ -210,6 +245,12 @@
 
   /* Asegurar que el contenido quede bien */
   .paper-content {
-    max-width: 100%;
+    max-width: 170mm;
+  }
+
+  /* Footer debe quedar en la página */
+  .print-footer-right {
+    position: relative;
+    margin-top: auto;
   }
 }

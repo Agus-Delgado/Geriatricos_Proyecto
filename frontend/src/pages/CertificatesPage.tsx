@@ -414,7 +414,7 @@ export default function CertificatesPage() {
           size="lg"
         >
           <CertificateEditor
-            draft={editingDraft}
+            initialDraft={editingDraft}
             onSave={handleSave}
             onPreview={handlePreview}
             onPrint={handlePrint}

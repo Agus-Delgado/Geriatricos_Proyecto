@@ -4,21 +4,21 @@ import { Button } from '../ui/Button';
 import type { CertificateType, CertificateDraft } from '../../types/certificates';
 import { buildDefaultBodyText, formatDateAR, formatTimeAR } from './templates';
 
-interface CertificateEditorProps {
-  draft: CertificateDraft;
-  onSave?: (draft: CertificateDraft) => Promise<void>;
+export type CertificateEditorProps = {
+  initialDraft: CertificateDraft;
+  onSave?: (draft: CertificateDraft) => void | Promise<void>;
   onPreview?: (draft: CertificateDraft) => void;
   onPrint?: (draft: CertificateDraft) => void;
   onCancel?: () => void;
-}
+};
 
-export const CertificateEditor = ({
-  draft: initialDraft,
+export function CertificateEditor({
+  initialDraft,
   onSave,
   onPreview,
   onPrint,
   onCancel,
-}) => {
+}: CertificateEditorProps) {
   const [draft, setDraft] = useState<CertificateDraft>(initialDraft);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -70,11 +70,10 @@ export const CertificateEditor = ({
 
   const handleSave = async () => {
     if (!validate()) return;
-    if (!onSave) return;
     
     setLoading(true);
     try {
-      await onSave(draft);
+      await onSave?.(draft);
     } catch (error) {
       console.error('Error al guardar:', error);
     } finally {
@@ -84,16 +83,12 @@ export const CertificateEditor = ({
 
   const handlePreview = () => {
     if (!validate()) return;
-    if (onPreview) {
-      onPreview(draft);
-    }
+    onPreview?.(draft);
   };
 
   const handlePrint = () => {
     if (!validate()) return;
-    if (onPrint) {
-      onPrint(draft);
-    }
+    onPrint?.(draft);
   };
 
   const issuedAtDate = new Date(draft.issuedAt);
@@ -194,4 +189,4 @@ export const CertificateEditor = ({
       </div>
     </div>
   );
-};
+}

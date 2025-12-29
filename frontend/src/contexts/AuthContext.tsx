@@ -1,10 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi } from '../api/auth';
-import type { User, FacilityMembership } from '../types/auth';
+import type { User, FacilityMembership, UserRole } from '../types/auth';
 import type { ApiError } from '../api/client';
-
-// Type for user role in impersonation
-type UserRole = 'doctor' | 'owner' | 'admin';
 
 // Type guard to validate user role
 function isUserRole(v: unknown): v is UserRole {

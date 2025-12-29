@@ -105,9 +105,11 @@ export function getRoleLabel(role: 'ADMIN' | 'MEDICO' | 'STAFF'): string {
 }
 
 // Admin interfaces
+export type UserRole = 'doctor' | 'owner' | 'admin';
+
 export interface ImpersonateRequest {
   user_id: string;
-  mode?: 'owner' | 'doctor';
+  mode?: UserRole;
 }
 
 export interface ImpersonateResponse {

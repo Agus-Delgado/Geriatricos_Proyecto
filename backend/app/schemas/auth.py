@@ -119,7 +119,7 @@ class ResendVerificationResponse(BaseModel):
 # Admin schemas
 class ImpersonateRequest(BaseModel):
     user_id: UUID
-    mode: Optional[Literal["owner", "doctor"]] = None
+    mode: Optional[Literal["owner", "doctor", "admin"]] = None
 
 
 class ImpersonateResponse(BaseModel):

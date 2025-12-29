@@ -326,9 +326,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       // Normalizar mode: validar y mapear si es necesario
-      const normalizedMode: UserRole | undefined = mode !== undefined 
-        ? (isUserRole(mode) ? mode : mapRole(mode))
-        : undefined;
+      // mode ya es UserRole | undefined, pero por seguridad validamos y mapeamos
+      let normalizedMode: UserRole | undefined = undefined;
+      if (mode !== undefined) {
+        if (isUserRole(mode)) {
+          normalizedMode = mode;
+        } else {
+          normalizedMode = mapRole(mode);
+        }
+      }
 
       // Iniciar impersonación
       const impersonatePayload: ImpersonateRequest = {

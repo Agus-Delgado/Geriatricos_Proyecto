@@ -81,7 +81,7 @@ export const RegisterPage: React.FC = () => {
       await authApi.register({
         role,
         dni: dni.trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -92,8 +92,21 @@ export const RegisterPage: React.FC = () => {
       
       setStep('success');
     } catch (err: any) {
-      if (err.response?.status === 409) {
-        setError(err.response?.data?.detail || 'Ya existe un usuario con este DNI o email');
+      if (err.detail || err.response?.data?.detail) {
+        const errorDetail = err.detail || err.response?.data?.detail;
+        
+        // Mensajes específicos según el tipo de error
+        if (errorDetail.includes('DNI')) {
+          setError('Ese DNI ya está registrado. Probá recuperar contraseña.');
+        } else if (errorDetail.includes('Email')) {
+          setError('Ese email ya está registrado. Probá recuperar contraseña.');
+        } else if (errorDetail.includes('Matrícula')) {
+          setError('Esa matrícula ya está registrada.');
+        } else {
+          setError(errorDetail || 'Error al registrar. Intentá nuevamente.');
+        }
+      } else if (err.response?.status === 409) {
+        setError('Ya existe un usuario con estos datos. Probá recuperar contraseña.');
       } else if (err.response?.status === 400) {
         setError(err.response?.data?.detail || 'Datos inválidos. Verificá los campos.');
       } else {

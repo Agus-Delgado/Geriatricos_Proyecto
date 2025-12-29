@@ -103,3 +103,35 @@ export function getRoleLabel(role: 'ADMIN' | 'MEDICO' | 'STAFF'): string {
   };
   return labels[role] || role;
 }
+
+// Admin interfaces
+export interface ImpersonateRequest {
+  user_id: string;
+  mode?: 'owner' | 'doctor';
+}
+
+export interface ImpersonateResponse {
+  impersonation_token: string;
+  expires_in: number; // segundos
+}
+
+export interface AdminUserListItem {
+  id: string;
+  dni: string | null;
+  email: string | null;
+  full_name: string;
+  license_number: string | null;
+  is_active: boolean;
+  is_verified: boolean;
+  role_inferred: 'owner' | 'doctor' | 'staff' | 'platform_admin' | null;
+  memberships_count: number;
+}
+
+export interface AdminUsersListResponse {
+  users: AdminUserListItem[];
+}
+
+export interface UpdateUserStatusRequest {
+  is_active?: boolean;
+  is_verified?: boolean;
+}

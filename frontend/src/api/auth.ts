@@ -2,7 +2,9 @@ import { apiClient } from './client';
 import type { 
   LoginRequest, TokenResponse, User, SetActiveFacilityRequest,
   RegisterRequest, RegisterResponse, VerifyEmailRequest, VerifyEmailResponse,
-  ResendVerificationRequest, ResendVerificationResponse
+  ResendVerificationRequest, ResendVerificationResponse,
+  ImpersonateRequest, ImpersonateResponse, AdminUsersListResponse,
+  UpdateUserStatusRequest
 } from '../types/auth';
 
 export const authApi = {
@@ -28,5 +30,22 @@ export const authApi = {
 
   resendVerification: async (request: ResendVerificationRequest): Promise<ResendVerificationResponse> => {
     return apiClient.post<ResendVerificationResponse>('/auth/resend-verification', request);
+  },
+
+  // Admin functions
+  getAdminUsers: async (): Promise<AdminUsersListResponse> => {
+    return apiClient.get<AdminUsersListResponse>('/admin/users');
+  },
+
+  impersonateUser: async (data: ImpersonateRequest): Promise<ImpersonateResponse> => {
+    return apiClient.post<ImpersonateResponse>('/admin/impersonate', data);
+  },
+
+  stopImpersonation: async (): Promise<void> => {
+    return apiClient.post<void>('/admin/impersonate/stop', {});
+  },
+
+  updateUserStatus: async (userId: string, data: UpdateUserStatusRequest): Promise<void> => {
+    return apiClient.patch<void>(`/admin/users/${userId}/status`, data);
   },
 };

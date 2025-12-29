@@ -3,6 +3,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.schemas.auth import (
@@ -128,40 +129,58 @@ async def register(
     db: Session = Depends(get_db)
 ):
     """Registrar nuevo usuario. Se envía email de verificación."""
-    # Validar DNI único
-    existing_user_dni = db.query(User).filter(User.dni == register_data.dni).first()
-    if existing_user_dni:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Ya existe un usuario con este DNI"
-        )
-    
-    # Validar email único
-    existing_user_email = db.query(User).filter(User.email == register_data.email).first()
-    if existing_user_email:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Ya existe un usuario con este email"
-        )
+    # Normalizar datos antes de validar
+    dni_normalized = register_data.dni.strip() if register_data.dni else None
+    email_normalized = register_data.email.strip().lower() if register_data.email else None
+    license_number_normalized = None
+    if register_data.role == "doctor" and register_data.license_number:
+        license_number_normalized = register_data.license_number.strip()
     
     # Validar license_number para médicos (ya validado en schema, pero por si acaso)
-    if register_data.role == "doctor" and not register_data.license_number:
+    if register_data.role == "doctor" and not license_number_normalized:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La matrícula es obligatoria para médicos"
         )
+    
+    # Validar DNI único (con datos normalizados)
+    if dni_normalized:
+        existing_user_dni = db.query(User).filter(User.dni == dni_normalized).first()
+        if existing_user_dni:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="DNI ya registrado"
+            )
+    
+    # Validar email único (con datos normalizados)
+    if email_normalized:
+        existing_user_email = db.query(User).filter(User.email == email_normalized).first()
+        if existing_user_email:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email ya registrado"
+            )
+    
+    # Validar license_number único para médicos (con datos normalizados)
+    if register_data.role == "doctor" and license_number_normalized:
+        existing_license = db.query(User).filter(User.license_number == license_number_normalized).first()
+        if existing_license:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Matrícula ya registrada"
+            )
     
     # Crear usuario
     full_name = f"{register_data.first_name} {register_data.last_name}"
     password_hash = get_password_hash(register_data.password)
     
     user = User(
-        dni=register_data.dni,
-        email=register_data.email,
-        phone=register_data.phone,
+        dni=dni_normalized,
+        email=email_normalized,
+        phone=register_data.phone.strip() if register_data.phone else None,
         full_name=full_name,
         birth_date=register_data.birth_date,
-        license_number=register_data.license_number,
+        license_number=license_number_normalized,
         password_hash=password_hash,
         is_active=True,
         is_verified=False,  # Requiere verificación
@@ -169,8 +188,38 @@ async def register(
     )
     
     db.add(user)
-    db.commit()
-    db.refresh(user)
+    
+    # Intentar commit y manejar IntegrityError (por si hay race condition)
+    try:
+        db.commit()
+        db.refresh(user)
+    except IntegrityError as e:
+        db.rollback()
+        error_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
+        
+        # Detectar qué constraint falló
+        if 'dni' in error_msg.lower() or 'ix_users_dni' in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="DNI ya registrado"
+            )
+        elif 'email' in error_msg.lower() or 'ix_users_email' in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email ya registrado"
+            )
+        elif 'license_number' in error_msg.lower() or 'ix_users_license_number' in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Matrícula ya registrada"
+            )
+        else:
+            # Error genérico de unicidad
+            logger.error(f"IntegrityError en registro: {error_msg}")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ya existe un usuario con estos datos"
+            )
     
     logger.info(f"Usuario registrado: {user.id} ({full_name}, {register_data.email})")
     

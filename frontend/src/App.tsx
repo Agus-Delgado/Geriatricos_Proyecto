@@ -14,6 +14,8 @@ import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { GeriatricLoginPage } from './pages/GeriatricLoginPage';
 import { SelectFacilityPage } from './pages/SelectFacilityPage';
 import { PlatformPage } from './pages/PlatformPage';
+import { AdminUsersPage } from './pages/AdminUsersPage';
+import { ImpersonationBanner } from './components/admin/ImpersonationBanner';
 import GeriatricDashboardPage from './pages/GeriatricDashboardPage';
 import GeriatricTasksPage from './pages/GeriatricTasksPage';
 import GeriatricMedicalPage from './pages/GeriatricMedicalPage';
@@ -36,6 +38,7 @@ function AppContent() {
       <UnauthorizedHandler />
       <SessionExpiredHandler />
       <UpdateBanner />
+      <ImpersonationBanner />
       <Header />
       <Routes>
             <Route path="/login" element={<LoginPage />} />
@@ -55,6 +58,14 @@ function AppContent() {
               element={
                 <ProtectedRoute requirePlatformAdmin={true} requireFacility={false}>
                   <PlatformPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute requirePlatformAdmin={true} requireFacility={false}>
+                  <AdminUsersPage />
                 </ProtectedRoute>
               }
             />

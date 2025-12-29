@@ -19,6 +19,11 @@ interface AuthContextType {
   getMemberships: () => FacilityMembership[];
   getActiveMembership: () => FacilityMembership | null;
   getActiveRole: () => 'ADMIN' | 'MEDICO' | 'STAFF' | null;
+  // Impersonation
+  isImpersonating: boolean;
+  impersonatedUser: User | null;
+  startImpersonation: (userId: string, mode?: string) => Promise<void>;
+  stopImpersonation: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,11 +45,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeFacilityId, setActiveFacilityId] = useState<string | null>(null);
+  // Impersonation state
+  const [isImpersonating, setIsImpersonating] = useState(false);
+  const [impersonatedUser, setImpersonatedUser] = useState<User | null>(null);
 
   useEffect(() => {
     // Cargar token y activeFacilityId del localStorage al iniciar
     const storedToken = localStorage.getItem('token');
     const storedFacilityId = localStorage.getItem('activeFacilityId');
+    const storedOriginalToken = localStorage.getItem('original_token');
     
     if (storedFacilityId) {
       setActiveFacilityId(storedFacilityId);
@@ -52,6 +61,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     if (storedToken) {
       setToken(storedToken);
+      // Si hay original_token, estamos en modo impersonación
+      if (storedOriginalToken) {
+        setIsImpersonating(true);
+      }
       // Intentar cargar usuario
       loadUserWithToken(storedToken);
     } else {
@@ -116,11 +129,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('original_token');
     localStorage.removeItem('facility_id');
     localStorage.removeItem('activeFacilityId');
     setToken(null);
     setUser(null);
     setActiveFacilityId(null);
+    setIsImpersonating(false);
+    setImpersonatedUser(null);
   };
 
   const loadUser = async () => {
@@ -194,6 +210,73 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return activeMembership?.role ?? null;
   };
 
+  const startImpersonation = async (userId: string, mode?: string) => {
+    try {
+      // Guardar token original si no hay uno guardado
+      const currentToken = localStorage.getItem('token');
+      if (currentToken && !localStorage.getItem('original_token')) {
+        localStorage.setItem('original_token', currentToken);
+      }
+
+      // Iniciar impersonación
+      const response = await authApi.impersonateUser({ user_id: userId, mode });
+      const impersonationToken = response.impersonation_token;
+
+      // Guardar token de impersonación
+      localStorage.setItem('token', impersonationToken);
+      setToken(impersonationToken);
+      setIsImpersonating(true);
+
+      // Cargar datos del usuario impersonado
+      const userData = await authApi.getCurrentUser();
+      setUser(userData);
+      setImpersonatedUser(userData);
+
+      // Sincronizar activeFacilityId
+      const facilityIdToUse = userData.active_facility_id ?? null;
+      if (facilityIdToUse) {
+        setActiveFacilityId(facilityIdToUse);
+        localStorage.setItem('activeFacilityId', facilityIdToUse);
+      }
+    } catch (error) {
+      const apiError = error as ApiError;
+      throw new Error(apiError.detail || 'Error al iniciar impersonación');
+    }
+  };
+
+  const stopImpersonation = async () => {
+    try {
+      // Detener impersonación en backend
+      await authApi.stopImpersonation();
+
+      // Restaurar token original
+      const originalToken = localStorage.getItem('original_token');
+      if (originalToken) {
+        localStorage.setItem('token', originalToken);
+        setToken(originalToken);
+        localStorage.removeItem('original_token');
+      } else {
+        // Si no hay token original, hacer logout
+        logout();
+        return;
+      }
+
+      setIsImpersonating(false);
+      setImpersonatedUser(null);
+
+      // Cargar datos del admin original
+      const userData = await authApi.getCurrentUser();
+      setUser(userData);
+
+      // Limpiar facility activa (admin no necesita facility)
+      setActiveFacilityId(null);
+      localStorage.removeItem('activeFacilityId');
+    } catch (error) {
+      const apiError = error as ApiError;
+      throw new Error(apiError.detail || 'Error al detener impersonación');
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -212,6 +295,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         getMemberships,
         getActiveMembership,
         getActiveRole,
+        isImpersonating,
+        impersonatedUser,
+        startImpersonation,
+        stopImpersonation,
       }}
     >
       {children}

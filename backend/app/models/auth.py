@@ -73,3 +73,19 @@ class EmailVerificationToken(Base):
     
     # Relationships
     user = relationship("User", foreign_keys=[user_id])
+
+
+class AdminAuditLog(Base):
+    __tablename__ = "admin_audit_log"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    actor_admin_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    target_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
+    action = Column(String(64), nullable=False)
+    ip_address = Column(String(45), nullable=True)  # IPv6 puede ser hasta 45 chars
+    user_agent = Column(String(512), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True)
+    
+    # Relationships
+    actor_admin = relationship("User", foreign_keys=[actor_admin_id])
+    target_user = relationship("User", foreign_keys=[target_user_id])

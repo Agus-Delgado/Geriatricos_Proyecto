@@ -69,20 +69,58 @@ def authenticate_user(db: Session, username: str, password: str) -> User:
     return user
 
 
-def create_user_token(user: User, db: Session | None = None) -> str:
-    """Crear token JWT para usuario con active_facility_id"""
-    expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+def create_user_token(
+    user: User, 
+    db: Session | None = None,
+    impersonation_data: dict | None = None
+) -> str:
+    """Crear token JWT para usuario con active_facility_id.
+    
+    Args:
+        user: Usuario para el cual crear el token
+        db: Sesión de base de datos (opcional)
+        impersonation_data: Dict opcional con 'actor_admin_id' y 'impersonated_user_id' para impersonación
+    """
+    # Si es impersonación, usar expiración corta (15 minutos)
+    if impersonation_data:
+        expires_delta = timedelta(minutes=15)
+    else:
+        expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    
     token_data = {
         "sub": str(user.id),
         "email": user.email or "",
         "dni": user.dni or "",
     }
     
+    # Si es impersonación, agregar claims especiales
+    if impersonation_data:
+        token_data["is_impersonation"] = True
+        token_data["actor_admin_id"] = str(impersonation_data["actor_admin_id"])
+        token_data["impersonated_user_id"] = str(impersonation_data["impersonated_user_id"])
+    
     # Incluir active_facility_id en el token si existe
     if user.active_facility_id:
         token_data["facility_id"] = str(user.active_facility_id)
     
     return create_access_token(data=token_data, expires_delta=expires_delta)
+
+
+def create_impersonation_token(actor_admin: User, target_user: User, db: Session) -> str:
+    """Crear token de impersonación para un usuario target.
+    
+    El token permite que el admin actúe como el usuario target.
+    """
+    impersonation_data = {
+        "actor_admin_id": actor_admin.id,
+        "impersonated_user_id": target_user.id
+    }
+    
+    return create_user_token(
+        user=target_user,
+        db=db,
+        impersonation_data=impersonation_data
+    )
 
 
 def get_user_with_relations(db: Session, user_id: UUID) -> User:

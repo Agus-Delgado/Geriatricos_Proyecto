@@ -114,3 +114,38 @@ class ResendVerificationRequest(BaseModel):
 
 class ResendVerificationResponse(BaseModel):
     message: str
+
+
+# Admin schemas
+class ImpersonateRequest(BaseModel):
+    user_id: UUID
+    mode: Optional[Literal["owner", "doctor"]] = None
+
+
+class ImpersonateResponse(BaseModel):
+    impersonation_token: str
+    expires_in: int  # segundos
+
+
+class AdminUserListItem(BaseModel):
+    id: UUID
+    dni: Optional[str]
+    email: Optional[str]
+    full_name: str
+    license_number: Optional[str]
+    is_active: bool
+    is_verified: bool
+    role_inferred: Optional[str]  # "owner", "doctor", "staff", o None
+    memberships_count: int
+
+    class Config:
+        from_attributes = True
+
+
+class AdminUsersListResponse(BaseModel):
+    users: List[AdminUserListItem]
+
+
+class UpdateUserStatusRequest(BaseModel):
+    is_active: Optional[bool] = None
+    is_verified: Optional[bool] = None

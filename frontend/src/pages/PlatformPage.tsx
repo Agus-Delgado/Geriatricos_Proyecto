@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Header } from '../components/layout/Header';
+import { Link } from 'react-router-dom';
 
 export const PlatformPage: React.FC = () => {
   const { user } = useAuth();
@@ -19,11 +20,18 @@ export const PlatformPage: React.FC = () => {
                 <p className="text-gray-600">Email: {user?.email || 'N/A'}</p>
               </div>
               
-              <div className="mt-6 p-4 bg-blue-50 rounded">
-                <p className="text-blue-900">
-                  Esta es la página de administración de plataforma. 
-                  Funcionalidad completa pendiente de implementar.
-                </p>
+              <div className="mt-6 space-y-4">
+                <div className="p-4 bg-blue-50 rounded">
+                  <p className="text-blue-900 font-semibold mb-2">Funcionalidades disponibles:</p>
+                  <ul className="list-disc list-inside text-blue-800 space-y-1">
+                    <li>
+                      <Link to="/admin/users" className="text-blue-600 hover:text-blue-800 underline">
+                        Gestión de Usuarios
+                      </Link>
+                      {' - Ver y administrar todos los usuarios de la plataforma'}
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>

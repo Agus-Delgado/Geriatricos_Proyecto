@@ -87,7 +87,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (username: string, password: string) => {
     try {
-      const response = await authApi.login({ username, password });
+      // Normalizar identificador: eliminar espacios al inicio y final
+      // NO hacer trim del password (puede tener espacios intencionales)
+      const normalizedUsername = username.trim();
+      const response = await authApi.login({ username: normalizedUsername, password });
       const authToken = response.access_token;
       
       localStorage.setItem('token', authToken);

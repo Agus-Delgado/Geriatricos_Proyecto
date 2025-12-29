@@ -8,31 +8,47 @@ from datetime import datetime, timedelta
 from app.core.config import settings
 from fastapi import HTTPException, status
 from typing import List
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def authenticate_user(db: Session, username: str, password: str) -> User:
     """Autenticar usuario por DNI o email (login único, sin facility)"""
-    # Buscar por DNI o email
+    # Normalizar identificador: eliminar espacios al inicio y final
+    identifier = (username or "").strip()
+    
+    if not identifier:
+        logger.warning("Intento de login fallido: identificador vacío después de trim")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales inválidas"
+        )
+    
+    # Buscar por DNI o email (usando identificador normalizado)
     user = db.query(User).filter(
         or_(
-            User.dni == username,
-            User.email == username
+            User.dni == identifier,
+            User.email == identifier
         )
     ).first()
     
     if not user:
+        logger.warning(f"Intento de login fallido: usuario no encontrado (identifier: {identifier})")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas"
         )
     
     if not user.is_active:
+        logger.warning(f"Intento de login fallido: usuario inactivo (user_id: {user.id}, identifier: {identifier})")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuario inactivo"
         )
     
     if not verify_password(password, user.password_hash):
+        logger.warning(f"Intento de login fallido: password incorrecto (user_id: {user.id}, identifier: {identifier})")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas"
@@ -42,6 +58,7 @@ def authenticate_user(db: Session, username: str, password: str) -> User:
     user.last_login_at = datetime.utcnow()
     db.commit()
     
+    logger.info(f"Login exitoso: usuario {user.id} ({user.full_name}, identifier: {identifier})")
     return user
 
 

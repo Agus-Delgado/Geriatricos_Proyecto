@@ -14,6 +14,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=True, index=True)
     phone = Column(String(32), nullable=True)
     full_name = Column(String(160), nullable=False)
+    license_number = Column(String(32), nullable=True)  # Matrícula médica
     password_hash = Column(String, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=True, nullable=False)

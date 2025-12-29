@@ -1,68 +1,66 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 from app.db.session import get_db
 from app.api.deps import get_current_user, require_facility_access
-from app.schemas.certificates import CertificateCreate, CertificateResponse
-from app.services.certificate_service import generate_certificate_pdf
+from app.schemas.certificates import CertificateCreate, CertificateResponse, CertificateUpdate
 from app.models.auth import User
 from app.models.residents import Resident
 from app.models.certificates import Certificate
 from app.models.audit import AuditLog
 
-router = APIRouter(prefix="/residents/{resident_id}/certificates", tags=["certificates"])
+router = APIRouter(prefix="/certificates", tags=["certificates"])
 
 
 @router.post("", response_model=CertificateResponse, status_code=201)
 async def create_certificate(
-    resident_id: UUID,
     cert_data: CertificateCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Generar certificado (PDF)"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    """Crear nueva constancia médica"""
+    # Validar que el residente existe
+    resident = db.query(Resident).filter(Resident.id == cert_data.resident_id).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Residente no encontrado"
         )
     
-    require_facility_access(resident.facility_id)(current_user, db)
+    # Validar acceso a la facility
+    require_facility_access(cert_data.facility_id)(current_user, db)
     
-    # Generar PDF
-    resident_name = f"{resident.first_name} {resident.last_name}"
-    pdf_buffer, pdf_url = generate_certificate_pdf(
-        cert_data.certificate_type,
-        resident_name,
-        cert_data.content_json,
-        cert_data.issued_at
-    )
+    # Validar que el residente pertenece a la facility
+    if resident.facility_id != cert_data.facility_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El residente no pertenece a la facility especificada"
+        )
     
-    # Guardar certificado en BD
+    # Crear certificado
     certificate = Certificate(
-        resident_id=resident_id,
-        facility_id=resident.facility_id,
+        resident_id=cert_data.resident_id,
+        facility_id=cert_data.facility_id,
         certificate_type=cert_data.certificate_type,
         issued_at=cert_data.issued_at,
         issued_by_user_id=current_user.id,
-        content_json=cert_data.content_json,
-        pdf_url=pdf_url
+        body_text=cert_data.body_text,
+        content_json=cert_data.content_json
     )
     db.add(certificate)
     db.flush()
     
     # Registrar en audit log
     audit_log = AuditLog(
-        facility_id=resident.facility_id,
+        facility_id=cert_data.facility_id,
         actor_user_id=current_user.id,
         action="CREATE_CERTIFICATE",
         entity_type="Certificate",
         entity_id=certificate.id,
         metadata_json={
             "certificate_type": cert_data.certificate_type,
-            "resident_id": str(resident_id)
+            "resident_id": str(cert_data.resident_id)
         }
     )
     db.add(audit_log)
@@ -74,23 +72,39 @@ async def create_certificate(
 
 @router.get("", response_model=List[CertificateResponse])
 async def list_certificates(
-    resident_id: UUID,
-    certificate_type: str = None,
+    resident_id: Optional[UUID] = Query(None, description="Filtrar por residente"),
+    facility_id: Optional[UUID] = Query(None, description="Filtrar por facility"),
+    certificate_type: Optional[str] = Query(None, description="Filtrar por tipo"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Listar certificados de un residente"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
-    if not resident:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Residente no encontrado"
-        )
+    """Listar constancias médicas"""
+    query = db.query(Certificate)
     
-    require_facility_access(resident.facility_id)(current_user, db)
+    # Si se especifica facility_id, validar acceso
+    if facility_id:
+        require_facility_access(facility_id)(current_user, db)
+        query = query.filter(Certificate.facility_id == facility_id)
+    else:
+        # Si no se especifica, solo mostrar las facilities a las que tiene acceso
+        from app.api.deps import get_user_facilities
+        facility_accesses = get_user_facilities(db, current_user.id)
+        facility_ids = [access.facility_id for access in facility_accesses]
+        if facility_ids:
+            query = query.filter(Certificate.facility_id.in_(facility_ids))
+        else:
+            # Usuario sin acceso a ninguna facility
+            return []
     
-    query = db.query(Certificate).filter(Certificate.resident_id == resident_id)
+    # Filtrar por residente si se especifica
+    if resident_id:
+        query = query.filter(Certificate.resident_id == resident_id)
+        # Validar acceso al residente
+        resident = db.query(Resident).filter(Resident.id == resident_id).first()
+        if resident:
+            require_facility_access(resident.facility_id)(current_user, db)
     
+    # Filtrar por tipo si se especifica
     if certificate_type:
         query = query.filter(Certificate.certificate_type == certificate_type)
     
@@ -98,47 +112,53 @@ async def list_certificates(
     return certificates
 
 
-@router.get("/{certificate_id}/pdf")
-async def download_certificate_pdf(
-    resident_id: UUID,
+@router.get("/{certificate_id}", response_model=CertificateResponse)
+async def get_certificate(
     certificate_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Descargar PDF del certificado (placeholder - regenerar desde content_json)"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
-    if not resident:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Residente no encontrado"
-        )
-    
-    require_facility_access(resident.facility_id)(current_user, db)
-    
-    certificate = db.query(Certificate).filter(
-        Certificate.id == certificate_id,
-        Certificate.resident_id == resident_id
-    ).first()
-    
+    """Obtener una constancia médica por ID"""
+    certificate = db.query(Certificate).filter(Certificate.id == certificate_id).first()
     if not certificate:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Certificado no encontrado"
+            detail="Constancia no encontrada"
         )
     
-    # Regenerar PDF desde content_json
-    resident_name = f"{resident.first_name} {resident.last_name}"
-    pdf_buffer, _ = generate_certificate_pdf(
-        certificate.certificate_type,
-        resident_name,
-        certificate.content_json,
-        certificate.issued_at
-    )
+    # Validar acceso a la facility
+    require_facility_access(certificate.facility_id)(current_user, db)
     
-    return Response(
-        content=pdf_buffer.read(),
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition": f"attachment; filename=certificate_{certificate.certificate_type.lower()}_{certificate.id}.pdf"
-        }
-    )
+    return certificate
+
+
+@router.patch("/{certificate_id}", response_model=CertificateResponse)
+async def update_certificate(
+    certificate_id: UUID,
+    cert_data: CertificateUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Actualizar una constancia médica"""
+    certificate = db.query(Certificate).filter(Certificate.id == certificate_id).first()
+    if not certificate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Constancia no encontrada"
+        )
+    
+    # Validar acceso a la facility
+    require_facility_access(certificate.facility_id)(current_user, db)
+    
+    # Actualizar campos
+    if cert_data.body_text is not None:
+        certificate.body_text = cert_data.body_text
+    if cert_data.issued_at is not None:
+        certificate.issued_at = cert_data.issued_at
+    if cert_data.content_json is not None:
+        certificate.content_json = cert_data.content_json
+    
+    db.commit()
+    db.refresh(certificate)
+    
+    return certificate

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { PatientList } from '../components/medical/PatientList';
 import { MEDICAL_LINKS } from '../config/medicalLinks';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,10 +12,15 @@ export default function GeriatricMedicalPage() {
   const activeMembership = memberships.find(m => m.facility_id === (activeFacilityId ?? facilityId) && m.is_active);
   const facilityName = activeMembership?.facility_name ?? facilityId;
 
+  const navigate = useNavigate();
+
   const handleQuickAction = (action: string) => {
-    // TODO: Implementar acciones rápidas
-    console.log('Acción rápida:', action);
-    // Por ahora solo log, en el futuro navegar a rutas específicas
+    if (action === 'certificaciones') {
+      navigate(`/g/${facilityId}/certificates`);
+    } else {
+      // TODO: Implementar otras acciones rápidas
+      console.log('Acción rápida:', action);
+    }
   };
 
   return (

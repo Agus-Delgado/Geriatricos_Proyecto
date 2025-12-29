@@ -29,22 +29,25 @@ def seed_database(db: Session):
     else:
         print("→ OwnerGroup ya existe: Grupo Geriátricos")
     
-    # 2. Crear Facilities (3 geriátricos con slugs)
+    # 2. Crear Facilities (3 geriátricos con slugs y direcciones)
     facilities_data = [
         {
             "code": "NSL",
             "name": "Nuestra Señora de Luján",
-            "slug": "nuestra-senora-de-lujan"
+            "slug": "nuestra-senora-de-lujan",
+            "address": "Gaona 1741"
         },
         {
             "code": "ET",
             "name": "El Trébol",
-            "slug": "el-trebol"
+            "slug": "el-trebol",
+            "address": "Barcala 672"
         },
         {
             "code": "EA",
             "name": "El Amanecer",
-            "slug": "el-amanecer"
+            "slug": "el-amanecer",
+            "address": "Palos 295"
         },
     ]
     
@@ -61,17 +64,24 @@ def seed_database(db: Session):
                 owner_group_id=owner_group.id,
                 name=fac_data["name"],
                 code=fac_data["code"],
-                slug=fac_data["slug"]
+                slug=fac_data["slug"],
+                address=fac_data.get("address")
             )
             db.add(facility)
             db.flush()
-            print(f"✓ Facility creado: {fac_data['code']} - {fac_data['name']} (slug: {fac_data['slug']})")
+            print(f"✓ Facility creado: {fac_data['code']} - {fac_data['name']} (slug: {fac_data['slug']}, address: {fac_data.get('address')})")
         else:
-            # Actualizar slug si no existe
+            # Actualizar slug y address si no existen
+            updated = False
             if not facility.slug:
                 facility.slug = fac_data["slug"]
+                updated = True
+            if not facility.address and fac_data.get("address"):
+                facility.address = fac_data["address"]
+                updated = True
+            if updated:
                 db.flush()
-                print(f"→ Facility actualizado con slug: {fac_data['code']} - {fac_data['slug']}")
+                print(f"→ Facility actualizado: {fac_data['code']} - {fac_data['slug']}, address: {fac_data.get('address')}")
             else:
                 print(f"→ Facility ya existe: {fac_data['code']} - {fac_data['name']}")
         

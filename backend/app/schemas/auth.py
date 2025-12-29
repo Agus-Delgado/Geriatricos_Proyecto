@@ -53,6 +53,7 @@ class UserResponse(BaseModel):
     dni: Optional[str]
     phone: Optional[str]
     full_name: str
+    license_number: Optional[str]  # Matrícula médica
     is_active: bool
     is_verified: bool
     is_platform_admin: bool

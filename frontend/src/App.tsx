@@ -15,6 +15,8 @@ import { PlatformPage } from './pages/PlatformPage';
 import GeriatricDashboardPage from './pages/GeriatricDashboardPage';
 import GeriatricTasksPage from './pages/GeriatricTasksPage';
 import GeriatricMedicalPage from './pages/GeriatricMedicalPage';
+import CertificatesPage from './pages/CertificatesPage';
+import CertificatePrintPage from './pages/CertificatePrintPage';
 import { ResidentsListPage } from './pages/ResidentsListPage';
 import { ResidentDetailPage } from './pages/ResidentDetailPage';
 import { MedicationDuePage } from './pages/MedicationDuePage';
@@ -75,6 +77,18 @@ function AppContent() {
                   <GeriatricMedicalPage />
                 </ProtectedRoute>
               }
+            />
+            <Route
+              path="/g/:id/certificates"
+              element={
+                <ProtectedRoute requireRole="MEDICO">
+                  <CertificatesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/certificates/print"
+              element={<CertificatePrintPage />}
             />
             <Route
               path="/residents"

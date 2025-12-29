@@ -27,6 +27,7 @@ export interface User {
   dni: string | null;
   phone: string | null;
   full_name: string;
+  license_number: string | null; // Matrícula médica
   is_active: boolean;
   is_verified: boolean;
   is_platform_admin: boolean;
@@ -55,6 +56,7 @@ export interface Facility {
   name: string;
   code: string;
   slug: string | null;
+  address: string | null; // Dirección del hogar
   is_active: boolean;
 }
 

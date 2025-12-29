@@ -9,6 +9,11 @@ from app.api.routes import (
     documents, certificates, external_platforms, resident_external_events, finance,
     staff, attendance
 )
+from app.db.session import SessionLocal
+from app.db.bootstrap import bootstrap_production_users
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -72,3 +77,29 @@ app.include_router(resident_external_events.router)
 app.include_router(finance.router)
 app.include_router(staff.router)
 app.include_router(attendance.router)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Ejecutar bootstrap de usuarios de producción al iniciar la aplicación"""
+    try:
+        # Solo ejecutar bootstrap si hay variables de entorno definidas
+        has_admin = settings.ADMIN_DNI and settings.ADMIN_PASSWORD
+        has_medico = settings.MEDICO_DNI and settings.MEDICO_PASSWORD
+        
+        if has_admin or has_medico:
+            logger.info("Bootstrap: Variables de entorno detectadas. Ejecutando bootstrap de usuarios...")
+            db = SessionLocal()
+            try:
+                bootstrap_production_users(db)
+            except Exception as e:
+                logger.error(f"Bootstrap: Error al crear usuarios de producción: {e}", exc_info=True)
+                # No fallar el startup si hay error en bootstrap
+            finally:
+                db.close()
+        else:
+            logger.info("Bootstrap: No hay variables de entorno de bootstrap. Saltando creación automática de usuarios.")
+            logger.info("Bootstrap: Para crear usuarios, definir ADMIN_DNI/ADMIN_PASSWORD o MEDICO_DNI/MEDICO_PASSWORD")
+    except Exception as e:
+        logger.error(f"Bootstrap: Error en startup event: {e}", exc_info=True)
+        # No fallar el startup si hay error

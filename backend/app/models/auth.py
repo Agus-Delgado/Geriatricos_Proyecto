@@ -1,7 +1,7 @@
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, UniqueConstraint, Date, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, date
 import uuid
 from app.db.base import Base
 
@@ -14,6 +14,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=True, index=True)
     phone = Column(String(32), nullable=True)
     full_name = Column(String(160), nullable=False)
+    birth_date = Column(Date, nullable=True)
     license_number = Column(String(32), nullable=True)  # Matrícula médica
     password_hash = Column(String, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
@@ -55,3 +56,20 @@ class UserRoleAssignment(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "role_id", name="uq_user_role"),
     )
+
+
+class EmailVerificationToken(Base):
+    __tablename__ = "email_verification_tokens"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, index=True)  # SHA256 hex = 64 chars
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    consumed_at = Column(DateTime(timezone=True), nullable=True)
+    last_sent_at = Column(DateTime(timezone=True), nullable=True)
+    send_count = Column(Integer, default=0, nullable=False)
+    window_started_at = Column(DateTime(timezone=True), nullable=True)  # Para rate limit por hora
+    
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])

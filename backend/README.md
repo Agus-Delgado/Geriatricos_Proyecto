@@ -348,6 +348,180 @@ curl -i -H "Origin: https://example.vercel.app" \
 - Si no hay token válido, debe devolver `401 Unauthorized` (NO 500)
 - Todos los headers CORS deben estar presentes incluso en respuestas de error
 
+## Configuración de Email (SMTP) para Verificación
+
+El sistema utiliza Gmail SMTP para enviar emails de verificación de cuenta. La configuración se realiza mediante variables de entorno en Render.
+
+### Variables de Entorno SMTP (Render)
+
+Configurar las siguientes variables en el dashboard de Render:
+
+```env
+# URL del frontend (Vercel)
+FRONTEND_URL=https://tu-app.vercel.app
+
+# Configuración de email
+EMAIL_FROM=Geriátricos <miconsultoriosoporte@gmail.com>
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USE_TLS=true
+SMTP_USE_SSL=false
+SMTP_USER=miconsultoriosoporte@gmail.com
+SMTP_PASSWORD=<APP_PASSWORD_GMAIL>  # Ver instrucciones abajo
+EMAIL_VERIFY_TOKEN_TTL_HOURS=24
+EMAIL_REPLY_TO=miconsultoriosoporte@gmail.com  # Opcional
+```
+
+### Obtener App Password de Gmail
+
+**IMPORTANTE**: No usar la contraseña normal de Gmail. Se requiere una "App Password" (Contraseña de aplicación).
+
+1. **Habilitar verificación en 2 pasos** (si no está habilitada):
+   - Ir a [Cuenta de Google](https://myaccount.google.com/)
+   - Seguridad → Verificación en 2 pasos → Activar
+
+2. **Generar App Password**:
+   - Ir a [App Passwords](https://myaccount.google.com/apppasswords)
+   - Seleccionar "Correo" y "Otro (nombre personalizado)"
+   - Ingresar nombre: "Geriátricos Backend"
+   - Copiar la contraseña generada (16 caracteres sin espacios)
+
+3. **Configurar en Render**:
+   - Pegar la App Password en la variable `SMTP_PASSWORD`
+   - **NUNCA** commitear esta contraseña en el código
+
+### Troubleshooting de Emails
+
+**Los emails no llegan:**
+
+1. **Revisar carpeta Spam/Promociones**:
+   - Gmail puede filtrar emails transaccionales a estas carpetas
+   - Instruir a usuarios a revisar estas carpetas
+
+2. **Verificar logs del backend**:
+   - Buscar en logs de Render mensajes como:
+     - "Email enviado exitosamente a X"
+     - "Error al enviar email a X"
+   - Si hay errores de autenticación, verificar `SMTP_PASSWORD` (App Password)
+
+3. **Verificar variables de entorno**:
+   ```bash
+   # En Render Shell, verificar que las variables están definidas:
+   echo $SMTP_USER
+   echo $SMTP_HOST
+   echo $FRONTEND_URL
+   ```
+
+4. **Probar conexión SMTP manualmente**:
+   ```python
+   # En Render Shell
+   python -c "
+   import smtplib
+   from app.core.config import settings
+   server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+   server.starttls()
+   server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+   print('Conexión SMTP exitosa')
+   server.quit()
+   "
+   ```
+
+5. **Rate Limiting**:
+   - El sistema limita reenvíos: mínimo 60 segundos entre envíos, máximo 5 por hora
+   - Si se excede, el usuario recibirá error 429
+
+### Flujo de Verificación de Email
+
+1. Usuario se registra → se crea usuario con `is_verified=false`
+2. Se genera token de verificación (válido por 24 horas)
+3. Se envía email con enlace: `{FRONTEND_URL}/verify-email?token={TOKEN}`
+4. Usuario hace click → frontend llama `POST /auth/verify-email`
+5. Backend verifica token → `user.is_verified=true`
+6. Usuario puede iniciar sesión
+
+**Nota**: Los usuarios existentes (creados antes de esta implementación) mantienen `is_verified=true` por defecto.
+
+## Bootstrap de Usuarios en Producción
+
+El sistema incluye dos mecanismos para crear usuarios iniciales en producción:
+
+### Opción 1: Bootstrap Automático (Recomendado)
+
+El bootstrap automático se ejecuta al iniciar la aplicación si las variables de entorno están definidas.
+
+**Variables de Entorno para Bootstrap:**
+
+```
+# Admin/Platform Admin
+ADMIN_DNI=90000000
+ADMIN_PASSWORD=tu-password-seguro-aqui
+ADMIN_EMAIL=admin@geriatricos.com
+ADMIN_FULL_NAME=Platform Admin
+
+# Médico
+MEDICO_DNI=30000000
+MEDICO_PASSWORD=tu-password-seguro-aqui
+MEDICO_EMAIL=medico@geriatricos.com
+MEDICO_FULL_NAME=Dr. Médico
+```
+
+**Características:**
+- Se ejecuta automáticamente al iniciar la aplicación
+- Idempotente: no duplica usuarios si ya existen
+- Solo crea si las variables están definidas
+- Si faltan variables, solo loggea advertencia (no falla)
+
+**Credenciales después del bootstrap:**
+- **Admin**: DNI `ADMIN_DNI` o email `ADMIN_EMAIL` / password `ADMIN_PASSWORD`
+- **Médico**: DNI `MEDICO_DNI` o email `MEDICO_EMAIL` / password `MEDICO_PASSWORD`
+
+### Opción 2: Seeds Manual
+
+Si prefieres ejecutar los seeds manualmente:
+
+**En Render Shell:**
+1. Ir a tu servicio en Render Dashboard
+2. Abrir "Shell" (consola)
+3. Ejecutar:
+   ```bash
+   python -m app.db.seeds
+   ```
+
+**Credenciales después de seeds:**
+- **Platform Admin**: DNI `90000000` / password `Admin123!` (o `DEV_SEED_PASSWORD`)
+- **Admin 1**: DNI `20000001` o email `owner1@geriatricos.com` / password `Admin123!`
+- **Admin 2**: DNI `20000002` o email `owner2@geriatricos.com` / password `Admin123!`
+- **Médico**: DNI `30000000` o email `medico@geriatricos.com` / password `Admin123!`
+- **Staff**: DNI `40000001` o email `staff1@geriatricos.com` / password `Admin123!`
+
+**Nota**: El password de seeds se puede cambiar con la variable `DEV_SEED_PASSWORD`.
+
+### Diagnóstico de Problemas de Login
+
+Si el login devuelve 401 "credenciales inválidas", verificar:
+
+1. **Usuarios existen en la base de datos:**
+   ```sql
+   -- En Render PostgreSQL, ejecutar:
+   SELECT id, dni, email, full_name, is_active FROM users;
+   ```
+
+2. **Logs del backend:**
+   - Buscar en los logs de Render mensajes como:
+     - "Intento de login fallido: usuario no encontrado"
+     - "Intento de login fallido: password incorrecto"
+     - "Login exitoso"
+
+3. **Verificar variables de entorno:**
+   - Confirmar que `ADMIN_DNI`, `ADMIN_PASSWORD`, etc. están definidas correctamente
+   - Verificar que no hay espacios extra en los valores
+
+4. **Ejecutar bootstrap manualmente:**
+   ```bash
+   # En Render Shell
+   python -c "from app.db.session import SessionLocal; from app.db.bootstrap import bootstrap_production_users; db = SessionLocal(); bootstrap_production_users(db); db.close()"
+   ```
+
 ## Licencia
 
 [Especificar licencia]

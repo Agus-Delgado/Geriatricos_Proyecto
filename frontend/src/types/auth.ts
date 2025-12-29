@@ -46,6 +46,38 @@ export interface SetActiveFacilityRequest {
   facility_id: string;
 }
 
+export interface RegisterRequest {
+  role: 'doctor' | 'owner';
+  dni: string;
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  birth_date: string; // YYYY-MM-DD
+  phone?: string | null;
+  license_number?: string | null;
+}
+
+export interface RegisterResponse {
+  message: string;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+export interface VerifyEmailResponse {
+  message: string;
+}
+
+export interface ResendVerificationRequest {
+  email_or_dni: string;
+}
+
+export interface ResendVerificationResponse {
+  message: string;
+}
+
 export interface TokenResponse {
   access_token: string;
   token_type: string;

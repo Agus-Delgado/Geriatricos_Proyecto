@@ -9,6 +9,8 @@ import { UpdateBanner } from './components/pwa/UpdateBanner';
 import { Header } from './components/layout/Header';
 import { useFacilityTheme } from './hooks/useFacilityTheme';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { GeriatricLoginPage } from './pages/GeriatricLoginPage';
 import { SelectFacilityPage } from './pages/SelectFacilityPage';
 import { PlatformPage } from './pages/PlatformPage';
@@ -37,6 +39,8 @@ function AppContent() {
       <Header />
       <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/login/:geriatricSlug" element={<GeriatricLoginPage />} />
             <Route
               path="/select-facility"

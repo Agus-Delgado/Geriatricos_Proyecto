@@ -223,13 +223,23 @@ El sistema utiliza PostgreSQL con 21 tablas organizadas en los siguientes módul
 
 ## 👥 Usuarios Iniciales (Seeds)
 
-Después de ejecutar los seeds, se crean los siguientes usuarios:
+Después de ejecutar los seeds, se crean los siguientes usuarios de desarrollo:
 
-- **owner1@geriatricos.com** / password: `owner123` (Rol: OWNER)
-- **owner2@geriatricos.com** / password: `owner123` (Rol: OWNER)
-- **doctor@geriatricos.com** / password: `doctor123` (Rol: DOCTOR)
+| Rol | DNI | Email | Password | Acceso |
+|-----|-----|-------|----------|--------|
+| **Platform Admin** | `90000000` | (sin email) | `Admin123!` | Acceso completo a todas las facilities |
+| **Admin (Propietario 1)** | `20000001` | `owner1@geriatricos.com` | `Admin123!` | ADMIN en NSL, ET, EA |
+| **Admin (Propietario 2)** | `20000002` | `owner2@geriatricos.com` | `Admin123!` | ADMIN en NSL, ET, EA |
+| **Médico** | `30000000` | `medico@geriatricos.com` | `Admin123!` | MEDICO en NSL, ET, EA |
+| **Staff** | `40000001` | `staff1@geriatricos.com` | `Admin123!` | STAFF en NSL |
 
-Todos los usuarios tienen acceso a las 3 sedes iniciales (G1, G2, G3).
+**Login**: Puedes usar DNI o email como username. Ejemplo:
+- Username: `30000000` o `medico@geriatricos.com`
+- Password: `Admin123!`
+
+**Nota**: El password por defecto es `Admin123!` (configurable con variable de entorno `DEV_SEED_PASSWORD`).
+
+⚠️ **IMPORTANTE**: Estas credenciales son SOLO para desarrollo. Cambiar en producción.
 
 ## 🔐 Roles y Permisos
 

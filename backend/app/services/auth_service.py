@@ -47,6 +47,13 @@ def authenticate_user(db: Session, username: str, password: str) -> User:
             detail="Usuario inactivo"
         )
     
+    if not user.is_verified:
+        logger.warning(f"Intento de login fallido: email no verificado (user_id: {user.id}, identifier: {identifier})")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email no verificado"
+        )
+    
     if not verify_password(password, user.password_hash):
         logger.warning(f"Intento de login fallido: password incorrecto (user_id: {user.id}, identifier: {identifier})")
         raise HTTPException(

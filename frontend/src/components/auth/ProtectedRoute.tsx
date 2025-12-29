@@ -19,50 +19,57 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireRole,
   requirePlatformAdmin = false,
 }) => {
-  const { user, token, loading: authLoading, isOwner, isPlatformAdmin, getActiveRole, activeFacilityId, setActiveFacility, getMemberships } = useAuth();
+  const {
+    user,
+    token,
+    loading: authLoading,
+    isOwner,
+    isPlatformAdmin,
+    getActiveRole,
+    activeFacilityId,
+    setActiveFacility,
+    getMemberships,
+  } = useAuth();
+
   const { facility, loading: facilityLoading } = useFacility();
+
   const params = useParams();
   const location = useLocation();
+
   const [syncingFacility, setSyncingFacility] = useState(false);
-  
-  // Detectar si estamos en una ruta /g/:id/*
+  const [syncFailed, setSyncFailed] = useState(false);
+
+  // Detectar ruta /g/:id/*
   const urlFacilityId = params.id;
   const isGeriatricRoute = location.pathname.startsWith('/g/');
 
-  // Sincronizar activeFacilityId con el parámetro :id de la URL
-  useEffect(() => {
-    if (requireFacility && isGeriatricRoute && urlFacilityId && user && !authLoading) {
-      const memberships = getMemberships();
-      const hasMembership = memberships.some(m => m.facility_id === urlFacilityId && m.is_active);
-      
-      // Si el usuario tiene membership para este id y difiere del activeFacilityId, sincronizar
-      if (hasMembership && activeFacilityId !== urlFacilityId) {
-        setSyncingFacility(true);
-        setActiveFacility(urlFacilityId)
-          .catch(() => {
-            // Error manejado por el catch, no hacer nada aquí
-          })
-          .finally(() => {
-            setSyncingFacility(false);
-          });
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlFacilityId, activeFacilityId, requireFacility, isGeriatricRoute, user, authLoading]);
-
-  // Verificar token primero
+  // 1) Token primero
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  // Mostrar loading mientras se carga el usuario o la facility o se sincroniza
-  if (authLoading || facilityLoading || syncingFacility) {
+  // 2) Mientras rehidrata auth, spinner
+  if (authLoading) {
     return <LoadingSpinner fullScreen />;
   }
 
-  // Si hay token pero no hay user, redirigir a login
+  // 3) Si hay token pero no user, cortar (evita loop)
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // A partir de acá ya sabemos si es platform admin
+  const mustHaveFacility = requireFacility && !isPlatformAdmin;
+
+  // Si es platform admin y la ruta requiere platform admin, ok; si lo requiere y no lo es, se corta abajo.
+  // Importante: NO bloquear por facilityLoading si NO necesitamos facility.
+  if (mustHaveFacility && (facilityLoading || syncingFacility)) {
+    return <LoadingSpinner fullScreen />;
+  }
+
+  // Si la sincronización de facility falló, no seguir spinners eternos
+  if (mustHaveFacility && syncFailed) {
+    return <Navigate to="/select-facility" replace />;
   }
 
   // Verificar platform admin si es requerido
@@ -70,64 +77,91 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/residents" replace />;
   }
 
-  // Verificar rol OWNER si es requerido (legacy, usar requireRole en su lugar)
+  // Verificar owner legacy si es requerido
   if (requireOwner && !isOwner) {
     return <Navigate to="/residents" replace />;
   }
 
-  // Verificar facility si es requerida
-  if (requireFacility) {
-    // Si es platform admin, puede acceder sin facility (no requiere facility)
-    if (isPlatformAdmin) {
-      return <>{children}</>;
+  // Sincronizar activeFacilityId con :id de la URL para /g/:id/*
+  useEffect(() => {
+    if (!mustHaveFacility) return;
+
+    // Resetear estado de error cuando cambia la URL facility
+    setSyncFailed(false);
+
+    if (isGeriatricRoute && urlFacilityId && user) {
+      const memberships = getMemberships();
+      const hasMembership = memberships.some(
+        (m) => m.facility_id === urlFacilityId && m.is_active
+      );
+
+      if (!hasMembership) return;
+
+      // Si difiere, sincronizar una vez
+      if (activeFacilityId !== urlFacilityId) {
+        setSyncingFacility(true);
+        setActiveFacility(urlFacilityId)
+          .catch(() => {
+            // Si falla, marcar y cortar (evita loop infinito)
+            setSyncFailed(true);
+          })
+          .finally(() => {
+            setSyncingFacility(false);
+          });
+      }
     }
-    
-    // Si estamos en ruta /g/:id/*, verificar que el usuario tenga membership para ese id
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlFacilityId, activeFacilityId, mustHaveFacility, isGeriatricRoute, user]);
+
+  // Verificar facility si es requerida (para no platform admin)
+  if (mustHaveFacility) {
+    // Caso /g/:id/*
     if (isGeriatricRoute && urlFacilityId) {
       const memberships = getMemberships();
-      const hasMembership = memberships.some(m => m.facility_id === urlFacilityId && m.is_active);
-      
+      const hasMembership = memberships.some(
+        (m) => m.facility_id === urlFacilityId && m.is_active
+      );
+
       if (!hasMembership) {
         return <Navigate to="/select-facility" replace />;
       }
-      
-      // Si no hay activeFacilityId pero hay urlFacilityId válido, esperar a que se sincronice
-      // Pero solo si no estamos sincronizando ya (para evitar loops)
-      if (!activeFacilityId && syncingFacility === false && hasMembership) {
-        // Dar un pequeño timeout antes de mostrar loading para evitar flashes
+
+      // Si todavía no se sincronizó, mostrar spinner (solo mientras intenta)
+      if (!activeFacilityId && !syncFailed) {
         return <LoadingSpinner fullScreen />;
       }
-    } else if (!facility && !activeFacilityId) {
-      // Si no es platform admin y no tiene facility, redirigir a selector
-      // Pero solo si ya terminó de cargar (para evitar redirecciones prematuras)
-      if (!authLoading && !facilityLoading) {
+    } else {
+      // No es /g/:id/*
+      if (!facility && !activeFacilityId) {
         return <Navigate to="/select-facility" replace />;
       }
     }
   }
 
-  // Verificar rol en facility activa si es requerido
+  // Verificar rol requerido en facility (si no es platform admin)
   if (requireRole && !isPlatformAdmin) {
-    // Si estamos en ruta /g/:id/*, verificar rol del membership de ese id
     let roleToCheck: 'ADMIN' | 'MEDICO' | 'STAFF' | null = null;
-    
+
     if (isGeriatricRoute && urlFacilityId) {
       const memberships = getMemberships();
-      const membership = memberships.find(m => m.facility_id === urlFacilityId && m.is_active);
+      const membership = memberships.find(
+        (m) => m.facility_id === urlFacilityId && m.is_active
+      );
       roleToCheck = membership?.role ?? null;
     } else {
       roleToCheck = getActiveRole();
     }
-    
+
     if (roleToCheck !== requireRole) {
-      // Redirigir según el rol actual o a una página por defecto
       const currentFacilityId = urlFacilityId ?? activeFacilityId ?? user.active_facility_id;
       if (currentFacilityId) {
         if (roleToCheck === 'ADMIN') {
           return <Navigate to={`/g/${currentFacilityId}/dashboard`} replace />;
-        } else if (roleToCheck === 'MEDICO') {
+        }
+        if (roleToCheck === 'MEDICO') {
           return <Navigate to={`/g/${currentFacilityId}/medical`} replace />;
-        } else if (roleToCheck === 'STAFF') {
+        }
+        if (roleToCheck === 'STAFF') {
           return <Navigate to={`/g/${currentFacilityId}/tasks`} replace />;
         }
       }

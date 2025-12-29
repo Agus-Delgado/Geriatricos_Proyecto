@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../api/auth';
-import type { AdminUserListItem } from '../types/auth';
+import type { AdminUserListItem, UserRole } from '../types/auth';
 import { useNavigate } from 'react-router-dom';
 
 export const AdminUsersPage: React.FC = () => {
@@ -29,7 +29,7 @@ export const AdminUsersPage: React.FC = () => {
     }
   };
 
-  const handleImpersonate = async (targetUser: AdminUserListItem, mode: 'owner' | 'doctor') => {
+  const handleImpersonate = async (targetUser: AdminUserListItem, mode: UserRole) => {
     try {
       setUpdatingUsers(prev => new Set(prev).add(targetUser.id));
       await startImpersonation(targetUser.id, mode);

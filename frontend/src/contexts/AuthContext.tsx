@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi } from '../api/auth';
-import type { User, FacilityMembership, UserRole } from '../types/auth';
+import type { User, FacilityMembership, UserRole, ImpersonateRequest } from '../types/auth';
 import type { ApiError } from '../api/client';
 
 // Type guard to validate user role
@@ -23,6 +23,7 @@ function mapRole(rawRole: unknown): UserRole | undefined {
     case 'medico':
       return 'doctor';
     case 'owner':
+      return 'owner';
     case 'admin':
     case 'platform_admin':
       return 'admin';
@@ -330,10 +331,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         : undefined;
 
       // Iniciar impersonación
-      const response = await authApi.impersonateUser({ 
-        user_id: userId, 
-        mode: normalizedMode 
-      });
+      const impersonatePayload: ImpersonateRequest = {
+        user_id: userId,
+        mode: normalizedMode,
+      };
+      const response = await authApi.impersonateUser(impersonatePayload);
       const impersonationToken = response.impersonation_token;
 
       // Guardar token de impersonación

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Navigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFacility } from '../../contexts/FacilityContext';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -19,16 +19,44 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireRole,
   requirePlatformAdmin = false,
 }) => {
-  const { user, token, loading: authLoading, isOwner, isPlatformAdmin, getActiveRole } = useAuth();
+  const { user, token, loading: authLoading, isOwner, isPlatformAdmin, getActiveRole, activeFacilityId, setActiveFacility, getMemberships } = useAuth();
   const { facility, loading: facilityLoading } = useFacility();
+  const params = useParams();
+  const location = useLocation();
+  const [syncingFacility, setSyncingFacility] = useState(false);
+  
+  // Detectar si estamos en una ruta /g/:id/*
+  const urlFacilityId = params.id;
+  const isGeriatricRoute = location.pathname.startsWith('/g/');
+
+  // Sincronizar activeFacilityId con el parámetro :id de la URL
+  useEffect(() => {
+    if (requireFacility && isGeriatricRoute && urlFacilityId && user && !authLoading) {
+      const memberships = getMemberships();
+      const hasMembership = memberships.some(m => m.facility_id === urlFacilityId && m.is_active);
+      
+      // Si el usuario tiene membership para este id y difiere del activeFacilityId, sincronizar
+      if (hasMembership && activeFacilityId !== urlFacilityId) {
+        setSyncingFacility(true);
+        setActiveFacility(urlFacilityId)
+          .catch(() => {
+            // Error manejado por el catch, no hacer nada aquí
+          })
+          .finally(() => {
+            setSyncingFacility(false);
+          });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlFacilityId, activeFacilityId, requireFacility, isGeriatricRoute, user, authLoading]);
 
   // Verificar token primero
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  // Mostrar loading mientras se carga el usuario o la facility
-  if (authLoading || facilityLoading) {
+  // Mostrar loading mientras se carga el usuario o la facility o se sincroniza
+  if (authLoading || facilityLoading || syncingFacility) {
     return <LoadingSpinner fullScreen />;
   }
 
@@ -48,25 +76,54 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Verificar facility si es requerida
-  if (requireFacility && !facility) {
+  if (requireFacility) {
     // Si es platform admin, puede acceder sin facility
     if (isPlatformAdmin) {
       return <>{children}</>;
     }
-    return <Navigate to="/select-facility" replace />;
+    
+    // Si estamos en ruta /g/:id/*, verificar que el usuario tenga membership para ese id
+    if (isGeriatricRoute && urlFacilityId) {
+      const memberships = getMemberships();
+      const hasMembership = memberships.some(m => m.facility_id === urlFacilityId && m.is_active);
+      
+      if (!hasMembership) {
+        return <Navigate to="/select-facility" replace />;
+      }
+      
+      // Si no hay activeFacilityId pero hay urlFacilityId válido, esperar a que se sincronice
+      if (!activeFacilityId && syncingFacility === false) {
+        return <LoadingSpinner fullScreen />;
+      }
+    } else if (!facility && !activeFacilityId) {
+      return <Navigate to="/select-facility" replace />;
+    }
   }
 
   // Verificar rol en facility activa si es requerido
   if (requireRole && !isPlatformAdmin) {
-    const activeRole = getActiveRole();
-    if (activeRole !== requireRole) {
+    // Si estamos en ruta /g/:id/*, verificar rol del membership de ese id
+    let roleToCheck: 'ADMIN' | 'MEDICO' | 'STAFF' | null = null;
+    
+    if (isGeriatricRoute && urlFacilityId) {
+      const memberships = getMemberships();
+      const membership = memberships.find(m => m.facility_id === urlFacilityId && m.is_active);
+      roleToCheck = membership?.role ?? null;
+    } else {
+      roleToCheck = getActiveRole();
+    }
+    
+    if (roleToCheck !== requireRole) {
       // Redirigir según el rol actual o a una página por defecto
-      if (activeRole === 'ADMIN') {
-        return <Navigate to={`/g/${user.active_facility_id}/dashboard`} replace />;
-      } else if (activeRole === 'MEDICO') {
-        return <Navigate to={`/g/${user.active_facility_id}/medical`} replace />;
-      } else if (activeRole === 'STAFF') {
-        return <Navigate to={`/g/${user.active_facility_id}/tasks`} replace />;
+      const currentFacilityId = urlFacilityId ?? activeFacilityId ?? user.active_facility_id;
+      if (currentFacilityId) {
+        if (roleToCheck === 'ADMIN') {
+          return <Navigate to={`/g/${currentFacilityId}/dashboard`} replace />;
+        } else if (roleToCheck === 'MEDICO') {
+          return <Navigate to={`/g/${currentFacilityId}/medical`} replace />;
+        } else if (roleToCheck === 'STAFF') {
+          return <Navigate to={`/g/${currentFacilityId}/tasks`} replace />;
+        }
       }
       return <Navigate to="/select-facility" replace />;
     }

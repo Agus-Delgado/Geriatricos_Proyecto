@@ -7,10 +7,12 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
+  activeFacilityId: string | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
   setActiveFacility: (facilityId: string) => Promise<void>;
+  clearActiveFacility: () => void;
   isOwner: boolean;
   isDoctor: boolean;
   isPlatformAdmin: boolean;
@@ -37,10 +39,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeFacilityId, setActiveFacilityId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Cargar token del localStorage al iniciar
+    // Cargar token y activeFacilityId del localStorage al iniciar
     const storedToken = localStorage.getItem('token');
+    const storedFacilityId = localStorage.getItem('activeFacilityId');
+    
+    if (storedFacilityId) {
+      setActiveFacilityId(storedFacilityId);
+    }
+    
     if (storedToken) {
       setToken(storedToken);
       // Intentar cargar usuario
@@ -55,11 +64,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userData = await authApi.getCurrentUser();
       setUser(userData);
       setToken(authToken);
+      
+      // Sincronizar activeFacilityId: priorizar user.active_facility_id, luego localStorage
+      const storedFacilityId = localStorage.getItem('activeFacilityId');
+      const facilityIdToUse = userData.active_facility_id ?? storedFacilityId ?? null;
+      
+      if (facilityIdToUse) {
+        setActiveFacilityId(facilityIdToUse);
+        localStorage.setItem('activeFacilityId', facilityIdToUse);
+      }
     } catch (error) {
       // Token inválido, limpiar
       localStorage.removeItem('token');
+      localStorage.removeItem('activeFacilityId');
       setToken(null);
       setUser(null);
+      setActiveFacilityId(null);
     } finally {
       setLoading(false);
     }
@@ -77,9 +97,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userData = await authApi.getCurrentUser();
       setUser(userData);
       
-      // Actualizar facility_id en localStorage si existe
-      if (userData.active_facility_id) {
-        localStorage.setItem('facility_id', userData.active_facility_id);
+      // Sincronizar activeFacilityId: priorizar user.active_facility_id, luego localStorage
+      const storedFacilityId = localStorage.getItem('activeFacilityId');
+      const facilityIdToUse = userData.active_facility_id ?? storedFacilityId ?? null;
+      
+      if (facilityIdToUse) {
+        setActiveFacilityId(facilityIdToUse);
+        localStorage.setItem('activeFacilityId', facilityIdToUse);
       }
     } catch (error) {
       const apiError = error as ApiError;
@@ -90,8 +114,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('facility_id');
+    localStorage.removeItem('activeFacilityId');
     setToken(null);
     setUser(null);
+    setActiveFacilityId(null);
   };
 
   const loadUser = async () => {
@@ -100,9 +126,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const userData = await authApi.getCurrentUser();
         setUser(userData);
         
-        // Actualizar facility_id en localStorage si existe
-        if (userData.active_facility_id) {
-          localStorage.setItem('facility_id', userData.active_facility_id);
+        // Sincronizar activeFacilityId: priorizar user.active_facility_id, luego localStorage
+        const storedFacilityId = localStorage.getItem('activeFacilityId');
+        const facilityIdToUse = userData.active_facility_id ?? storedFacilityId ?? null;
+        
+        if (facilityIdToUse) {
+          setActiveFacilityId(facilityIdToUse);
+          localStorage.setItem('activeFacilityId', facilityIdToUse);
         }
       } catch (error) {
         logout();
@@ -110,21 +140,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const clearActiveFacility = () => {
+    setActiveFacilityId(null);
+    localStorage.removeItem('activeFacilityId');
+  };
+
   const setActiveFacility = async (facilityId: string) => {
+    const prevFacilityId = activeFacilityId;
+    
     try {
-      await authApi.setActiveFacility({ facility_id: facilityId });
-      // Actualizar estado local INMEDIATAMENTE para que la navegación funcione sin delay
-      setUser(prev => prev ? ({ ...prev, active_facility_id: facilityId }) : prev);
-      localStorage.setItem('facility_id', facilityId);
+      // Actualización optimista: setear estado INMEDIATAMENTE
+      setActiveFacilityId(facilityId);
+      localStorage.setItem('activeFacilityId', facilityId);
       
-      // Sincronizar con el backend en background (no bloquear)
-      // Esto asegura que el estado local esté actualizado antes de navegar
-      setTimeout(() => {
-        loadUser().catch(() => {
-          // Si falla, el estado local ya está actualizado, así que no es crítico
-        });
-      }, 0);
+      // Llamar al backend
+      await authApi.setActiveFacility({ facility_id: facilityId });
+      
+      // Actualizar user con el nuevo active_facility_id
+      setUser(prev => prev ? ({ ...prev, active_facility_id: facilityId }) : prev);
     } catch (error) {
+      // Revertir en caso de error
+      setActiveFacilityId(prevFacilityId);
+      if (prevFacilityId) {
+        localStorage.setItem('activeFacilityId', prevFacilityId);
+      } else {
+        localStorage.removeItem('activeFacilityId');
+      }
+      
       const apiError = error as ApiError;
       throw new Error(apiError.detail || 'Error al establecer facility activa');
     }
@@ -139,8 +181,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const getActiveMembership = (): FacilityMembership | null => {
-    if (!user?.active_facility_id) return null;
-    return user.memberships.find(m => m.facility_id === user.active_facility_id && m.is_active) ?? null;
+    const facilityId = activeFacilityId ?? user?.active_facility_id ?? null;
+    if (!facilityId || !user) return null;
+    return user.memberships.find(m => m.facility_id === facilityId && m.is_active) ?? null;
   };
 
   const getActiveRole = (): 'ADMIN' | 'MEDICO' | 'STAFF' | null => {
@@ -154,10 +197,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         user,
         token,
         loading,
+        activeFacilityId,
         login,
         logout,
         loadUser,
         setActiveFacility,
+        clearActiveFacility,
         isOwner,
         isDoctor,
         isPlatformAdmin,

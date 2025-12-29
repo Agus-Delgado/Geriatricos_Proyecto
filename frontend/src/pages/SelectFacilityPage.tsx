@@ -7,7 +7,7 @@ import { getRoleLabel } from '../types/auth';
 import { getFacilityTheme } from '../theme/facilityTheme';
 
 export const SelectFacilityPage: React.FC = () => {
-  const { user, setActiveFacility, getMemberships, loading: authLoading } = useAuth();
+  const { user, setActiveFacility, getMemberships, loading: authLoading, activeFacilityId } = useAuth();
   const navigate = useNavigate();
   const [loadingFacilityId, setLoadingFacilityId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,8 +32,9 @@ export const SelectFacilityPage: React.FC = () => {
     setLoadingFacilityId(facilityId);
     
     try {
+      // setActiveFacility actualiza activeFacilityId optimistamente
       await setActiveFacility(facilityId);
-      // AuthContext ya actualiza active_facility_id, navegar inmediatamente
+      // Navegar inmediatamente sin esperar refresh
       redirectByRole(role, facilityId);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al seleccionar hogar. Intenta nuevamente.';
@@ -52,27 +53,14 @@ export const SelectFacilityPage: React.FC = () => {
 
   const memberships = getMemberships();
 
-  // Si solo hay una membership, seleccionarla automáticamente
+  // Si solo hay una membership, seleccionarla automáticamente (solo si no hay activeFacilityId)
   useEffect(() => {
-    if (memberships.length === 1 && !user?.active_facility_id && !loadingFacilityId) {
+    if (memberships.length === 1 && !activeFacilityId && !loadingFacilityId) {
       const membership = memberships[0];
       handleSelectFacility(membership.facility_id, membership.role);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [memberships.length, user?.active_facility_id, loadingFacilityId]);
-
-  // Safety net: si active_facility_id ya está seteado, redirigir automáticamente
-  useEffect(() => {
-    if (user?.active_facility_id && !loadingFacilityId && memberships.length > 0) {
-      const activeMembership = memberships.find(
-        m => m.facility_id === user.active_facility_id && m.is_active
-      );
-      if (activeMembership) {
-        redirectByRole(activeMembership.role, activeMembership.facility_id);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.active_facility_id, loadingFacilityId, memberships]);
+  }, [memberships.length, activeFacilityId, loadingFacilityId]);
 
   if (memberships.length === 0) {
     return (
@@ -116,6 +104,8 @@ export const SelectFacilityPage: React.FC = () => {
               setImageErrors(prev => ({ ...prev, [membership.facility_id]: true }));
             };
 
+            const isActive = activeFacilityId === membership.facility_id;
+
             return (
               <button
                 key={membership.id}
@@ -148,7 +138,7 @@ export const SelectFacilityPage: React.FC = () => {
                 
                 {/* Contenido */}
                 <div className="relative z-10 p-6 h-full flex flex-col justify-between text-left">
-                  <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h3 className="text-2xl font-bold text-white mb-1">
                         {membership.facility_name}
@@ -157,9 +147,16 @@ export const SelectFacilityPage: React.FC = () => {
                         Código: {membership.facility_code}
                       </p>
                     </div>
-                    <span className="text-xs font-medium text-gray-900 bg-white/90 px-3 py-1.5 rounded-full">
-                      {getRoleLabel(membership.role)}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="text-xs font-medium text-gray-900 bg-white/90 px-3 py-1.5 rounded-full">
+                        {getRoleLabel(membership.role)}
+                      </span>
+                      {isActive && (
+                        <span className="text-xs font-medium text-white bg-green-600/90 px-3 py-1.5 rounded-full">
+                          Actual
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Spinner durante loading */}

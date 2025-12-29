@@ -2,10 +2,15 @@ import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { PatientList } from '../components/medical/PatientList';
 import { MEDICAL_LINKS } from '../config/medicalLinks';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function GeriatricMedicalPage() {
   const { id } = useParams();
   const facilityId = useMemo(() => id ?? '', [id]);
+  const { getMemberships, activeFacilityId } = useAuth();
+  const memberships = getMemberships();
+  const activeMembership = memberships.find(m => m.facility_id === (activeFacilityId ?? facilityId) && m.is_active);
+  const facilityName = activeMembership?.facility_name ?? facilityId;
 
   return (
     <div style={{ padding: 24 }}>
@@ -19,7 +24,7 @@ export default function GeriatricMedicalPage() {
       >
         <h1 style={{ margin: 0 }}>Módulo Médico</h1>
         <p style={{ marginTop: 8, opacity: 0.8 }}>
-          Hogar activo: <strong>{facilityId}</strong>
+          Hogar activo: <strong>{facilityName}</strong>
         </p>
 
         <div style={{ marginTop: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>

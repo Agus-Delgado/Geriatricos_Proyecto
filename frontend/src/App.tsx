@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { UnauthorizedHandler } from './components/auth/UnauthorizedHandler';
 import { SessionExpiredHandler } from './components/auth/SessionExpiredHandler';
 import { UpdateBanner } from './components/pwa/UpdateBanner';
+import { Header } from './components/layout/Header';
 import { useFacilityTheme } from './hooks/useFacilityTheme';
 import { LoginPage } from './pages/LoginPage';
 import { GeriatricLoginPage } from './pages/GeriatricLoginPage';
@@ -31,6 +32,7 @@ function AppContent() {
       <UnauthorizedHandler />
       <SessionExpiredHandler />
       <UpdateBanner />
+      <Header />
       <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/login/:geriatricSlug" element={<GeriatricLoginPage />} />

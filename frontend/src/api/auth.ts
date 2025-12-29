@@ -22,13 +22,11 @@ export const authApi = {
     return apiClient.post<RegisterResponse>('/auth/register', data);
   },
 
-  verifyEmail: async (token: string): Promise<VerifyEmailResponse> => {
-    return apiClient.post<VerifyEmailResponse>('/auth/verify-email', { token });
+  verifyEmail: async (request: VerifyEmailRequest): Promise<VerifyEmailResponse> => {
+    return apiClient.post<VerifyEmailResponse>('/auth/verify-email', request);
   },
 
-  resendVerification: async (emailOrDni: string): Promise<ResendVerificationResponse> => {
-    return apiClient.post<ResendVerificationResponse>('/auth/resend-verification', { 
-      email_or_dni: emailOrDni 
-    });
+  resendVerification: async (request: ResendVerificationRequest): Promise<ResendVerificationResponse> => {
+    return apiClient.post<ResendVerificationResponse>('/auth/resend-verification', request);
   },
 };

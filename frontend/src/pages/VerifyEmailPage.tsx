@@ -21,7 +21,7 @@ export const VerifyEmailPage: React.FC = () => {
 
     const verifyEmail = async () => {
       try {
-        const response = await authApi.verifyEmail(token);
+        const response = await authApi.verifyEmail({ token });
         setStatus('success');
         setMessage(response.message);
       } catch (err: any) {

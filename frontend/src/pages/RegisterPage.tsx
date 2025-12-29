@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { authApi } from '../api/auth';
 import { Input } from '../components/ui/Input';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
@@ -7,7 +7,6 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
 
 export const RegisterPage: React.FC = () => {
-  const navigate = useNavigate();
   const [step, setStep] = useState<'form' | 'success'>('form');
   
   const [role, setRole] = useState<'doctor' | 'owner'>('doctor');

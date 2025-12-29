@@ -21,7 +21,7 @@ export const ResendVerificationForm: React.FC<ResendVerificationFormProps> = ({ 
     setLoading(true);
 
     try {
-      const response = await authApi.resendVerification(emailOrDni);
+      const response = await authApi.resendVerification({ email_or_dni: emailOrDni });
       setSuccess(response.message);
       setEmailOrDni('');
       if (onSuccess) {

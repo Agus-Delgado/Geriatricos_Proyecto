@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import type { CertificateDraft } from '../../types/certificates';
+import { RxPaperFrame } from './RxPaperFrame';
 import './print.css';
 
 // IMPORTANTE: este componente NO debe incluir navbar ni sidebar.
@@ -26,25 +27,27 @@ export function PrintDocument({ draft }: { draft: CertificateDraft }) {
   const footerRight = `${draft.doctorDisplayName} — Matrícula: ${license}`;
 
   return (
-    <div className="print-root">
-      {/* Título neutro opcional. Si querés máxima seguridad, dejalo vacío. */}
-      <div className="print-title">Constancia</div>
+    <RxPaperFrame headerDate={draft.issuedAt}>
+      <div className="print-root">
+        {/* Título neutro opcional. Si querés máxima seguridad, dejalo vacío. */}
+        <div className="print-title">Constancia</div>
 
-      <div className="print-body">
-        {draft.bodyText.split('\n').map((line, idx) => (
-          <p key={idx} className="print-paragraph">
-            {line}
-          </p>
-        ))}
-      </div>
+        <div className="print-body">
+          {draft.bodyText.split('\n').map((line, idx) => (
+            <p key={idx} className="print-paragraph">
+              {line}
+            </p>
+          ))}
+        </div>
 
-      <div className="print-footer">
-        <div className="print-footer-left">{footerLeft}</div>
-        <div className="print-footer-right">
-          <div className="print-signature-line">Firma:</div>
-          <div className="print-doctor">{footerRight}</div>
+        <div className="print-footer">
+          <div className="print-footer-left">{footerLeft}</div>
+          <div className="print-footer-right">
+            <div className="print-signature-line">Firma:</div>
+            <div className="print-doctor">{footerRight}</div>
+          </div>
         </div>
       </div>
-    </div>
+    </RxPaperFrame>
   );
 }

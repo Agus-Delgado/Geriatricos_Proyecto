@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, field_validator
-from typing import Optional
+from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Optional, List
 from uuid import UUID
 from datetime import date, datetime
 
@@ -11,10 +11,18 @@ class ResidentCreate(BaseModel):
     dni: Optional[str] = None
     birth_date: Optional[date] = None
     sex: Optional[str] = None
-    coverage_type: Optional[str] = None
+    coverage_type: Optional[str] = Field(None, description="PAMI, OBRA SOCIAL, PARTICULAR, IOMA, OTRA")
+    coverage_other: Optional[str] = Field(None, description="Especificación cuando coverage_type == 'OTRA'")
     coverage_number: Optional[str] = None
     admission_date: date
     notes: Optional[str] = None
+    contacts: Optional[List['ResidentContactCreate']] = Field(default_factory=list, description="Lista de contactos/familiares")
+
+    @model_validator(mode='after')
+    def validate_coverage_other(self):
+        if self.coverage_type == 'OTRA' and not self.coverage_other:
+            raise ValueError("coverage_other es requerido cuando coverage_type es 'OTRA'")
+        return self
 
 
 class ResidentUpdate(BaseModel):
@@ -23,7 +31,8 @@ class ResidentUpdate(BaseModel):
     dni: Optional[str] = None
     birth_date: Optional[date] = None
     sex: Optional[str] = None
-    coverage_type: Optional[str] = None
+    coverage_type: Optional[str] = Field(None, description="PAMI, OBRA SOCIAL, PARTICULAR, IOMA, OTRA")
+    coverage_other: Optional[str] = Field(None, description="Especificación cuando coverage_type == 'OTRA'")
     coverage_number: Optional[str] = None
     admission_date: Optional[date] = None
     stay_status: Optional[str] = Field(None, pattern="^(ACTIVE|ENDED)$")
@@ -39,6 +48,12 @@ class ResidentUpdate(BaseModel):
                 raise ValueError("La fecha de finalización no puede ser anterior a la fecha de ingreso")
         return v
 
+    @model_validator(mode='after')
+    def validate_coverage_other(self):
+        if self.coverage_type == 'OTRA' and not self.coverage_other:
+            raise ValueError("coverage_other es requerido cuando coverage_type es 'OTRA'")
+        return self
+
 
 class ResidentResponse(BaseModel):
     id: UUID
@@ -49,6 +64,7 @@ class ResidentResponse(BaseModel):
     birth_date: Optional[date]
     sex: Optional[str]
     coverage_type: Optional[str]
+    coverage_other: Optional[str]
     coverage_number: Optional[str]
     admission_date: date
     stay_status: str
@@ -96,3 +112,7 @@ class ResidentContactResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Resolver referencias forward para ResidentCreate.contacts
+ResidentCreate.model_rebuild()

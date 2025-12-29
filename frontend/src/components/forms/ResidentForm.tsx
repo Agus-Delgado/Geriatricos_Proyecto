@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
-import type { Resident, ResidentCreate, ResidentUpdate } from '../../types/residents';
+import type { Resident, ResidentCreate, ResidentUpdate, ResidentContactCreate } from '../../types/residents';
 
 interface ResidentFormProps {
   resident?: Resident;
@@ -24,10 +24,24 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
     birth_date: resident?.birth_date || '',
     sex: resident?.sex || '',
     coverage_type: resident?.coverage_type || '',
+    coverage_other: resident?.coverage_other || '',
     coverage_number: resident?.coverage_number || '',
     admission_date: resident?.admission_date || new Date().toISOString().split('T')[0],
     notes: resident?.notes || '',
   });
+
+  // Estado para contactos (máximo 3)
+  const [contacts, setContacts] = useState<Array<{
+    first_name: string;
+    last_name: string;
+    phone: string;
+    email: string;
+    relationship_type: string;
+  }>>([
+    { first_name: '', last_name: '', phone: '', email: '', relationship_type: '' },
+    { first_name: '', last_name: '', phone: '', email: '', relationship_type: '' },
+    { first_name: '', last_name: '', phone: '', email: '', relationship_type: '' },
+  ]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -69,6 +83,26 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
       }
     }
 
+    // Validar coverage_other si coverage_type es OTRA
+    if (formData.coverage_type === 'OTRA' && !formData.coverage_other?.trim()) {
+      newErrors.coverage_other = 'Debe especificar la cobertura cuando selecciona OTRA';
+    }
+
+    // Validar contactos: al menos uno debe tener nombre y teléfono
+    const validContacts = contacts.filter(
+      (c) => c.first_name.trim() || c.last_name.trim() || c.phone.trim()
+    );
+    if (validContacts.length > 0) {
+      validContacts.forEach((contact, index) => {
+        if (!contact.first_name.trim() && !contact.last_name.trim()) {
+          newErrors[`contact_${index}_name`] = 'Nombre o apellido es requerido';
+        }
+        if (!contact.phone.trim()) {
+          newErrors[`contact_${index}_phone`] = 'Teléfono es requerido';
+        }
+      });
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -80,10 +114,27 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
     setLoading(true);
     setErrors({});
     try {
+      // Preparar contactos para enviar (solo los que tienen datos)
+      const contactsToSend: ResidentContactCreate[] = contacts
+        .filter((c) => (c.first_name.trim() || c.last_name.trim()) && c.phone.trim())
+        .map((c) => ({
+          full_name: `${c.first_name.trim()} ${c.last_name.trim()}`.trim(),
+          phone: c.phone.trim(),
+          email: c.email.trim() || undefined,
+          relationship_type: c.relationship_type.trim() || undefined,
+          is_primary: false,
+        }));
+
       if (resident) {
         await onSubmit(formData as ResidentUpdate);
       } else {
-        await onSubmit({ ...formData, facility_id: facilityId } as ResidentCreate);
+        const submitData: ResidentCreate = {
+          ...formData,
+          facility_id: facilityId,
+          coverage_other: formData.coverage_other || undefined,
+          contacts: contactsToSend.length > 0 ? contactsToSend : undefined,
+        };
+        await onSubmit(submitData);
       }
     } catch (error: any) {
       // Manejar errores de validación del backend
@@ -95,6 +146,12 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateContact = (index: number, field: string, value: string) => {
+    const newContacts = [...contacts];
+    newContacts[index] = { ...newContacts[index], [field]: value };
+    setContacts(newContacts);
   };
 
   return (
@@ -148,15 +205,27 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
       <Select
         label="Tipo de Cobertura"
         value={formData.coverage_type}
-        onChange={(e) => setFormData({ ...formData, coverage_type: e.target.value })}
+        onChange={(e) => setFormData({ ...formData, coverage_type: e.target.value, coverage_other: e.target.value !== 'OTRA' ? '' : formData.coverage_other })}
         options={[
           { value: '', label: 'Seleccionar...' },
           { value: 'PAMI', label: 'PAMI' },
-          { value: 'OS', label: 'Obra Social' },
-          { value: 'PARTICULAR', label: 'Particular' },
+          { value: 'OBRA SOCIAL', label: 'OBRA SOCIAL' },
+          { value: 'PARTICULAR', label: 'PARTICULAR' },
+          { value: 'IOMA', label: 'IOMA' },
+          { value: 'OTRA', label: 'OTRA' },
         ]}
         disabled={loading}
       />
+
+      {formData.coverage_type === 'OTRA' && (
+        <Input
+          label="Especificar Cobertura *"
+          value={formData.coverage_other}
+          onChange={(e) => setFormData({ ...formData, coverage_other: e.target.value })}
+          error={errors.coverage_other}
+          disabled={loading}
+        />
+      )}
 
       <Input
         label="Número de Cobertura"
@@ -173,6 +242,61 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
         error={errors.admission_date}
         disabled={loading}
       />
+
+      {/* Sección Contactos / Familiares */}
+      <div className="border-t pt-4 mt-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Contactos / Familiares</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Complete al menos un contacto con nombre y teléfono. Los campos de email y parentesco son opcionales.
+        </p>
+        <div className="space-y-4">
+          {contacts.map((contact, index) => (
+            <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <h4 className="font-medium text-gray-700 mb-3">Contacto {index + 1}</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Nombre"
+                  value={contact.first_name}
+                  onChange={(e) => updateContact(index, 'first_name', e.target.value)}
+                  error={errors[`contact_${index}_name`]}
+                  disabled={loading}
+                />
+                <Input
+                  label="Apellido"
+                  value={contact.last_name}
+                  onChange={(e) => updateContact(index, 'last_name', e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <Input
+                  label="Teléfono *"
+                  value={contact.phone}
+                  onChange={(e) => updateContact(index, 'phone', e.target.value)}
+                  error={errors[`contact_${index}_phone`]}
+                  disabled={loading}
+                />
+                <Input
+                  label="Email"
+                  type="email"
+                  value={contact.email}
+                  onChange={(e) => updateContact(index, 'email', e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <div className="mt-3">
+                <Input
+                  label="Parentesco (opcional)"
+                  value={contact.relationship_type}
+                  onChange={(e) => updateContact(index, 'relationship_type', e.target.value)}
+                  placeholder="Ej: Hijo/a, Cónyuge, Tutor, etc."
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div>
         <label className="label">Notas</label>

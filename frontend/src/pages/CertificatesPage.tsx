@@ -193,36 +193,9 @@ export default function CertificatesPage() {
   };
 
   const handlePreview = (draft: CertificateDraft) => {
-    // Abrir en nueva ventana para vista previa
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    const printPageHTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Vista Previa - Constancia</title>
-          <link rel="stylesheet" href="/src/components/certificates/print.css">
-        </head>
-        <body>
-          <div id="root"></div>
-          <script>
-            // Renderizar PrintDocument aquí (simplificado para preview)
-            const draft = ${JSON.stringify(draft)};
-            // En producción, usar React para renderizar
-            document.getElementById('root').innerHTML = '<div class="print-root"><div class="print-title">Constancia</div><div class="print-body">' + 
-              draft.bodyText.split('\\n').map(l => '<p class="print-paragraph">' + l + '</p>').join('') + 
-              '</div><div class="print-footer"><div class="print-footer-left">' + 
-              draft.hogarName + ', ' + draft.hogarAddress + ', Ramos Mejía</div><div class="print-footer-right">' +
-              draft.doctorDisplayName + ' — Matrícula: ' + (draft.doctorLicenseNumber || '(pendiente de configurar)') +
-              '</div></div></div>';
-          </script>
-        </body>
-      </html>
-    `;
-    
-    printWindow.document.write(printPageHTML);
-    printWindow.document.close();
+    // El preview ahora se maneja internamente en CertificateEditor
+    // Este callback se mantiene para compatibilidad pero no hace nada
+    // ya que CertificateEditor muestra el preview en un modal
   };
 
   const handlePrint = (draft: CertificateDraft) => {

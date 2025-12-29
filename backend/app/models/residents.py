@@ -16,7 +16,8 @@ class Resident(Base):
     dni = Column(String(16), nullable=True)
     birth_date = Column(Date, nullable=True)
     sex = Column(String(16), nullable=True)
-    coverage_type = Column(String(32), nullable=True)  # PAMI/OS/PARTICULAR
+    coverage_type = Column(String(32), nullable=True)  # PAMI/OBRA SOCIAL/PARTICULAR/IOMA/OTRA
+    coverage_other = Column(String(128), nullable=True)  # Especificación cuando coverage_type == 'OTRA'
     coverage_number = Column(String(64), nullable=True)
     admission_date = Column(Date, nullable=False)
     

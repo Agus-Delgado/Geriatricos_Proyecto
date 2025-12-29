@@ -7,6 +7,7 @@ export interface Resident {
   birth_date: string | null;
   sex: string | null;
   coverage_type: string | null;
+  coverage_other: string | null;
   coverage_number: string | null;
   admission_date: string;
   stay_status: string;
@@ -27,9 +28,11 @@ export interface ResidentCreate {
   birth_date?: string;
   sex?: string;
   coverage_type?: string;
+  coverage_other?: string;
   coverage_number?: string;
   admission_date: string;
   notes?: string;
+  contacts?: ResidentContactCreate[];
 }
 
 export interface ResidentUpdate {
@@ -39,6 +42,7 @@ export interface ResidentUpdate {
   birth_date?: string;
   sex?: string;
   coverage_type?: string;
+  coverage_other?: string;
   coverage_number?: string;
   stay_status?: string;
   end_date?: string;
@@ -50,30 +54,29 @@ export interface ResidentContact {
   id: string;
   resident_id: string;
   full_name: string;
-  relationship: string;
+  relationship_type: string | null;
   phone: string | null;
   email: string | null;
   address: string | null;
-  is_emergency_contact: boolean;
-  notes: string | null;
+  is_primary: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ResidentContactCreate {
   full_name: string;
-  relationship: string;
+  relationship_type?: string;
   phone?: string;
   email?: string;
   address?: string;
-  is_emergency_contact?: boolean;
-  notes?: string;
+  is_primary?: boolean;
 }
 
 export interface ResidentContactUpdate {
   full_name?: string;
-  relationship?: string;
+  relationship_type?: string;
   phone?: string;
   email?: string;
   address?: string;
-  is_emergency_contact?: boolean;
-  notes?: string;
+  is_primary?: boolean;
 }

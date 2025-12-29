@@ -1,21 +1,40 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 from uuid import UUID
-from app.models.residents import Resident
+from app.models.residents import Resident, ResidentContact
 from app.models.audit import AuditLog
 from app.schemas.residents import ResidentCreate, ResidentUpdate
 from fastapi import HTTPException, status
 
 
 def create_resident(db: Session, resident_data: ResidentCreate, user_id: UUID) -> Resident:
-    """Crear nuevo residente"""
+    """Crear nuevo residente con contactos opcionales"""
+    # Extraer contactos del payload
+    contacts_data = resident_data.contacts or []
+    resident_dict = resident_data.model_dump(exclude={'contacts'})
+    
     resident = Resident(
-        **resident_data.model_dump(),
+        **resident_dict,
         created_by_user_id=user_id,
         updated_by_user_id=user_id
     )
     db.add(resident)
     db.flush()
+    
+    # Crear contactos si se proporcionaron
+    for contact_data in contacts_data:
+        # Validar que al menos tenga nombre completo
+        if contact_data.full_name and contact_data.full_name.strip():
+            contact = ResidentContact(
+                resident_id=resident.id,
+                full_name=contact_data.full_name.strip(),
+                relationship_type=contact_data.relationship_type,
+                phone=contact_data.phone,
+                email=contact_data.email,
+                address=contact_data.address,
+                is_primary=contact_data.is_primary
+            )
+            db.add(contact)
     
     # Registrar en audit log
     audit_log = AuditLog(

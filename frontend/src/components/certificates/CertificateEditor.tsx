@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
+import { PrintDocument } from './PrintDocument';
 import type { CertificateType, CertificateDraft } from '../../types/certificates';
 import { buildDefaultBodyText, formatDateAR, formatTimeAR } from './templates';
 
@@ -22,6 +24,7 @@ export function CertificateEditor({
   const [draft, setDraft] = useState<CertificateDraft>(initialDraft);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPreview, setShowPreview] = useState(false);
 
   const typeLabels: Record<CertificateType, string> = {
     CONTROL_CLINICO: 'Control Clínico',
@@ -83,6 +86,8 @@ export function CertificateEditor({
 
   const handlePreview = () => {
     if (!validate()) return;
+    setShowPreview(true);
+    // También llamar al callback si existe (para compatibilidad)
     onPreview?.(draft);
   };
 
@@ -187,6 +192,34 @@ export function CertificateEditor({
           </Button>
         )}
       </div>
+
+      {/* Modal de Vista Previa */}
+      {showPreview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+          onClick={() => setShowPreview(false)}
+        >
+          <div
+            className="bg-transparent rounded-lg w-full max-w-6xl max-h-[95vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4 bg-white rounded-t-lg p-4">
+              <h2 className="text-lg font-semibold text-gray-900">Vista Previa</h2>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="previewStage bg-gray-100 rounded-b-lg">
+              <div className="previewScale">
+                <PrintDocument draft={draft} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

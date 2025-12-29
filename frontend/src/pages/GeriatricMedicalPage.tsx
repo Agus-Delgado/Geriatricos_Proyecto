@@ -17,9 +17,12 @@ export default function GeriatricMedicalPage() {
   const handleQuickAction = (action: string) => {
     if (action === 'certificaciones') {
       navigate(`/g/${facilityId}/certificates`);
-    } else {
-      // TODO: Implementar otras acciones rápidas
-      console.log('Acción rápida:', action);
+    } else if (action === 'carpeta-medica') {
+      navigate('/medical-folder/search');
+    } else if (action === 'historia-clinica') {
+      navigate('/clinical-history/search');
+    } else if (action === 'historial-recetas') {
+      navigate('/prescriptions-history/search');
     }
   };
 

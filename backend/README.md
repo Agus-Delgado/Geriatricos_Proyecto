@@ -332,6 +332,15 @@ CORS_ORIGIN_REGEX=^https://.*\.vercel\.app$
 CORS_ALLOW_CREDENTIALS=true
 ```
 
+### Dependencias Importantes
+
+⚠️ **Nota sobre EmailStr de Pydantic**: Si usás `EmailStr` de Pydantic en tus schemas (como en `RegisterRequest`), necesitás asegurarte de que `email-validator>=2.0.0` esté incluido en `requirements.txt`. Esta dependencia es requerida por Pydantic para validar emails pero no se instala automáticamente con `pydantic`.
+
+**Verificación post-deploy**:
+- Verificar que el backend arranca sin errores
+- Acceder a `https://geriatricos-proyecto.onrender.com/docs` y confirmar que la documentación Swagger carga correctamente
+- Probar el endpoint `/auth/register` con un email válido para confirmar que la validación funciona
+
 ### Verificación de CORS
 
 Para verificar que CORS está funcionando correctamente:

@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -29,8 +30,21 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS - Configurado INMEDIATAMENTE después de crear la app y ANTES de routers/startup
 # para que funcione en todos los endpoints, incluyendo respuestas de error (401, 403, 500, etc.)
-cors_origins = settings.cors_origins_list
-cors_origin_regex = settings.cors_origin_regex
+# Leer env vars: CORS_ORIGINS (CSV), CORS_ORIGIN_REGEX, CORS_ALLOW_CREDENTIALS
+import os
+cors_origins_str = os.getenv("CORS_ORIGINS", "").strip()
+cors_origin_regex = os.getenv("CORS_ORIGIN_REGEX", "").strip()
+cors_allow_credentials = os.getenv("CORS_ALLOW_CREDENTIALS", "true").strip().lower() == "true"
+
+# Parsear CORS_ORIGINS (CSV)
+cors_origins = []
+if cors_origins_str:
+    cors_origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
+
+# Si no hay env vars, intentar usar settings (para compatibilidad)
+if not cors_origins and not cors_origin_regex:
+    cors_origins = settings.cors_origins_list
+    cors_origin_regex = settings.cors_origin_regex
 
 # Fallback seguro: si tanto origins como regex están vacíos, usar regex para Vercel previews
 # Esto asegura que nunca quede sin CORS por falta de env vars
@@ -42,7 +56,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins if cors_origins else [],
     allow_origin_regex=cors_origin_regex,
-    allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
+    allow_credentials=cors_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -63,6 +77,24 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     return {"status": "ok"}
+
+
+# Catch-all exception handler para asegurar que CORS se aplique SIEMPRE, incluso en errores 500
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Handler global que captura cualquier excepción no manejada.
+    
+    Esto asegura que los errores 500 siempre pasen por los middlewares de CORS
+    y retornen respuestas JSON con headers CORS correctos.
+    """
+    # Loguear el error real con stacktrace para diagnóstico
+    logger.exception(f"Excepción no manejada en {request.method} {request.url}: {exc}")
+    
+    # Retornar JSONResponse para que CORS se aplique
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Internal Server Error"}
+    )
 
 
 # Routers

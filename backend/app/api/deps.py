@@ -8,7 +8,6 @@ from app.db.session import get_db
 from app.models.auth import User, UserRole, UserRoleAssignment
 from app.models.org import FacilityUserAccess, Facility
 from app.core.security import decode_access_token
-from app.services.auth_service import get_user_with_relations
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=False)  # auto_error=False para manejar manualmente
@@ -19,21 +18,32 @@ def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
-    """Obtener usuario actual desde JWT token. Devuelve 401 si no hay token o es inválido (nunca 500)"""
+    """Obtener usuario actual desde JWT token. Devuelve 401/403 si no hay token o es inválido (nunca 500)"""
     # Si no hay credentials, verificar si hay token en el header manualmente
-    if not credentials:
-        auth_header = request.headers.get("Authorization")
-        if not auth_header or not auth_header.startswith("Bearer "):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        token = auth_header.replace("Bearer ", "").strip()
-    else:
-        token = credentials.credentials
+    # Evitar AttributeError si request.headers es None
+    try:
+        if not credentials:
+            auth_header = request.headers.get("Authorization") if request.headers else None
+            if not auth_header or not auth_header.startswith("Bearer "):
+                logger.info("get_current_user: Authorization header ausente o inválido")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Not authenticated",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            token = auth_header.replace("Bearer ", "").strip()
+        else:
+            token = credentials.credentials
+    except AttributeError:
+        logger.warning("get_current_user: request.headers es None")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     if not token:
+        logger.info("get_current_user: Token vacío después de extracción")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
@@ -44,6 +54,7 @@ def get_current_user(
     try:
         payload = decode_access_token(token)
         if payload is None:
+            logger.info("get_current_user: Token inválido o expirado (decode_access_token retornó None)")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token inválido o expirado",
@@ -54,6 +65,7 @@ def get_current_user(
         raise
     except Exception as e:
         # Cualquier otra excepción inesperada -> 401 (no 500)
+        logger.warning(f"get_current_user: Error inesperado al decodificar token: {type(e).__name__}", exc_info=False)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Error al validar token",
@@ -80,6 +92,7 @@ def get_current_user(
     # Extraer user_id del payload (puede ser el usuario impersonado si hay impersonación)
     user_id = payload.get("sub")
     if user_id is None:
+        logger.info("get_current_user: Token sin campo 'sub' (user_id)")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido",
@@ -90,6 +103,7 @@ def get_current_user(
     try:
         user_id_uuid = UUID(user_id)
     except (ValueError, TypeError):
+        logger.info(f"get_current_user: user_id no es un UUID válido: {user_id}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido",
@@ -98,13 +112,10 @@ def get_current_user(
     
     # Obtener usuario de la base de datos - capturar todas las excepciones para evitar 500
     try:
-        user = get_user_with_relations(db, user_id_uuid)
-    except HTTPException:
-        # Re-raise HTTPException (ya es 401/403)
-        raise
+        user = db.query(User).filter(User.id == user_id_uuid).first()
     except Exception as e:
         # Cualquier error de DB o inesperado -> 401 (no 500)
-        logger.warning(f"Error al obtener usuario en get_current_user: {e}")
+        logger.warning(f"get_current_user: Error de DB al obtener usuario {user_id_uuid}: {type(e).__name__}", exc_info=False)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Error al obtener usuario",
@@ -112,6 +123,7 @@ def get_current_user(
         )
     
     if not user:
+        logger.info(f"get_current_user: Usuario no encontrado (user_id: {user_id_uuid})")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario no encontrado",
@@ -119,6 +131,7 @@ def get_current_user(
         )
     
     if not user.is_active:
+        logger.info(f"get_current_user: Usuario inactivo (user_id: {user.id})")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuario inactivo"

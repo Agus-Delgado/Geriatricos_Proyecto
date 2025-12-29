@@ -59,54 +59,79 @@ async def get_current_user_info(
 ):
     """Obtener información del usuario actual con roles y memberships.
     
-    Devuelve 401 si no hay token o es inválido (nunca 500).
+    Devuelve 401 si no hay token o es inválido, 403 si usuario inactivo (nunca 500).
     """
-    # Obtener roles (globales, legacy)
-    role_assignments = db.query(UserRoleAssignment).join(UserRole).filter(
-        UserRoleAssignment.user_id == current_user.id
-    ).all()
-    
-    roles = [
-        RoleResponse(
-            id=ra.role.id,
-            code=ra.role.code,
-            name=ra.role.name
-        )
-        for ra in role_assignments
-    ]
-    
-    # Obtener memberships (facility + role)
-    memberships_data = get_user_memberships(db, current_user.id)
-    
-    memberships = []
-    for membership in memberships_data:
-        facility = db.query(Facility).filter(Facility.id == membership.facility_id).first()
-        if facility:
-            memberships.append(
-                FacilityMembershipResponse(
-                    id=membership.id,
-                    facility_id=facility.id,
-                    facility_name=facility.name,
-                    facility_code=facility.code,
-                    role=membership.role,
-                    is_active=membership.is_active
+    try:
+        # Obtener roles (globales, legacy)
+        try:
+            role_assignments = db.query(UserRoleAssignment).join(UserRole).filter(
+                UserRoleAssignment.user_id == current_user.id
+            ).all()
+            
+            roles = [
+                RoleResponse(
+                    id=ra.role.id,
+                    code=ra.role.code,
+                    name=ra.role.name
                 )
-            )
-    
-    return UserResponse(
-        id=current_user.id,
-        email=current_user.email,
-        dni=current_user.dni,
-        phone=current_user.phone,
-        full_name=current_user.full_name,
-        is_active=current_user.is_active,
-        is_verified=current_user.is_verified,
-        is_platform_admin=current_user.is_platform_admin,
-        active_facility_id=current_user.active_facility_id,
-        last_login_at=current_user.last_login_at,
-        roles=roles,
-        memberships=memberships
-    )
+                for ra in role_assignments
+            ]
+        except Exception as e:
+            logger.warning(f"/auth/me: Error al obtener roles para usuario {current_user.id}: {type(e).__name__}", exc_info=False)
+            roles = []  # Continuar sin roles si hay error
+        
+        # Obtener memberships (facility + role)
+        try:
+            memberships_data = get_user_memberships(db, current_user.id)
+            
+            memberships = []
+            for membership in memberships_data:
+                try:
+                    facility = db.query(Facility).filter(Facility.id == membership.facility_id).first()
+                    if facility:
+                        memberships.append(
+                            FacilityMembershipResponse(
+                                id=membership.id,
+                                facility_id=facility.id,
+                                facility_name=facility.name,
+                                facility_code=facility.code,
+                                role=membership.role,
+                                is_active=membership.is_active
+                            )
+                        )
+                except Exception as e:
+                    logger.warning(f"/auth/me: Error al obtener facility {membership.facility_id}: {type(e).__name__}", exc_info=False)
+                    # Continuar sin esta membership si hay error
+                    continue
+        except Exception as e:
+            logger.warning(f"/auth/me: Error al obtener memberships para usuario {current_user.id}: {type(e).__name__}", exc_info=False)
+            memberships = []  # Continuar sin memberships si hay error
+        
+        return UserResponse(
+            id=current_user.id,
+            email=current_user.email,
+            dni=current_user.dni,
+            phone=current_user.phone,
+            full_name=current_user.full_name,
+            is_active=current_user.is_active,
+            is_verified=current_user.is_verified,
+            is_platform_admin=current_user.is_platform_admin,
+            active_facility_id=current_user.active_facility_id,
+            last_login_at=current_user.last_login_at,
+            roles=roles,
+            memberships=memberships
+        )
+    except HTTPException:
+        # Re-raise HTTPException (ya es 401/403 de get_current_user)
+        raise
+    except Exception as e:
+        # Cualquier error inesperado -> 401 (no 500)
+        logger.error(f"/auth/me: Error inesperado al obtener información del usuario {current_user.id if current_user else 'unknown'}: {type(e).__name__}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Error al obtener información del usuario",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 @router.post("/active-facility")

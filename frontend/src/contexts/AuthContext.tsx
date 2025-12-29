@@ -1,17 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi } from '../api/auth';
-import type { User } from '../types/auth';
+import type { User, FacilityMembership } from '../types/auth';
 import type { ApiError } from '../api/client';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (username: string, password: string, facilitySlug?: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
+  setActiveFacility: (facilityId: string) => Promise<void>;
   isOwner: boolean;
   isDoctor: boolean;
+  isPlatformAdmin: boolean;
+  getMemberships: () => FacilityMembership[];
+  getActiveMembership: () => FacilityMembership | null;
+  getActiveRole: () => 'ADMIN' | 'MEDICO' | 'STAFF' | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,17 +65,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async (username: string, password: string, facilitySlug?: string) => {
+  const login = async (username: string, password: string) => {
     try {
-      const response = await authApi.login({ username, password, facility_slug: facilitySlug });
+      const response = await authApi.login({ username, password });
       const authToken = response.access_token;
       
       localStorage.setItem('token', authToken);
       setToken(authToken);
       
-      // Cargar datos del usuario
+      // Cargar datos del usuario (incluye memberships y active_facility_id)
       const userData = await authApi.getCurrentUser();
       setUser(userData);
+      
+      // Actualizar facility_id en localStorage si existe
+      if (userData.active_facility_id) {
+        localStorage.setItem('facility_id', userData.active_facility_id);
+      }
     } catch (error) {
       const apiError = error as ApiError;
       throw new Error(apiError.detail || 'Error al iniciar sesión');
@@ -89,14 +99,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const userData = await authApi.getCurrentUser();
         setUser(userData);
+        
+        // Actualizar facility_id en localStorage si existe
+        if (userData.active_facility_id) {
+          localStorage.setItem('facility_id', userData.active_facility_id);
+        }
       } catch (error) {
         logout();
       }
     }
   };
 
+  const setActiveFacility = async (facilityId: string) => {
+    try {
+      await authApi.setActiveFacility({ facility_id: facilityId });
+      // Recargar datos del usuario para obtener active_facility_id actualizado
+      const userData = await authApi.getCurrentUser();
+      setUser(userData);
+      localStorage.setItem('facility_id', facilityId);
+    } catch (error) {
+      const apiError = error as ApiError;
+      throw new Error(apiError.detail || 'Error al establecer facility activa');
+    }
+  };
+
   const isOwner = user?.roles.some((role) => role.code === 'OWNER') ?? false;
   const isDoctor = user?.roles.some((role) => role.code === 'DOCTOR') ?? false;
+  const isPlatformAdmin = user?.is_platform_admin ?? false;
+
+  const getMemberships = (): FacilityMembership[] => {
+    return user?.memberships.filter(m => m.is_active) ?? [];
+  };
+
+  const getActiveMembership = (): FacilityMembership | null => {
+    if (!user?.active_facility_id) return null;
+    return user.memberships.find(m => m.facility_id === user.active_facility_id && m.is_active) ?? null;
+  };
+
+  const getActiveRole = (): 'ADMIN' | 'MEDICO' | 'STAFF' | null => {
+    const activeMembership = getActiveMembership();
+    return activeMembership?.role ?? null;
+  };
 
   return (
     <AuthContext.Provider
@@ -107,8 +150,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         login,
         logout,
         loadUser,
+        setActiveFacility,
         isOwner,
         isDoctor,
+        isPlatformAdmin,
+        getMemberships,
+        getActiveMembership,
+        getActiveRole,
       }}
     >
       {children}

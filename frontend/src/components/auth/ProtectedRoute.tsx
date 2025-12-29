@@ -8,14 +8,18 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   requireOwner?: boolean;
   requireFacility?: boolean;
+  requireRole?: 'ADMIN' | 'MEDICO' | 'STAFF';
+  requirePlatformAdmin?: boolean;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requireOwner = false,
   requireFacility = true,
+  requireRole,
+  requirePlatformAdmin = false,
 }) => {
-  const { user, token, loading: authLoading, isOwner } = useAuth();
+  const { user, token, loading: authLoading, isOwner, isPlatformAdmin, getActiveRole } = useAuth();
   const { facility, loading: facilityLoading } = useFacility();
 
   // Verificar token primero
@@ -33,14 +37,39 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" replace />;
   }
 
-  // Verificar rol OWNER si es requerido
+  // Verificar platform admin si es requerido
+  if (requirePlatformAdmin && !isPlatformAdmin) {
+    return <Navigate to="/residents" replace />;
+  }
+
+  // Verificar rol OWNER si es requerido (legacy, usar requireRole en su lugar)
   if (requireOwner && !isOwner) {
     return <Navigate to="/residents" replace />;
   }
 
   // Verificar facility si es requerida
   if (requireFacility && !facility) {
+    // Si es platform admin, puede acceder sin facility
+    if (isPlatformAdmin) {
+      return <>{children}</>;
+    }
     return <Navigate to="/select-facility" replace />;
+  }
+
+  // Verificar rol en facility activa si es requerido
+  if (requireRole && !isPlatformAdmin) {
+    const activeRole = getActiveRole();
+    if (activeRole !== requireRole) {
+      // Redirigir según el rol actual o a una página por defecto
+      if (activeRole === 'ADMIN') {
+        return <Navigate to={`/g/${user.active_facility_id}/dashboard`} replace />;
+      } else if (activeRole === 'MEDICO') {
+        return <Navigate to={`/g/${user.active_facility_id}/medical`} replace />;
+      } else if (activeRole === 'STAFF') {
+        return <Navigate to={`/g/${user.active_facility_id}/tasks`} replace />;
+      }
+      return <Navigate to="/select-facility" replace />;
+    }
   }
 
   return <>{children}</>;

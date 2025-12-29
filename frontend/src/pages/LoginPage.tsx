@@ -1,47 +1,164 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GERIATRICS } from '../config/geriatrics';
+import { useAuth } from '../contexts/AuthContext';
+import { Input } from '../components/ui/Input';
+import { ErrorMessage } from '../components/ui/ErrorMessage';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const { login, user, token } = useAuth();
 
-  const handleSelectGeriatric = (slug: string) => {
-    navigate(`/login/${slug}`);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Si ya está autenticado, redirigir según rol/memberships
+  useEffect(() => {
+    if (token && user) {
+      redirectAfterLogin();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, user]);
+
+  const redirectAfterLogin = () => {
+    if (!user) return;
+
+    // Platform admin -> /platform
+    if (user.is_platform_admin) {
+      navigate('/platform', { replace: true });
+      return;
+    }
+
+    const memberships = user.memberships.filter(m => m.is_active);
+
+    // Sin memberships -> error (no debería pasar)
+    if (memberships.length === 0) {
+      setError('Usuario sin acceso asignado');
+      return;
+    }
+
+    // Si hay active_facility_id, redirigir según rol en esa facility
+    if (user.active_facility_id) {
+      const activeMembership = memberships.find(m => m.facility_id === user.active_facility_id);
+      if (activeMembership) {
+        redirectByRole(activeMembership.role, user.active_facility_id);
+        return;
+      }
+    }
+
+    // Si solo hay una membership, setearla automáticamente y redirigir
+    if (memberships.length === 1) {
+      // El backend debería setearla automáticamente, pero por si acaso
+      // aquí simplemente redirigimos al selector que la seteará
+      navigate('/select-facility', { replace: true });
+      return;
+    }
+
+    // Múltiples memberships -> selector
+    if (memberships.length > 1) {
+      navigate('/select-facility', { replace: true });
+      return;
+    }
+  };
+
+  const redirectByRole = (role: 'ADMIN' | 'MEDICO' | 'STAFF', facilityId: string) => {
+    switch (role) {
+      case 'ADMIN':
+        navigate(`/g/${facilityId}/dashboard`, { replace: true });
+        break;
+      case 'MEDICO':
+        navigate(`/g/${facilityId}/medical`, { replace: true });
+        break;
+      case 'STAFF':
+        navigate(`/g/${facilityId}/tasks`, { replace: true });
+        break;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      await login(username, password);
+      // redirectAfterLogin se ejecutará en el useEffect cuando user se actualice
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+      setLoading(false);
+    }
+  };
+
+  const gradientStyle = {
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-700 px-4">
-      <div className="w-full max-w-2xl">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Geriátricos</h1>
-          <p className="text-white/90">Selecciona tu geriátrico para continuar</p>
-        </div>
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-8"
+      style={gradientStyle}
+    >
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Geriátricos
+            </h1>
+            <p className="text-gray-600 text-sm">Iniciar sesión</p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {GERIATRICS.map((geriatric) => (
+          {error && (
+            <div className="mb-6">
+              <ErrorMessage message={error} onDismiss={() => setError(null)} />
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <Input
+              label="DNI o Usuario"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              autoComplete="username"
+              disabled={loading}
+              className="w-full"
+            />
+
+            <Input
+              label="Contraseña"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+              disabled={loading}
+              className="w-full"
+            />
+
             <button
-              key={geriatric.slug}
-              onClick={() => handleSelectGeriatric(geriatric.slug)}
-              className="card hover:shadow-lg transition-all duration-200 hover:scale-105 cursor-pointer"
-              style={{
-                background: `linear-gradient(135deg, ${geriatric.theme.gradientFrom}15, ${geriatric.theme.gradientTo}15)`,
-                borderColor: geriatric.theme.gradientFrom,
-              }}
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 px-6 rounded-lg text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={gradientStyle}
             >
-              <div className="text-center">
-                <div
-                  className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-white"
-                  style={{
-                    background: `linear-gradient(135deg, ${geriatric.theme.gradientFrom}, ${geriatric.theme.gradientTo})`,
-                  }}
-                >
-                  {geriatric.displayName.charAt(0)}
-                </div>
-                <h3 className="font-semibold text-gray-900 text-lg">{geriatric.displayName}</h3>
-                <p className="text-sm text-gray-600 mt-2">Haz clic para iniciar sesión</p>
-              </div>
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <LoadingSpinner size="sm" />
+                </span>
+              ) : (
+                'Iniciar sesión'
+              )}
             </button>
-          ))}
+          </form>
+
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-center text-xs text-gray-500">
+              Acceso gestionado por administradores
+            </p>
+          </div>
         </div>
       </div>
     </div>

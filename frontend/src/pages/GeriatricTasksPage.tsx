@@ -1,0 +1,35 @@
+import React from 'react';
+import { useParams } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+export const GeriatricTasksPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const { user, getActiveMembership } = useAuth();
+  const activeMembership = getActiveMembership();
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Tareas - {activeMembership?.facility_name || `Geriátrico ${id}`}
+          </h1>
+          
+          <div className="space-y-4">
+            <div>
+              <p className="text-gray-600">Usuario: {user?.full_name}</p>
+              <p className="text-gray-600">Rol: Operador</p>
+            </div>
+            
+            <div className="mt-6 p-4 bg-blue-50 rounded">
+              <p className="text-blue-900">
+                Esta es la página de tareas para operadores/staff. 
+                Funcionalidad completa pendiente de implementar.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

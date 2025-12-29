@@ -1,50 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useFacility } from '../contexts/FacilityContext';
-import { facilitiesApi } from '../api/facilities';
-import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
-import type { Facility } from '../types/auth';
-import type { ApiError } from '../api/client';
+import { getRoleLabel } from '../types/auth';
 
 export const SelectFacilityPage: React.FC = () => {
-  const [facilities, setFacilities] = useState<Facility[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
-  const { setFacility } = useFacility();
+  const { user, setActiveFacility, getMemberships, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    loadFacilities();
-  }, []);
-
-  const loadFacilities = async () => {
+  const handleSelectFacility = async (facilityId: string, role: 'ADMIN' | 'MEDICO' | 'STAFF') => {
     try {
-      setLoading(true);
-      const data = await facilitiesApi.list();
-      setFacilities(data);
+      await setActiveFacility(facilityId);
       
-      // Si solo hay una facility, seleccionarla automáticamente
-      if (data.length === 1) {
-        handleSelectFacility(data[0]);
+      // Redirigir según rol
+      switch (role) {
+        case 'ADMIN':
+          navigate(`/g/${facilityId}/dashboard`, { replace: true });
+          break;
+        case 'MEDICO':
+          navigate(`/g/${facilityId}/medical`, { replace: true });
+          break;
+        case 'STAFF':
+          navigate(`/g/${facilityId}/tasks`, { replace: true });
+          break;
       }
-    } catch (err) {
-      const apiError = err as ApiError;
-      setError(apiError.detail || 'Error al cargar sedes');
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('Error al establecer facility activa:', error);
     }
   };
 
-  const handleSelectFacility = (facility: Facility) => {
-    setFacility(facility);
-    navigate('/residents');
-  };
-
-  if (loading) {
+  if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />
@@ -52,14 +38,22 @@ export const SelectFacilityPage: React.FC = () => {
     );
   }
 
-  if (error) {
+  const memberships = getMemberships();
+
+  // Si solo hay una membership, seleccionarla automáticamente
+  useEffect(() => {
+    if (memberships.length === 1 && !user?.active_facility_id) {
+      const membership = memberships[0];
+      handleSelectFacility(membership.facility_id, membership.role);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memberships.length, user?.active_facility_id]);
+
+  if (memberships.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="w-full max-w-md">
-          <ErrorMessage message={error} />
-          <Button onClick={loadFacilities} className="mt-4" fullWidth>
-            Reintentar
-          </Button>
+          <ErrorMessage message="No tienes acceso a ninguna sede" />
         </div>
       </div>
     );
@@ -70,31 +64,32 @@ export const SelectFacilityPage: React.FC = () => {
       <div className="max-w-md mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Seleccionar Sede
+            Seleccionar Geriátrico
           </h1>
           <p className="text-gray-600">
-            {user?.full_name}, elige la sede con la que trabajarás
+            {user.full_name}, elige el geriátrico con el que trabajarás
           </p>
         </div>
 
         <div className="space-y-3">
-          {facilities.map((facility) => (
+          {memberships.map((membership) => (
             <button
-              key={facility.id}
-              onClick={() => handleSelectFacility(facility)}
+              key={membership.id}
+              onClick={() => handleSelectFacility(membership.facility_id, membership.role)}
               className="card w-full text-left hover:shadow-md transition-shadow"
             >
-              <h3 className="font-semibold text-gray-900">{facility.name}</h3>
-              <p className="text-sm text-gray-500 mt-1">Código: {facility.code}</p>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-semibold text-gray-900">{membership.facility_name}</h3>
+                  <p className="text-sm text-gray-500 mt-1">Código: {membership.facility_code}</p>
+                </div>
+                <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                  {getRoleLabel(membership.role)}
+                </span>
+              </div>
             </button>
           ))}
         </div>
-
-        {facilities.length === 0 && (
-          <div className="text-center text-gray-500 mt-8">
-            No tienes acceso a ninguna sede
-          </div>
-        )}
       </div>
     </div>
   );

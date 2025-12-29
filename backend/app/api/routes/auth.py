@@ -3,11 +3,12 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.api.deps import get_current_user, get_user_facilities
-from app.schemas.auth import LoginRequest, TokenResponse, UserResponse, RoleResponse, FacilityAccessResponse
-from app.services.auth_service import authenticate_user, create_user_token
+from app.api.deps import get_current_user
+from app.schemas.auth import LoginRequest, TokenResponse, UserResponse, RoleResponse, FacilityMembershipResponse, SetActiveFacilityRequest
+from app.services.auth_service import authenticate_user, create_user_token, get_user_memberships
 from app.models.auth import User, UserRoleAssignment, UserRole
 from app.models.org import Facility
+from uuid import UUID
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
@@ -22,15 +23,15 @@ async def login(
 ):
     """Login por DNI o email + password (rate limited: 5 intentos por minuto)
     
-    Si se proporciona facility_slug, valida que el usuario tenga acceso a esa facility.
+    Login único sin selección de facility. El frontend debe llamar /auth/me después
+    para obtener memberships y active_facility_id.
     """
-    user, facility = authenticate_user(
+    user = authenticate_user(
         db, 
         login_data.username, 
-        login_data.password,
-        login_data.facility_slug
+        login_data.password
     )
-    token = create_user_token(user, facility.id if facility else None, db)
+    token = create_user_token(user, db)
     return TokenResponse(access_token=token)
 
 
@@ -39,8 +40,8 @@ async def get_current_user_info(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Obtener información del usuario actual con roles y facilities"""
-    # Obtener roles
+    """Obtener información del usuario actual con roles y memberships"""
+    # Obtener roles (globales, legacy)
     role_assignments = db.query(UserRoleAssignment).join(UserRole).filter(
         UserRoleAssignment.user_id == current_user.id
     ).all()
@@ -54,20 +55,21 @@ async def get_current_user_info(
         for ra in role_assignments
     ]
     
-    # Obtener facilities accesibles
-    facility_accesses = get_user_facilities(db, current_user.id)
+    # Obtener memberships (facility + role)
+    memberships_data = get_user_memberships(db, current_user.id)
     
-    facilities = []
-    for access in facility_accesses:
-        facility = db.query(Facility).filter(Facility.id == access.facility_id).first()
+    memberships = []
+    for membership in memberships_data:
+        facility = db.query(Facility).filter(Facility.id == membership.facility_id).first()
         if facility:
-            facilities.append(
-                FacilityAccessResponse(
-                    id=access.id,
+            memberships.append(
+                FacilityMembershipResponse(
+                    id=membership.id,
                     facility_id=facility.id,
                     facility_name=facility.name,
                     facility_code=facility.code,
-                    access_level=access.access_level
+                    role=membership.role,
+                    is_active=membership.is_active
                 )
             )
     
@@ -79,7 +81,22 @@ async def get_current_user_info(
         full_name=current_user.full_name,
         is_active=current_user.is_active,
         is_verified=current_user.is_verified,
+        is_platform_admin=current_user.is_platform_admin,
+        active_facility_id=current_user.active_facility_id,
         last_login_at=current_user.last_login_at,
         roles=roles,
-        facilities=facilities
+        memberships=memberships
     )
+
+
+@router.post("/active-facility")
+async def set_active_facility_endpoint(
+    request_data: SetActiveFacilityRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Establecer facility activa para el usuario actual"""
+    from app.services.auth_service import set_active_facility
+    
+    user = set_active_facility(db, current_user.id, request_data.facility_id)
+    return {"active_facility_id": str(user.active_facility_id)}

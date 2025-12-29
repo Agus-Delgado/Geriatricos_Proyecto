@@ -7,7 +7,9 @@ from app.models.auth import User, UserRole, UserRoleAssignment
 from app.models.org import OwnerGroup, Facility, FacilityUserAccess
 from app.models.finance import FinanceCategory
 from app.core.security import get_password_hash
+from app.core.config import settings
 import uuid
+import os
 
 
 def seed_database(db: Session):
@@ -97,67 +99,101 @@ def seed_database(db: Session):
         
         roles[role_data["code"]] = role
     
-    # 4. Crear Usuarios (2 owners + 1 doctor)
+    # 4. Crear Usuarios (platform_admin, 2 owners, 1 medico, 1 staff)
+    # Password desde env DEV_SEED_PASSWORD (fallback 'Admin123!')
+    seed_password = os.getenv("DEV_SEED_PASSWORD", "Admin123!")
+    
     users_data = [
         {
+            "dni": "90000000",
+            "email": None,
+            "full_name": "Platform Admin",
+            "is_platform_admin": True,
+            "memberships": []  # Platform admin no necesita membresías
+        },
+        {
+            "dni": "20000001",
             "email": "owner1@geriatricos.com",
             "full_name": "Propietario 1",
-            "role_code": "OWNER",
-            "password": "owner123"  # TEMPORAL - cambiar en producción
+            "is_platform_admin": False,
+            "memberships": [
+                {"facility_code": "NSL", "role": "ADMIN"},
+                {"facility_code": "ET", "role": "ADMIN"},
+                {"facility_code": "EA", "role": "ADMIN"},
+            ]
         },
         {
+            "dni": "20000002",
             "email": "owner2@geriatricos.com",
             "full_name": "Propietario 2",
-            "role_code": "OWNER",
-            "password": "owner123"  # TEMPORAL
+            "is_platform_admin": False,
+            "memberships": [
+                {"facility_code": "NSL", "role": "ADMIN"},
+                {"facility_code": "ET", "role": "ADMIN"},
+                {"facility_code": "EA", "role": "ADMIN"},
+            ]
         },
         {
-            "email": "doctor@geriatricos.com",
+            "dni": "30000000",
+            "email": "medico@geriatricos.com",
             "full_name": "Dr. Médico",
-            "role_code": "DOCTOR",
-            "password": "doctor123"  # TEMPORAL
+            "is_platform_admin": False,
+            "memberships": [
+                {"facility_code": "NSL", "role": "MEDICO"},
+                {"facility_code": "ET", "role": "MEDICO"},
+                {"facility_code": "EA", "role": "MEDICO"},
+            ]
+        },
+        {
+            "dni": "40000001",
+            "email": "staff1@geriatricos.com",
+            "full_name": "Staff G1",
+            "is_platform_admin": False,
+            "memberships": [
+                {"facility_code": "NSL", "role": "STAFF"},
+            ]
         },
     ]
     
     users = {}
     for user_data in users_data:
-        user = db.query(User).filter(User.email == user_data["email"]).first()
+        # Buscar por DNI (prioritario) o email
+        user = None
+        if user_data["dni"]:
+            user = db.query(User).filter(User.dni == user_data["dni"]).first()
+        if not user and user_data["email"]:
+            user = db.query(User).filter(User.email == user_data["email"]).first()
+        
         if not user:
             user = User(
                 id=uuid.uuid4(),
+                dni=user_data["dni"],
                 email=user_data["email"],
                 full_name=user_data["full_name"],
-                password_hash=get_password_hash(user_data["password"]),
+                password_hash=get_password_hash(seed_password),
                 is_active=True,
-                is_verified=True
+                is_verified=True,
+                is_platform_admin=user_data["is_platform_admin"]
             )
             db.add(user)
             db.flush()
-            print(f"✓ Usuario creado: {user_data['email']}")
+            print(f"✓ Usuario creado: {user_data['dni']} - {user_data['full_name']}")
         else:
-            print(f"→ Usuario ya existe: {user_data['email']}")
+            # Actualizar campos si es necesario
+            if user.is_platform_admin != user_data["is_platform_admin"]:
+                user.is_platform_admin = user_data["is_platform_admin"]
+                db.flush()
+            print(f"→ Usuario ya existe: {user_data['dni']} - {user_data['full_name']}")
         
-        # Asignar rol
-        assignment = db.query(UserRoleAssignment).filter(
-            UserRoleAssignment.user_id == user.id,
-            UserRoleAssignment.role_id == roles[user_data["role_code"]].id
-        ).first()
-        
-        if not assignment:
-            assignment = UserRoleAssignment(
-                id=uuid.uuid4(),
-                user_id=user.id,
-                role_id=roles[user_data["role_code"]].id
-            )
-            db.add(assignment)
-            db.flush()
-            print(f"  ✓ Rol asignado: {user_data['role_code']}")
-        
-        users[user_data["email"]] = user
+        users[user_data["dni"]] = user
     
-    # 5. Crear FacilityUserAccess (3 usuarios × 3 sedes = 9 registros)
-    for user_email, user_obj in users.items():
-        for fac_code, facility_obj in facilities.items():
+    # 5. Crear FacilityUserAccess (membresías con role)
+    for user_data in users_data:
+        user_obj = users[user_data["dni"]]
+        
+        for membership_data in user_data["memberships"]:
+            facility_obj = facilities[membership_data["facility_code"]]
+            
             access = db.query(FacilityUserAccess).filter(
                 FacilityUserAccess.facility_id == facility_obj.id,
                 FacilityUserAccess.user_id == user_obj.id
@@ -168,11 +204,20 @@ def seed_database(db: Session):
                     id=uuid.uuid4(),
                     facility_id=facility_obj.id,
                     user_id=user_obj.id,
-                    access_level="CLINICAL"
+                    role=membership_data["role"],
+                    is_active=True
                 )
                 db.add(access)
                 db.flush()
-                print(f"  ✓ Acceso creado: {user_email} → {fac_code}")
+                print(f"  ✓ Membresía creada: {user_data['dni']} → {membership_data['facility_code']} ({membership_data['role']})")
+            else:
+                # Actualizar role e is_active si es necesario
+                if access.role != membership_data["role"]:
+                    access.role = membership_data["role"]
+                if not access.is_active:
+                    access.is_active = True
+                db.flush()
+                print(f"  → Membresía actualizada: {user_data['dni']} → {membership_data['facility_code']} ({membership_data['role']})")
     
     # 6. Crear Categorías de Finanzas
     expense_categories = [

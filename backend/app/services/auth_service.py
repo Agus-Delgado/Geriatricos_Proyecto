@@ -1,16 +1,17 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, case
+from sqlalchemy import or_
 from uuid import UUID
-from app.models.auth import User, UserRole, UserRoleAssignment
+from app.models.auth import User
 from app.models.org import FacilityUserAccess, Facility
 from app.core.security import verify_password, create_access_token
 from datetime import datetime, timedelta
 from app.core.config import settings
 from fastapi import HTTPException, status
+from typing import List
 
 
-def authenticate_user(db: Session, username: str, password: str, facility_slug: str | None = None) -> tuple[User, Facility | None]:
-    """Autenticar usuario por DNI o email"""
+def authenticate_user(db: Session, username: str, password: str) -> User:
+    """Autenticar usuario por DNI o email (login único, sin facility)"""
     # Buscar por DNI o email
     user = db.query(User).filter(
         or_(
@@ -37,37 +38,15 @@ def authenticate_user(db: Session, username: str, password: str, facility_slug: 
             detail="Credenciales inválidas"
         )
     
-    # Si se proporciona facility_slug, validar acceso
-    facility = None
-    if facility_slug:
-        facility = db.query(Facility).filter(Facility.slug == facility_slug).first()
-        if not facility:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Geriátrico no encontrado"
-            )
-        
-        # Verificar que el usuario tenga acceso a esta facility
-        access = db.query(FacilityUserAccess).filter(
-            FacilityUserAccess.facility_id == facility.id,
-            FacilityUserAccess.user_id == user.id
-        ).first()
-        
-        if not access:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tiene acceso a este geriátrico"
-            )
-    
     # Actualizar last_login_at
     user.last_login_at = datetime.utcnow()
     db.commit()
     
-    return user, facility
+    return user
 
 
-def create_user_token(user: User, facility_id: UUID | None = None, db: Session | None = None) -> str:
-    """Crear token JWT para usuario con facility_id y role"""
+def create_user_token(user: User, db: Session | None = None) -> str:
+    """Crear token JWT para usuario con active_facility_id"""
     expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     token_data = {
         "sub": str(user.id),
@@ -75,42 +54,63 @@ def create_user_token(user: User, facility_id: UUID | None = None, db: Session |
         "dni": user.dni or "",
     }
     
-    # Incluir facility_id en el token si se proporciona
-    if facility_id:
-        token_data["facility_id"] = str(facility_id)
-    
-    # Incluir role principal del usuario (OWNER tiene prioridad sobre DOCTOR)
-    if db:
-        role_assignments = db.query(UserRoleAssignment).join(UserRole).filter(
-            UserRoleAssignment.user_id == user.id
-        ).order_by(
-            # OWNER primero, luego DOCTOR
-            sa.case(
-                (UserRole.code == "OWNER", 1),
-                (UserRole.code == "DOCTOR", 2),
-                else_=3
-            )
-        ).all()
-        
-        if role_assignments:
-            # Determinar rol principal: OWNER tiene prioridad
-            roles = [ra.role.code for ra in role_assignments]
-            if "OWNER" in roles:
-                token_data["role"] = "OWNER"
-            elif "DOCTOR" in roles:
-                token_data["role"] = "DOCTOR"
-            else:
-                token_data["role"] = roles[0] if roles else None
+    # Incluir active_facility_id en el token si existe
+    if user.active_facility_id:
+        token_data["facility_id"] = str(user.active_facility_id)
     
     return create_access_token(data=token_data, expires_delta=expires_delta)
 
 
 def get_user_with_relations(db: Session, user_id: UUID) -> User:
-    """Obtener usuario con roles y facilities cargados"""
+    """Obtener usuario con relaciones cargadas"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Usuario no encontrado"
         )
+    return user
+
+
+def get_user_memberships(db: Session, user_id: UUID) -> List[FacilityUserAccess]:
+    """Obtener membresías activas del usuario (facility + role)"""
+    return db.query(FacilityUserAccess).filter(
+        FacilityUserAccess.user_id == user_id,
+        FacilityUserAccess.is_active == True
+    ).all()
+
+
+def set_active_facility(db: Session, user_id: UUID, facility_id: UUID) -> User:
+    """Establecer facility activa para el usuario. Valida membresía activa (o platform_admin)"""
+    user = get_user_with_relations(db, user_id)
+    
+    # Platform admin puede tener cualquier facility activa (o ninguna)
+    if user.is_platform_admin:
+        user.active_facility_id = facility_id
+        db.commit()
+        return user
+    
+    # Verificar que el usuario tenga membresía activa para esta facility
+    membership = db.query(FacilityUserAccess).filter(
+        FacilityUserAccess.user_id == user_id,
+        FacilityUserAccess.facility_id == facility_id,
+        FacilityUserAccess.is_active == True
+    ).first()
+    
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tiene acceso a este geriátrico"
+        )
+    
+    # Verificar que la facility exista
+    facility = db.query(Facility).filter(Facility.id == facility_id).first()
+    if not facility:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Geriátrico no encontrado"
+        )
+    
+    user.active_facility_id = facility_id
+    db.commit()
     return user

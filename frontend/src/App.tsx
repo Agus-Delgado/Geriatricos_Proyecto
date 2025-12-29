@@ -9,6 +9,10 @@ import { UpdateBanner } from './components/pwa/UpdateBanner';
 import { LoginPage } from './pages/LoginPage';
 import { GeriatricLoginPage } from './pages/GeriatricLoginPage';
 import { SelectFacilityPage } from './pages/SelectFacilityPage';
+import { PlatformPage } from './pages/PlatformPage';
+import { GeriatricDashboardPage } from './pages/GeriatricDashboardPage';
+import { GeriatricTasksPage } from './pages/GeriatricTasksPage';
+import { GeriatricMedicalPage } from './pages/GeriatricMedicalPage';
 import { ResidentsListPage } from './pages/ResidentsListPage';
 import { ResidentDetailPage } from './pages/ResidentDetailPage';
 import { MedicationDuePage } from './pages/MedicationDuePage';
@@ -34,6 +38,38 @@ function App() {
               element={
                 <ProtectedRoute requireFacility={false}>
                   <SelectFacilityPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/platform"
+              element={
+                <ProtectedRoute requirePlatformAdmin={true} requireFacility={false}>
+                  <PlatformPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/g/:id/dashboard"
+              element={
+                <ProtectedRoute requireRole="ADMIN">
+                  <GeriatricDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/g/:id/tasks"
+              element={
+                <ProtectedRoute requireRole="STAFF">
+                  <GeriatricTasksPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/g/:id/medical"
+              element={
+                <ProtectedRoute requireRole="MEDICO">
+                  <GeriatricMedicalPage />
                 </ProtectedRoute>
               }
             />

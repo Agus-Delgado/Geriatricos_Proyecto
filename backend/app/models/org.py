@@ -53,7 +53,8 @@ class FacilityUserAccess(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     facility_id = Column(UUID(as_uuid=True), ForeignKey("facilities.id"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    access_level = Column(String(32), default="CLINICAL", nullable=False)
+    role = Column(String(32), nullable=False)  # 'ADMIN', 'MEDICO', 'STAFF'
+    is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     
     # Relationships

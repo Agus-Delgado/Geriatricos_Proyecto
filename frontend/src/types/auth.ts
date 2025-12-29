@@ -12,6 +12,15 @@ export interface FacilityAccess {
   access_level: string;
 }
 
+export interface FacilityMembership {
+  id: string;
+  facility_id: string;
+  facility_name: string;
+  facility_code: string;
+  role: 'ADMIN' | 'MEDICO' | 'STAFF';
+  is_active: boolean;
+}
+
 export interface User {
   id: string;
   email: string | null;
@@ -20,15 +29,20 @@ export interface User {
   full_name: string;
   is_active: boolean;
   is_verified: boolean;
+  is_platform_admin: boolean;
+  active_facility_id: string | null;
   last_login_at: string | null;
   roles: Role[];
-  facilities: FacilityAccess[];
+  memberships: FacilityMembership[];
 }
 
 export interface LoginRequest {
   username: string; // DNI o email
   password: string;
-  facility_slug?: string; // Slug del geriátrico (opcional por ahora)
+}
+
+export interface SetActiveFacilityRequest {
+  facility_id: string;
 }
 
 export interface TokenResponse {
@@ -42,4 +56,16 @@ export interface Facility {
   code: string;
   slug: string | null;
   is_active: boolean;
+}
+
+/**
+ * Helper para mapear roles cortos a labels legibles en UI
+ */
+export function getRoleLabel(role: 'ADMIN' | 'MEDICO' | 'STAFF'): string {
+  const labels: Record<'ADMIN' | 'MEDICO' | 'STAFF', string> = {
+    ADMIN: 'Administrador',
+    MEDICO: 'Médico',
+    STAFF: 'Operador',
+  };
+  return labels[role] || role;
 }

@@ -7,7 +7,6 @@ from uuid import UUID
 class LoginRequest(BaseModel):
     username: str  # DNI o email
     password: str
-    facility_slug: str | None = None  # Slug del geriátrico (opcional por compatibilidad)
 
 
 class TokenResponse(BaseModel):
@@ -24,7 +23,20 @@ class RoleResponse(BaseModel):
         from_attributes = True
 
 
+class FacilityMembershipResponse(BaseModel):
+    id: UUID
+    facility_id: UUID
+    facility_name: str
+    facility_code: str
+    role: str  # 'ADMIN', 'MEDICO', 'STAFF'
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
 class FacilityAccessResponse(BaseModel):
+    """Deprecated: usar FacilityMembershipResponse"""
     id: UUID
     facility_id: UUID
     facility_name: str
@@ -43,9 +55,15 @@ class UserResponse(BaseModel):
     full_name: str
     is_active: bool
     is_verified: bool
+    is_platform_admin: bool
+    active_facility_id: Optional[UUID]
     last_login_at: Optional[datetime]
     roles: List[RoleResponse]
-    facilities: List[FacilityAccessResponse]
+    memberships: List[FacilityMembershipResponse]
 
     class Config:
         from_attributes = True
+
+
+class SetActiveFacilityRequest(BaseModel):
+    facility_id: UUID

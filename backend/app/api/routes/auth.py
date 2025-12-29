@@ -37,10 +37,14 @@ async def login(
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Obtener información del usuario actual con roles y memberships"""
+    """Obtener información del usuario actual con roles y memberships.
+    
+    Devuelve 401 si no hay token o es inválido (nunca 500).
+    """
     # Obtener roles (globales, legacy)
     role_assignments = db.query(UserRoleAssignment).join(UserRole).filter(
         UserRoleAssignment.user_id == current_user.id

@@ -22,14 +22,20 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS
-# Permitir orígenes específicos desde CORS_ORIGINS o defaults
-# También permitir previews de Vercel con regex
+# CORS - Configurado INMEDIATAMENTE después de crear la app para que funcione en todos los endpoints
+# Incluyendo respuestas de error (401, 403, 500, etc.)
+cors_origins = settings.cors_origins_list
+cors_origin_regex = settings.cors_origin_regex
+
+# Si no hay regex configurado, usar el default para Vercel previews
+if not cors_origin_regex:
+    cors_origin_regex = r"^https://.*\.vercel\.app$"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
-    allow_origin_regex=r"^https://.*\.vercel\.app$",  # Previews de Vercel
-    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_origin_regex=cors_origin_regex,
+    allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
     allow_methods=["*"],
     allow_headers=["*"],
 )

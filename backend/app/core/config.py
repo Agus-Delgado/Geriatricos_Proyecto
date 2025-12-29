@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     
     # CORS (opcional - si no está definida usa defaults)
     CORS_ORIGINS: Optional[str] = None
+    CORS_ORIGIN_REGEX: Optional[str] = None  # Regex para permitir orígenes (ej: "^https://.*\\.vercel\\.app$")
+    CORS_ALLOW_CREDENTIALS: bool = True  # Permitir cookies/credentials
     
     # Storage
     STORAGE_PROVIDER: str = "local"
@@ -40,6 +42,13 @@ class Settings(BaseSettings):
             return default_origins
         
         return origins
+    
+    @property
+    def cors_origin_regex(self) -> Optional[str]:
+        """Retorna el regex de CORS si está definido"""
+        if not self.CORS_ORIGIN_REGEX or not self.CORS_ORIGIN_REGEX.strip():
+            return None
+        return self.CORS_ORIGIN_REGEX.strip()
     
     class Config:
         env_file = ".env"

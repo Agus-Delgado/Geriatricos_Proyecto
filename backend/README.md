@@ -70,14 +70,12 @@ API backend para gestión de 3 geriátricos (MVP) desarrollada con FastAPI, SQLA
 
    Esto creará:
    - 1 grupo propietario: "Grupo Geriátricos"
-   - 3 sedes: G1, G2, G3
+   - 3 sedes: NSL (Nuestra Señora de Luján), ET (El Trébol), EA (El Amanecer)
    - Roles: OWNER, DOCTOR
-   - 3 usuarios:
-     - owner1@geriatricos.com / owner123
-     - owner2@geriatricos.com / owner123
-     - doctor@geriatricos.com / doctor123
-   - Accesos: los 3 usuarios tienen acceso a las 3 sedes
+   - 5 usuarios de desarrollo (ver sección "Credenciales de Desarrollo" abajo)
    - Categorías de finanzas (7 expense + 3 income)
+
+   **Nota**: El password por defecto es `Admin123!` (configurable con variable de entorno `DEV_SEED_PASSWORD`)
 
 8. **Iniciar servidor:**
    ```bash
@@ -162,6 +160,28 @@ python -m app.db.seeds
 
 **Nota**: Los seeds son idempotentes - no duplicarán datos si ya existen.
 
+### Credenciales de Desarrollo
+
+Los seeds crean los siguientes usuarios para desarrollo local:
+
+| Rol | DNI | Email | Password | Acceso |
+|-----|-----|-------|----------|--------|
+| **Platform Admin** | `90000000` | (sin email) | `Admin123!` | Acceso completo a todas las facilities |
+| **Admin (Propietario 1)** | `20000001` | `owner1@geriatricos.com` | `Admin123!` | ADMIN en NSL, ET, EA |
+| **Admin (Propietario 2)** | `20000002` | `owner2@geriatricos.com` | `Admin123!` | ADMIN en NSL, ET, EA |
+| **Médico** | `30000000` | `medico@geriatricos.com` | `Admin123!` | MEDICO en NSL, ET, EA |
+| **Staff** | `40000001` | `staff1@geriatricos.com` | `Admin123!` | STAFF en NSL |
+
+**Login**: Puedes usar DNI o email como username. Ejemplo:
+- Username: `30000000` o `medico@geriatricos.com`
+- Password: `Admin123!`
+
+**Configuración del password**:
+- Variable de entorno `DEV_SEED_PASSWORD` (default: `Admin123!`)
+- Variable de entorno `ALLOW_SEED_RESET_PASSWORD=true` para resetear passwords de usuarios existentes
+
+⚠️ **IMPORTANTE**: Estas credenciales son SOLO para desarrollo. Cambiar en producción.
+
 ## Crear Usuarios Adicionales
 
 Puedes crear usuarios adicionales directamente en la base de datos o mediante un script:
@@ -235,7 +255,9 @@ flake8 app/
 - **CORS**: 
   - Variable `CORS_ORIGINS` es opcional (lista separada por comas)
   - Si no se define, usa defaults: `http://localhost:5173`, `http://localhost:4173`
-  - Previews de Vercel (`.vercel.app`) se permiten automáticamente
+  - Variable `CORS_ORIGIN_REGEX` para permitir orígenes por patrón (ej: `^https://.*\.vercel\.app$`)
+  - Variable `CORS_ALLOW_CREDENTIALS` (default: `true`) para permitir cookies/credentials
+  - Previews de Vercel (`.vercel.app`) se permiten automáticamente si no se define `CORS_ORIGIN_REGEX`
   - En producción, definir `CORS_ORIGINS` con la URL de tu frontend
 
 ## Solución de Problemas
@@ -283,6 +305,48 @@ Si encuentras errores como `TypeError: 'Column' object is not callable` o `Inval
 - Implementar rate limiting en producción
 - Configurar backups de base de datos
 - **Evitar rutas con caracteres especiales en producción** (usar rutas simples)
+
+## Configuración en Render
+
+Para desplegar el backend en Render, configurar las siguientes variables de entorno:
+
+### Variables Requeridas
+- `DATABASE_URL`: URL de conexión a PostgreSQL (proporcionada por Render PostgreSQL)
+- `JWT_SECRET`: Clave secreta para firmar tokens JWT (generar una aleatoria y segura)
+- `JWT_ALGORITHM`: `HS256` (default)
+- `ACCESS_TOKEN_EXPIRE_MINUTES`: `1440` (default, 24 horas)
+
+### Variables CORS (Recomendadas)
+- `CORS_ORIGIN_REGEX`: `^https://.*\.vercel\.app$` (permite todos los previews de Vercel)
+- `CORS_ORIGINS`: (Opcional) URLs específicas separadas por comas, ej: `https://tu-app.vercel.app,https://tu-dominio.com`
+- `CORS_ALLOW_CREDENTIALS`: `true` (default) o `false` si no usas cookies
+
+### Ejemplo de Configuración en Render
+
+```
+DATABASE_URL=postgresql://user:pass@host:5432/dbname
+JWT_SECRET=tu-clave-secreta-super-segura-aqui
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+CORS_ORIGIN_REGEX=^https://.*\.vercel\.app$
+CORS_ALLOW_CREDENTIALS=true
+```
+
+### Verificación de CORS
+
+Para verificar que CORS está funcionando correctamente:
+
+```bash
+# Probar desde consola con curl simulando un origen de Vercel
+curl -i -H "Origin: https://example.vercel.app" \
+     -H "Authorization: Bearer TU_TOKEN" \
+     https://geriatricos-proyecto.onrender.com/auth/me
+```
+
+**Respuesta esperada**:
+- Debe incluir header `Access-Control-Allow-Origin: https://example.vercel.app` (o el origin específico)
+- Si no hay token válido, debe devolver `401 Unauthorized` (NO 500)
+- Todos los headers CORS deben estar presentes incluso en respuestas de error
 
 ## Licencia
 

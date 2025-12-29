@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import List, Optional, Tuple
@@ -9,17 +9,37 @@ from app.models.org import FacilityUserAccess, Facility
 from app.core.security import decode_access_token
 from app.services.auth_service import get_user_with_relations
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)  # auto_error=False para manejar manualmente
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
-    """Obtener usuario actual desde JWT token"""
-    token = credentials.credentials
-    payload = decode_access_token(token)
+    """Obtener usuario actual desde JWT token. Devuelve 401 si no hay token o es inválido (nunca 500)"""
+    # Si no hay credentials, verificar si hay token en el header manualmente
+    if not credentials:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        token = auth_header.replace("Bearer ", "").strip()
+    else:
+        token = credentials.credentials
     
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Decodificar token
+    payload = decode_access_token(token)
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -27,6 +47,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Extraer user_id del payload
     user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(
@@ -35,16 +56,33 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Validar que user_id sea un UUID válido
     try:
         user_id_uuid = UUID(user_id)
-    except ValueError:
+    except (ValueError, TypeError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    user = get_user_with_relations(db, user_id_uuid)
+    # Obtener usuario de la base de datos
+    try:
+        user = get_user_with_relations(db, user_id_uuid)
+    except Exception as e:
+        # Si hay error al obtener el usuario, devolver 401 (no 500)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Error al obtener usuario",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario no encontrado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     if not user.is_active:
         raise HTTPException(

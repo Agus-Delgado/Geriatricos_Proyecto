@@ -261,8 +261,13 @@ El frontend está configurado para deploy en Vercel. Ver `frontend/README.md` pa
 - Output Directory: `dist`
 - Framework Preset: Vite
 
-**Variable de entorno requerida:**
+**Variables de entorno requeridas:**
 - `VITE_API_BASE_URL`: URL del backend API en producción
+- `VITE_MISRX_URL`: URL de MisRX para recetas (ej: `https://misrx.com.ar`)
+- `VITE_RECETO_URL`: URL de Receto para recetas (ej: `https://receto.com.ar`)
+- `VITE_PAMI_URL`: URL de PAMI (ej: `https://www.pami.org.ar`)
+
+**Nota:** Si las variables de entorno de links médicos no están configuradas o son inválidas, los botones correspondientes se mostrarán deshabilitados con un mensaje indicando que deben configurarse en Vercel.
 
 ## 📚 Documentación Adicional
 

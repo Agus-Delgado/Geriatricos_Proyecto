@@ -16,13 +16,13 @@ export const SelectFacilityPage: React.FC = () => {
   const redirectByRole = (role: 'ADMIN' | 'MEDICO' | 'STAFF', facilityId: string) => {
     switch (role) {
       case 'ADMIN':
-        navigate(`/g/${facilityId}/dashboard`, { replace: true });
+        navigate(`/g/${facilityId}/dashboard`);
         break;
       case 'MEDICO':
-        navigate(`/g/${facilityId}/medical`, { replace: true });
+        navigate(`/g/${facilityId}/medical`);
         break;
       case 'STAFF':
-        navigate(`/g/${facilityId}/tasks`, { replace: true });
+        navigate(`/g/${facilityId}/tasks`);
         break;
     }
   };

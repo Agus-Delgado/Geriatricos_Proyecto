@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { MEDICAL_LINKS } from '../config/medicalLinks';
 import { PatientList } from '../components/medical/PatientList';
+import { Header } from '../components/layout/Header';
 
 export const GeriatricMedicalPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,10 +16,12 @@ export const GeriatricMedicalPage: React.FC = () => {
   };
 
   return (
-    <div 
-      className="min-h-screen p-4 md:p-8 relative"
-      style={{ background: 'var(--facility-bg, #f9fafb)' }}
-    >
+    <div className="min-h-screen" style={{ background: 'var(--facility-bg, #f9fafb)' }}>
+      <Header title="Módulo Médico" />
+      <div 
+        className="p-4 md:p-8 relative"
+        style={{ background: 'var(--facility-bg, #f9fafb)' }}
+      >
       {/* Overlay violeta suave para módulo médico */}
       <div 
         className="absolute inset-0 pointer-events-none"
@@ -35,9 +38,6 @@ export const GeriatricMedicalPage: React.FC = () => {
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Módulo Médico
-              </h1>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>{activeMembership?.facility_name || `Geriátrico ${id}`}</span>
                 <span>•</span>

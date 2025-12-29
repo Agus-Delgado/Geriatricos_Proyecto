@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Header } from '../components/layout/Header';
 
 export const GeriatricDashboardPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -8,10 +9,12 @@ export const GeriatricDashboardPage: React.FC = () => {
   const activeMembership = getActiveMembership();
 
   return (
-    <div 
-      className="min-h-screen p-8"
-      style={{ background: 'var(--facility-bg, #f9fafb)' }}
-    >
+    <div className="min-h-screen" style={{ background: 'var(--facility-bg, #f9fafb)' }}>
+      <Header title="Dashboard" />
+      <div 
+        className="p-8"
+        style={{ background: 'var(--facility-bg, #f9fafb)' }}
+      >
       <div className="max-w-4xl mx-auto">
         <div 
           className="rounded-lg shadow-lg p-6"

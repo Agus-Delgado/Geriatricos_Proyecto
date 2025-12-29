@@ -3,6 +3,36 @@ import { authApi } from '../api/auth';
 import type { User, FacilityMembership } from '../types/auth';
 import type { ApiError } from '../api/client';
 
+// Type for user role in impersonation
+type UserRole = 'doctor' | 'owner';
+
+// Type guard to validate user role
+function isUserRole(v: unknown): v is UserRole {
+  return v === 'doctor' || v === 'owner';
+}
+
+// Map role from API/storage to UserRole
+function mapRole(rawRole: unknown): UserRole | undefined {
+  if (typeof rawRole !== 'string') {
+    return undefined;
+  }
+  
+  // Normalize case
+  const normalized = rawRole.toLowerCase();
+  
+  // Map API values to frontend types
+  switch (normalized) {
+    case 'doctor':
+    case 'medico':
+      return 'doctor';
+    case 'owner':
+    case 'admin':
+      return 'owner';
+    default:
+      return undefined;
+  }
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -22,7 +52,7 @@ interface AuthContextType {
   // Impersonation
   isImpersonating: boolean;
   impersonatedUser: User | null;
-  startImpersonation: (userId: string, mode?: string) => Promise<void>;
+  startImpersonation: (userId: string, mode?: UserRole) => Promise<void>;
   stopImpersonation: () => Promise<void>;
 }
 
@@ -210,7 +240,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return activeMembership?.role ?? null;
   };
 
-  const startImpersonation = async (userId: string, mode?: string) => {
+  const startImpersonation = async (userId: string, mode?: UserRole) => {
     try {
       // Guardar token original si no hay uno guardado
       const currentToken = localStorage.getItem('token');
@@ -218,8 +248,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.setItem('original_token', currentToken);
       }
 
+      // Normalizar mode: validar y mapear si es necesario
+      const normalizedMode: UserRole | undefined = mode !== undefined 
+        ? (isUserRole(mode) ? mode : mapRole(mode))
+        : undefined;
+
       // Iniciar impersonación
-      const response = await authApi.impersonateUser({ user_id: userId, mode });
+      const response = await authApi.impersonateUser({ 
+        user_id: userId, 
+        mode: normalizedMode 
+      });
       const impersonationToken = response.impersonation_token;
 
       // Guardar token de impersonación

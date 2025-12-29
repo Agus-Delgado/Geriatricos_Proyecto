@@ -346,16 +346,24 @@ CORS_ALLOW_CREDENTIALS=true
 Para verificar que CORS está funcionando correctamente:
 
 ```bash
-# Probar desde consola con curl simulando un origen de Vercel
+# Prueba rápida: verificar que CORS funciona y /auth/me devuelve 401 (no 500) sin token
 curl -i -H "Origin: https://example.vercel.app" \
-     -H "Authorization: Bearer TU_TOKEN" \
      https://geriatricos-proyecto.onrender.com/auth/me
 ```
 
 **Respuesta esperada**:
 - Debe incluir header `Access-Control-Allow-Origin: https://example.vercel.app` (o el origin específico)
-- Si no hay token válido, debe devolver `401 Unauthorized` (NO 500)
-- Todos los headers CORS deben estar presentes incluso en respuestas de error
+- Debe devolver `401 Unauthorized` (NO 500) cuando no hay token
+- Todos los headers CORS deben estar presentes incluso en respuestas de error (401, 403, 500, etc.)
+
+**Prueba con token válido**:
+```bash
+curl -i -H "Origin: https://example.vercel.app" \
+     -H "Authorization: Bearer TU_TOKEN" \
+     https://geriatricos-proyecto.onrender.com/auth/me
+```
+
+**Nota**: El sistema tiene un fallback seguro de CORS que permite automáticamente todos los orígenes de Vercel (`^https://.*\.vercel\.app$`) si no se configuran variables de entorno. Esto asegura que nunca quede sin CORS por falta de configuración.
 
 ## Configuración de Email (SMTP) para Verificación
 

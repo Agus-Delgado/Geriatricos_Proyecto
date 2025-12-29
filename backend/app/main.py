@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.api.routes import (
     auth, facilities, residents, resident_contacts, clinical, medications,
     documents, certificates, external_platforms, resident_external_events, finance,
-    staff, attendance
+    staff, attendance, admin
 )
 from app.db.session import SessionLocal
 from app.db.bootstrap import bootstrap_production_users
@@ -27,18 +27,20 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS - Configurado INMEDIATAMENTE después de crear la app para que funcione en todos los endpoints
-# Incluyendo respuestas de error (401, 403, 500, etc.)
+# CORS - Configurado INMEDIATAMENTE después de crear la app y ANTES de routers/startup
+# para que funcione en todos los endpoints, incluyendo respuestas de error (401, 403, 500, etc.)
 cors_origins = settings.cors_origins_list
 cors_origin_regex = settings.cors_origin_regex
 
-# Si no hay regex configurado, usar el default para Vercel previews
-if not cors_origin_regex:
+# Fallback seguro: si tanto origins como regex están vacíos, usar regex para Vercel previews
+# Esto asegura que nunca quede sin CORS por falta de env vars
+if not cors_origin_regex and (not cors_origins or len(cors_origins) == 0):
     cors_origin_regex = r"^https://.*\.vercel\.app$"
+    logger.warning("CORS: No hay configuración de CORS. Usando fallback seguro para Vercel previews.")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=cors_origins if cors_origins else [],
     allow_origin_regex=cors_origin_regex,
     allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
     allow_methods=["*"],
@@ -65,6 +67,7 @@ async def health_check():
 
 # Routers
 app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(facilities.router)
 app.include_router(residents.router)
 app.include_router(resident_contacts.router)

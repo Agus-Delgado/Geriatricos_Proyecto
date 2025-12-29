@@ -3,12 +3,14 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import List, Optional, Tuple
 from uuid import UUID
+import logging
 from app.db.session import get_db
 from app.models.auth import User, UserRole, UserRoleAssignment
 from app.models.org import FacilityUserAccess, Facility
 from app.core.security import decode_access_token
 from app.services.auth_service import get_user_with_relations
 
+logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=False)  # auto_error=False para manejar manualmente
 
 
@@ -38,16 +40,44 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Decodificar token
-    payload = decode_access_token(token)
-    if payload is None:
+    # Decodificar token - capturar cualquier excepción para evitar 500
+    try:
+        payload = decode_access_token(token)
+        if payload is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token inválido o expirado",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except HTTPException:
+        # Re-raise HTTPException (ya es 401)
+        raise
+    except Exception as e:
+        # Cualquier otra excepción inesperada -> 401 (no 500)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido o expirado",
+            detail="Error al validar token",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Extraer user_id del payload
+    # Detectar impersonación
+    is_impersonation = payload.get("is_impersonation", False)
+    actor_admin_id = None
+    
+    if is_impersonation:
+        # En caso de impersonación, el user_id en "sub" es el usuario impersonado
+        # Guardar actor_admin_id en el contexto del request para auditoría
+        actor_admin_id_str = payload.get("actor_admin_id")
+        if actor_admin_id_str:
+            try:
+                actor_admin_id = UUID(actor_admin_id_str)
+                # Guardar en request.state para acceso posterior
+                request.state.actor_admin_id = actor_admin_id
+                request.state.is_impersonation = True
+            except (ValueError, TypeError):
+                pass  # Si no se puede parsear, continuar sin auditoría
+    
+    # Extraer user_id del payload (puede ser el usuario impersonado si hay impersonación)
     user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(
@@ -66,11 +96,15 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Obtener usuario de la base de datos
+    # Obtener usuario de la base de datos - capturar todas las excepciones para evitar 500
     try:
         user = get_user_with_relations(db, user_id_uuid)
+    except HTTPException:
+        # Re-raise HTTPException (ya es 401/403)
+        raise
     except Exception as e:
-        # Si hay error al obtener el usuario, devolver 401 (no 500)
+        # Cualquier error de DB o inesperado -> 401 (no 500)
+        logger.warning(f"Error al obtener usuario en get_current_user: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Error al obtener usuario",
@@ -261,3 +295,13 @@ def get_user_facilities(db: Session, user_id: UUID) -> List[FacilityUserAccess]:
         FacilityUserAccess.user_id == user_id,
         FacilityUserAccess.is_active == True
     ).all()
+
+
+def get_impersonation_context(request: Request) -> Optional[dict]:
+    """Obtener información de impersonación del request si existe"""
+    if hasattr(request.state, "is_impersonation") and request.state.is_impersonation:
+        return {
+            "is_impersonation": True,
+            "actor_admin_id": getattr(request.state, "actor_admin_id", None)
+        }
+    return None

@@ -101,6 +101,12 @@ def bootstrap_production_users(db: Session) -> None:
             if not user.is_platform_admin:
                 user.is_platform_admin = True
                 updated = True
+            if not user.is_verified:
+                user.is_verified = True
+                updated = True
+            if not user.is_active:
+                user.is_active = True
+                updated = True
             # Actualizar password si está configurado (útil para reset)
             if admin_password:
                 user.password_hash = get_password_hash(admin_password)

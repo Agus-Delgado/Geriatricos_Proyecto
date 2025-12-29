@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
 from app.db.session import get_db
-from app.api.deps import get_current_user, require_facility_access
+from app.api.deps import get_current_user, require_facility_access, require_facility_role_any
 from app.schemas.residents import ResidentCreate, ResidentUpdate, ResidentResponse
 from app.services.residents_service import (
     create_resident,
@@ -19,10 +19,10 @@ router = APIRouter(prefix="/residents", tags=["residents"])
 @router.post("", response_model=ResidentResponse, status_code=201)
 async def create_resident_endpoint(
     resident_data: ResidentCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_facility_role_any(['MEDICO', 'ADMIN'])),
     db: Session = Depends(get_db)
 ):
-    """Crear nuevo residente (requiere acceso a la facility)"""
+    """Crear nuevo residente (requiere rol MEDICO o ADMIN en la facility activa)"""
     # Validar acceso a la facility
     require_facility_access(resident_data.facility_id)(current_user, db)
     
@@ -65,10 +65,10 @@ async def get_resident(
 async def update_resident_endpoint(
     resident_id: UUID,
     resident_data: ResidentUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_facility_role_any(['MEDICO', 'ADMIN'])),
     db: Session = Depends(get_db)
 ):
-    """Actualizar residente (incluye stay_status/end_date/end_reason)"""
+    """Actualizar residente (requiere rol MEDICO o ADMIN en la facility activa)"""
     resident = get_resident_by_id(db, resident_id)
     
     # Validar acceso a la facility del residente

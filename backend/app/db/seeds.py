@@ -3,6 +3,7 @@ Script de seeds para poblar datos iniciales del sistema.
 Ejecutar después de aplicar las migraciones.
 """
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.models.auth import User, UserRole, UserRoleAssignment
 from app.models.org import OwnerGroup, Facility, FacilityUserAccess
 from app.models.finance import FinanceCategory
@@ -102,6 +103,7 @@ def seed_database(db: Session):
     # 4. Crear Usuarios (platform_admin, 2 owners, 1 medico, 1 staff)
     # Password desde env DEV_SEED_PASSWORD (fallback 'Admin123!')
     seed_password = os.getenv("DEV_SEED_PASSWORD", "Admin123!")
+    allow_reset_password = os.getenv("ALLOW_SEED_RESET_PASSWORD", "false").lower() == "true"
     
     users_data = [
         {
@@ -155,20 +157,55 @@ def seed_database(db: Session):
         },
     ]
     
+    # Validar que todos los usuarios tengan dni
+    for user_data in users_data:
+        if not user_data.get("dni"):
+            raise ValueError(f"Error: usuario '{user_data.get('full_name', 'N/A')}' debe tener dni obligatorio")
+    
+    # Unificar médico: buscar si existe doctor@geriatricos.com y reasignarlo a medico@geriatricos.com
+    medico_dni = "30000000"
+    medico_email = "medico@geriatricos.com"
+    doctor_email = "doctor@geriatricos.com"
+    
+    existing_doctor = db.query(User).filter(User.email == doctor_email).first()
+    existing_medico = db.query(User).filter(
+        or_(User.dni == medico_dni, User.email == medico_email)
+    ).first()
+    
+    if existing_doctor and existing_doctor.id != (existing_medico.id if existing_medico else None):
+        # Si existe doctor@ pero no es el mismo que medico@, unificar
+        if existing_medico:
+            # Ya existe medico@, eliminar o actualizar doctor@ (migrar membresías si es necesario)
+            print(f"⚠ SKIPPED: doctor@geriatricos.com existe pero medico@geriatricos.com ya está creado. Usar medico@geriatricos.com (DNI: {medico_dni})")
+        else:
+            # Usar el usuario doctor@ existente, actualizarlo
+            existing_doctor.dni = medico_dni
+            existing_doctor.email = medico_email
+            existing_doctor.full_name = "Dr. Médico"
+            db.flush()
+            print(f"→ UPDATED: doctor@geriatricos.com unificado a medico@geriatricos.com (DNI: {medico_dni})")
+    
     users = {}
     for user_data in users_data:
-        # Buscar por DNI (prioritario) o email
-        user = None
-        if user_data["dni"]:
-            user = db.query(User).filter(User.dni == user_data["dni"]).first()
-        if not user and user_data["email"]:
-            user = db.query(User).filter(User.email == user_data["email"]).first()
+        dni = user_data["dni"]
+        email = user_data.get("email")
         
+        # Validar dni obligatorio
+        if not dni:
+            raise ValueError(f"Error: dni es obligatorio para usuario '{user_data.get('full_name', 'N/A')}'")
+        
+        # Buscar usuario: primero por dni (prioritario), luego por email (secundario)
+        user = db.query(User).filter(User.dni == dni).first()
+        if not user and email:
+            user = db.query(User).filter(User.email == email).first()
+        
+        action = None
         if not user:
+            # Crear nuevo usuario
             user = User(
                 id=uuid.uuid4(),
-                dni=user_data["dni"],
-                email=user_data["email"],
+                dni=dni,
+                email=email,
                 full_name=user_data["full_name"],
                 password_hash=get_password_hash(seed_password),
                 is_active=True,
@@ -177,15 +214,52 @@ def seed_database(db: Session):
             )
             db.add(user)
             db.flush()
-            print(f"✓ Usuario creado: {user_data['dni']} - {user_data['full_name']}")
+            action = "CREATED"
         else:
-            # Actualizar campos si es necesario
+            # Usuario existe: actualizar si es necesario
+            updated = False
+            
+            # Si el usuario tiene dni NULL, asignar el dni del seed
+            if not user.dni:
+                user.dni = dni
+                updated = True
+            
+            # Actualizar email si es diferente y no está en conflicto
+            if email and user.email != email:
+                # Verificar que el nuevo email no esté en uso por otro usuario
+                existing_with_email = db.query(User).filter(
+                    User.email == email,
+                    User.id != user.id
+                ).first()
+                if not existing_with_email:
+                    user.email = email
+                    updated = True
+            
+            # Actualizar otros campos si es necesario
+            if user.full_name != user_data["full_name"]:
+                user.full_name = user_data["full_name"]
+                updated = True
+            
             if user.is_platform_admin != user_data["is_platform_admin"]:
                 user.is_platform_admin = user_data["is_platform_admin"]
+                updated = True
+            
+            # Resetear password si está habilitado
+            if allow_reset_password:
+                user.password_hash = get_password_hash(seed_password)
+                updated = True
+            
+            if updated:
                 db.flush()
-            print(f"→ Usuario ya existe: {user_data['dni']} - {user_data['full_name']}")
+                action = "UPDATED"
+            else:
+                action = "SKIPPED"
         
-        users[user_data["dni"]] = user
+        # Logging claro
+        email_str = f" ({email})" if email else ""
+        print(f"  {action}: Usuario {dni} - {user_data['full_name']}{email_str}")
+        
+        users[dni] = user
     
     # 5. Crear FacilityUserAccess (membresías con role)
     for user_data in users_data:
@@ -209,15 +283,25 @@ def seed_database(db: Session):
                 )
                 db.add(access)
                 db.flush()
-                print(f"  ✓ Membresía creada: {user_data['dni']} → {membership_data['facility_code']} ({membership_data['role']})")
+                action = "CREATED"
             else:
                 # Actualizar role e is_active si es necesario
+                updated = False
                 if access.role != membership_data["role"]:
                     access.role = membership_data["role"]
+                    updated = True
                 if not access.is_active:
                     access.is_active = True
-                db.flush()
-                print(f"  → Membresía actualizada: {user_data['dni']} → {membership_data['facility_code']} ({membership_data['role']})")
+                    updated = True
+                
+                if updated:
+                    db.flush()
+                    action = "UPDATED"
+                else:
+                    action = "SKIPPED"
+            
+            # Logging claro
+            print(f"    {action}: Membresía {user_data['dni']} → {membership_data['facility_code']} ({membership_data['role']})")
     
     # 6. Crear Categorías de Finanzas
     expense_categories = [

@@ -59,10 +59,17 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
             <div className="relative">
               <button
                 onClick={handleFacilitySwitcherClick}
-                className="text-sm text-gray-500 hover:text-gray-700 flex items-center"
+                className="text-sm font-medium flex items-center transition-colors"
+                style={{
+                  color: activeMembership ? 'var(--facility-accent)' : '#6b7280',
+                }}
                 disabled={memberships.length === 0}
               >
-                {activeMembership ? activeMembership.facility_name : 'Seleccionar geriátrico'}
+                {activeMembership ? (
+                  <span className="font-semibold">{activeMembership.facility_name}</span>
+                ) : (
+                  'Seleccionar geriátrico'
+                )}
                 {memberships.length > 1 && (
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

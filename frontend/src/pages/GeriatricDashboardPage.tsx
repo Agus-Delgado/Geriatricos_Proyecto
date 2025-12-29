@@ -8,9 +8,15 @@ export const GeriatricDashboardPage: React.FC = () => {
   const activeMembership = getActiveMembership();
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div 
+      className="min-h-screen p-8"
+      style={{ background: 'var(--facility-bg, #f9fafb)' }}
+    >
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div 
+          className="rounded-lg shadow-lg p-6"
+          style={{ backgroundColor: 'var(--facility-card, white)' }}
+        >
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
             Dashboard - {activeMembership?.facility_name || `Geriátrico ${id}`}
           </h1>

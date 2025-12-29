@@ -177,6 +177,46 @@ def require_facility_role(role: str):
     return role_checker
 
 
+def require_facility_role_any(allowed_roles: List[str]):
+    """
+    Dependency factory para requerir que el usuario tenga uno de los roles especificados
+    en la facility activa.
+    allowed_roles: Lista de roles permitidos, ej: ['MEDICO', 'ADMIN']
+    Platform admin siempre tiene acceso.
+    """
+    def role_checker(
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db)
+    ) -> User:
+        # Platform admin siempre tiene acceso
+        if current_user.is_platform_admin:
+            return current_user
+        
+        if not current_user.active_facility_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No hay facility activa"
+            )
+        
+        # Obtener membership activa
+        membership = db.query(FacilityUserAccess).filter(
+            FacilityUserAccess.user_id == current_user.id,
+            FacilityUserAccess.facility_id == current_user.active_facility_id,
+            FacilityUserAccess.is_active == True,
+            FacilityUserAccess.role.in_(allowed_roles)
+        ).first()
+        
+        if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Se requiere uno de los roles: {', '.join(allowed_roles)}"
+            )
+        
+        return current_user
+    
+    return role_checker
+
+
 def get_user_facilities(db: Session, user_id: UUID) -> List[FacilityUserAccess]:
     """Obtener todas las facilities accesibles por el usuario (legacy, usar get_user_memberships)"""
     return db.query(FacilityUserAccess).filter(

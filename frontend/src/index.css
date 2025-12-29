@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --facility-accent: #667eea;
+    --facility-bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    --facility-card: rgba(255, 255, 255, 0.9);
+  }
+
   body {
     @apply bg-gray-50 text-gray-900;
     -webkit-font-smoothing: antialiased;

@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { UnauthorizedHandler } from './components/auth/UnauthorizedHandler';
 import { SessionExpiredHandler } from './components/auth/SessionExpiredHandler';
 import { UpdateBanner } from './components/pwa/UpdateBanner';
+import { useFacilityTheme } from './hooks/useFacilityTheme';
 import { LoginPage } from './pages/LoginPage';
 import { GeriatricLoginPage } from './pages/GeriatricLoginPage';
 import { SelectFacilityPage } from './pages/SelectFacilityPage';
@@ -21,16 +22,16 @@ import { StaffPage } from './pages/StaffPage';
 import { AttendancePage } from './pages/AttendancePage';
 import { DebugPage } from './pages/DebugPage';
 
-function App() {
+function AppContent() {
+  // Aplicar theme de facility activa (resetea a defaults si no hay activeMembership)
+  useFacilityTheme();
+
   return (
-    <PWAProvider>
-      <AuthProvider>
-        <FacilityProvider>
-          <BrowserRouter>
-            <UnauthorizedHandler />
-            <SessionExpiredHandler />
-            <UpdateBanner />
-            <Routes>
+    <BrowserRouter>
+      <UnauthorizedHandler />
+      <SessionExpiredHandler />
+      <UpdateBanner />
+      <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/login/:geriatricSlug" element={<GeriatricLoginPage />} />
             <Route
@@ -125,8 +126,17 @@ function App() {
             {import.meta.env.DEV && (
               <Route path="/debug" element={<DebugPage />} />
             )}
-            </Routes>
-          </BrowserRouter>
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+function App() {
+  return (
+    <PWAProvider>
+      <AuthProvider>
+        <FacilityProvider>
+          <AppContent />
         </FacilityProvider>
       </AuthProvider>
     </PWAProvider>

@@ -91,22 +91,48 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const gradientStyle = {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  };
+  // Fondo con imagen ilustrada o fallback a gradient violeta
+  const fallbackGradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+  const [imageError, setImageError] = useState(false);
+
+  const backgroundStyle: React.CSSProperties = imageError
+    ? { background: fallbackGradient }
+    : {
+        backgroundImage: 'url(/backgrounds/login-bg.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: '#667eea', // Fallback color si la imagen no carga
+      };
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-4 py-8"
-      style={gradientStyle}
+      className="min-h-screen flex items-center justify-center px-4 py-8 relative"
+      style={backgroundStyle}
     >
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
+      {/* Overlay suave para mejorar legibilidad (solo si hay imagen) */}
+      {!imageError && (
+        <div 
+          className="absolute inset-0"
+          style={{ background: 'rgba(102, 126, 234, 0.1)' }}
+        />
+      )}
+      
+      {/* Imagen oculta para detectar error */}
+      <img
+        src="/backgrounds/login-bg.png"
+        alt=""
+        className="hidden"
+        onError={() => setImageError(true)}
+      />
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Geriátricos
+              Hogares de Cuidado y Cariño
             </h1>
-            <p className="text-gray-600 text-sm">Iniciar sesión</p>
+            <p className="text-gray-600 text-sm">Acceso gestionado por administradores</p>
           </div>
 
           {error && (
@@ -142,7 +168,9 @@ export const LoginPage: React.FC = () => {
               type="submit"
               disabled={loading}
               className="w-full py-3 px-6 rounded-lg text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={gradientStyle}
+              style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              }}
             >
               {loading ? (
                 <span className="flex items-center justify-center">

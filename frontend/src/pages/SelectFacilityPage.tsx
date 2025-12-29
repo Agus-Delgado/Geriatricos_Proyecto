@@ -1,32 +1,43 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { getRoleLabel } from '../types/auth';
+import { getFacilityTheme } from '../theme/facilityTheme';
 
 export const SelectFacilityPage: React.FC = () => {
   const { user, setActiveFacility, getMemberships, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [loadingFacilityId, setLoadingFacilityId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const redirectByRole = (role: 'ADMIN' | 'MEDICO' | 'STAFF', facilityId: string) => {
+    switch (role) {
+      case 'ADMIN':
+        navigate(`/g/${facilityId}/dashboard`, { replace: true });
+        break;
+      case 'MEDICO':
+        navigate(`/g/${facilityId}/medical`, { replace: true });
+        break;
+      case 'STAFF':
+        navigate(`/g/${facilityId}/tasks`, { replace: true });
+        break;
+    }
+  };
 
   const handleSelectFacility = async (facilityId: string, role: 'ADMIN' | 'MEDICO' | 'STAFF') => {
+    setError(null);
+    setLoadingFacilityId(facilityId);
+    
     try {
       await setActiveFacility(facilityId);
-      
-      // Redirigir según rol
-      switch (role) {
-        case 'ADMIN':
-          navigate(`/g/${facilityId}/dashboard`, { replace: true });
-          break;
-        case 'MEDICO':
-          navigate(`/g/${facilityId}/medical`, { replace: true });
-          break;
-        case 'STAFF':
-          navigate(`/g/${facilityId}/tasks`, { replace: true });
-          break;
-      }
-    } catch (error) {
-      console.error('Error al establecer facility activa:', error);
+      // AuthContext ya actualiza active_facility_id, navegar inmediatamente
+      redirectByRole(role, facilityId);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al seleccionar hogar. Intenta nuevamente.';
+      setError(errorMessage);
+      setLoadingFacilityId(null);
     }
   };
 
@@ -42,12 +53,12 @@ export const SelectFacilityPage: React.FC = () => {
 
   // Si solo hay una membership, seleccionarla automáticamente
   useEffect(() => {
-    if (memberships.length === 1 && !user?.active_facility_id) {
+    if (memberships.length === 1 && !user?.active_facility_id && !loadingFacilityId) {
       const membership = memberships[0];
       handleSelectFacility(membership.facility_id, membership.role);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [memberships.length, user?.active_facility_id]);
+  }, [memberships.length, user?.active_facility_id, loadingFacilityId]);
 
   if (memberships.length === 0) {
     return (
@@ -61,34 +72,77 @@ export const SelectFacilityPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="max-w-md mx-auto">
+      <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Seleccionar Geriátrico
+            Seleccionar Hogar
           </h1>
           <p className="text-gray-600">
-            {user.full_name}, elige el geriátrico con el que trabajarás
+            {user.full_name}, elegí el hogar con el que trabajarás
           </p>
         </div>
 
-        <div className="space-y-3">
-          {memberships.map((membership) => (
-            <button
-              key={membership.id}
-              onClick={() => handleSelectFacility(membership.facility_id, membership.role)}
-              className="card w-full text-left hover:shadow-md transition-shadow"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{membership.facility_name}</h3>
-                  <p className="text-sm text-gray-500 mt-1">Código: {membership.facility_code}</p>
+        {error && (
+          <div className="mb-6">
+            <ErrorMessage message={error} onDismiss={() => setError(null)} />
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {memberships.map((membership) => {
+            const theme = getFacilityTheme(membership);
+            const facilityCodeLower = membership.facility_code?.toLowerCase() || '';
+            const bannerImage = theme.bannerImage || `/facilities/${facilityCodeLower}.png`;
+            const isLoading = loadingFacilityId === membership.facility_id;
+            const isDisabled = loadingFacilityId !== null;
+
+            return (
+              <button
+                key={membership.id}
+                onClick={() => !isDisabled && handleSelectFacility(membership.facility_id, membership.role)}
+                disabled={isDisabled}
+                className="relative w-full min-h-[200px] rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                style={{
+                  backgroundImage: `url(${bannerImage})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundColor: theme.accentColor, // Fallback si no hay imagen
+                }}
+              >
+                {/* Overlay para mejorar legibilidad */}
+                <div 
+                  className="absolute inset-0"
+                  style={{
+                    background: `linear-gradient(135deg, ${theme.accentColor}CC 0%, ${theme.accentColor}99 100%)`,
+                  }}
+                />
+                
+                {/* Contenido */}
+                <div className="relative z-10 p-6 h-full flex flex-col justify-between text-left">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold text-white mb-1">
+                        {membership.facility_name}
+                      </h3>
+                      <p className="text-white/90 text-sm">
+                        Código: {membership.facility_code}
+                      </p>
+                    </div>
+                    <span className="text-xs font-medium text-gray-900 bg-white/90 px-3 py-1.5 rounded-full">
+                      {getRoleLabel(membership.role)}
+                    </span>
+                  </div>
+
+                  {/* Spinner durante loading */}
+                  {isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      <LoadingSpinner size="lg" />
+                    </div>
+                  )}
                 </div>
-                <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                  {getRoleLabel(membership.role)}
-                </span>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

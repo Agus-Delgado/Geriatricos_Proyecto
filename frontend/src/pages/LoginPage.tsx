@@ -110,11 +110,11 @@ export const LoginPage: React.FC = () => {
       className="min-h-screen flex items-center justify-center px-4 py-8 relative"
       style={backgroundStyle}
     >
-      {/* Overlay suave para mejorar legibilidad (solo si hay imagen) */}
+      {/* Overlay oscuro para mejorar legibilidad (solo si hay imagen) */}
       {!imageError && (
         <div 
           className="absolute inset-0"
-          style={{ background: 'rgba(102, 126, 234, 0.1)' }}
+          style={{ background: 'rgba(0, 0, 0, 0.35)' }}
         />
       )}
       
@@ -151,6 +151,21 @@ export const LoginPage: React.FC = () => {
               autoComplete="username"
               disabled={loading}
               className="w-full"
+              icon={
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              }
             />
 
             <Input
@@ -162,6 +177,21 @@ export const LoginPage: React.FC = () => {
               autoComplete="current-password"
               disabled={loading}
               className="w-full"
+              icon={
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              }
             />
 
             <button

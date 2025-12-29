@@ -11,6 +11,7 @@ export const SelectFacilityPage: React.FC = () => {
   const navigate = useNavigate();
   const [loadingFacilityId, setLoadingFacilityId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
   const redirectByRole = (role: 'ADMIN' | 'MEDICO' | 'STAFF', facilityId: string) => {
     switch (role) {
@@ -60,6 +61,19 @@ export const SelectFacilityPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memberships.length, user?.active_facility_id, loadingFacilityId]);
 
+  // Safety net: si active_facility_id ya está seteado, redirigir automáticamente
+  useEffect(() => {
+    if (user?.active_facility_id && !loadingFacilityId && memberships.length > 0) {
+      const activeMembership = memberships.find(
+        m => m.facility_id === user.active_facility_id && m.is_active
+      );
+      if (activeMembership) {
+        redirectByRole(activeMembership.role, activeMembership.facility_id);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.active_facility_id, loadingFacilityId, memberships]);
+
   if (memberships.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
@@ -92,9 +106,15 @@ export const SelectFacilityPage: React.FC = () => {
           {memberships.map((membership) => {
             const theme = getFacilityTheme(membership);
             const facilityCodeLower = membership.facility_code?.toLowerCase() || '';
-            const bannerImage = theme.bannerImage || `/facilities/${facilityCodeLower}.png`;
+            const imageUrl = facilityCodeLower ? `/facilities/${facilityCodeLower}.png` : null;
+            const hasImageError = imageErrors[membership.facility_id] || false;
+            const shouldShowImage = imageUrl && !hasImageError;
             const isLoading = loadingFacilityId === membership.facility_id;
             const isDisabled = loadingFacilityId !== null;
+
+            const handleImageError = () => {
+              setImageErrors(prev => ({ ...prev, [membership.facility_id]: true }));
+            };
 
             return (
               <button
@@ -103,17 +123,26 @@ export const SelectFacilityPage: React.FC = () => {
                 disabled={isDisabled}
                 className="relative w-full min-h-[200px] rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 style={{
-                  backgroundImage: `url(${bannerImage})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
                   backgroundColor: theme.accentColor, // Fallback si no hay imagen
                 }}
               >
-                {/* Overlay para mejorar legibilidad */}
+                {/* Imagen real del hogar */}
+                {shouldShowImage && (
+                  <img
+                    src={imageUrl}
+                    alt={membership.facility_name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    onError={handleImageError}
+                  />
+                )}
+
+                {/* Overlay oscuro para mejorar legibilidad */}
                 <div 
                   className="absolute inset-0"
                   style={{
-                    background: `linear-gradient(135deg, ${theme.accentColor}CC 0%, ${theme.accentColor}99 100%)`,
+                    background: shouldShowImage 
+                      ? 'rgba(0, 0, 0, 0.4)' 
+                      : `linear-gradient(135deg, ${theme.accentColor}CC 0%, ${theme.accentColor}99 100%)`,
                   }}
                 />
                 
@@ -135,7 +164,7 @@ export const SelectFacilityPage: React.FC = () => {
 
                   {/* Spinner durante loading */}
                   {isLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-20">
                       <LoadingSpinner size="lg" />
                     </div>
                   )}

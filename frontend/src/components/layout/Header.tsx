@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getRoleLabel } from '../../types/auth';
@@ -9,18 +9,37 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
-  const { user, logout, setActiveFacility, getMemberships, getActiveMembership } = useAuth();
+  const { user, logout, setActiveFacility, getMemberships, getActiveMembership, getActiveRole } = useAuth();
   const navigate = useNavigate();
   const [showFacilitySwitcher, setShowFacilitySwitcher] = useState(false);
   const [loadingFacilitySwitch, setLoadingFacilitySwitch] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   
   const memberships = getMemberships();
   const activeMembership = getActiveMembership();
   const activeFacilityId = user?.active_facility_id ?? null;
 
+  // Cerrar menú de usuario al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
+
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   const handleFacilitySwitcherClick = () => {
@@ -105,14 +124,52 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
           </div>
           <div className="flex items-center space-x-3">
             {user && (
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{user.full_name}</p>
+              <div className="relative" ref={userMenuRef}>
                 <button
-                  onClick={handleLogout}
-                  className="text-xs text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  aria-label="Menú de usuario"
                 >
-                  Cerrar sesión
+                  <svg
+                    className="w-6 h-6 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
                 </button>
+
+                {showUserMenu && (
+                  <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
+                    <div className="py-2">
+                      <div className="px-4 py-2 border-b border-gray-200">
+                        <p className="text-sm font-medium text-gray-900">
+                          {user.full_name || user.email || user.dni || 'Usuario'}
+                        </p>
+                        {getActiveRole() && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {getRoleLabel(getActiveRole()!)}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          handleLogout();
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        Cerrar sesión
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

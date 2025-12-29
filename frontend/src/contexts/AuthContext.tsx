@@ -113,10 +113,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const setActiveFacility = async (facilityId: string) => {
     try {
       await authApi.setActiveFacility({ facility_id: facilityId });
-      // Recargar datos del usuario para obtener active_facility_id actualizado
-      const userData = await authApi.getCurrentUser();
-      setUser(userData);
+      // Actualizar estado local INMEDIATAMENTE para que la navegación funcione sin delay
+      setUser(prev => prev ? ({ ...prev, active_facility_id: facilityId }) : prev);
       localStorage.setItem('facility_id', facilityId);
+      
+      // Sincronizar con el backend en background (no bloquear)
+      // Esto asegura que el estado local esté actualizado antes de navegar
+      setTimeout(() => {
+        loadUser().catch(() => {
+          // Si falla, el estado local ya está actualizado, así que no es crítico
+        });
+      }, 0);
     } catch (error) {
       const apiError = error as ApiError;
       throw new Error(apiError.detail || 'Error al establecer facility activa');

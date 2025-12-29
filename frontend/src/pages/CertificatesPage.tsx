@@ -192,7 +192,7 @@ export default function CertificatesPage() {
     }
   };
 
-  const handlePreview = (draft: CertificateDraft) => {
+  const handlePreview = () => {
     // El preview ahora se maneja internamente en CertificateEditor
     // Este callback se mantiene para compatibilidad pero no hace nada
     // ya que CertificateEditor muestra el preview en un modal

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
-import { Modal } from '../ui/Modal';
 import { PrintDocument } from './PrintDocument';
 import type { CertificateType, CertificateDraft } from '../../types/certificates';
 import { buildDefaultBodyText, formatDateAR, formatTimeAR } from './templates';

@@ -119,13 +119,15 @@ export const ResidentContactsTab: React.FC<ResidentContactsTabProps> = ({
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <h4 className="font-semibold text-gray-900">{contact.full_name}</h4>
-                    {contact.is_emergency_contact && (
-                      <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded">
-                        Emergencia
+                    {contact.is_primary && (
+                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                        Principal
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">{contact.relationship}</p>
+                  {contact.relationship_type && (
+                    <p className="text-sm text-gray-600 mt-1">Parentesco: {contact.relationship_type}</p>
+                  )}
                   {contact.phone && (
                     <p className="text-sm text-gray-600 mt-1">Tel: {contact.phone}</p>
                   )}
@@ -134,9 +136,6 @@ export const ResidentContactsTab: React.FC<ResidentContactsTabProps> = ({
                   )}
                   {contact.address && (
                     <p className="text-sm text-gray-600 mt-1">Dirección: {contact.address}</p>
-                  )}
-                  {contact.notes && (
-                    <p className="text-sm text-gray-500 mt-2">{contact.notes}</p>
                   )}
                 </div>
                 <div className="flex space-x-2 ml-4">

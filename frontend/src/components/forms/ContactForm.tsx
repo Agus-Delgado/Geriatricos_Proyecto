@@ -20,12 +20,11 @@ export const ContactForm: React.FC<ContactFormProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     full_name: contact?.full_name || '',
-    relationship: contact?.relationship || '',
+    relationship_type: contact?.relationship_type || '',
     phone: contact?.phone || '',
     email: contact?.email || '',
     address: contact?.address || '',
-    is_emergency_contact: contact?.is_emergency_contact || false,
-    notes: contact?.notes || '',
+    is_primary: contact?.is_primary || false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -36,9 +35,6 @@ export const ContactForm: React.FC<ContactFormProps> = ({
 
     if (!formData.full_name.trim()) {
       newErrors.full_name = 'El nombre completo es requerido';
-    }
-    if (!formData.relationship.trim()) {
-      newErrors.relationship = 'La relación es requerida';
     }
 
     setErrors(newErrors);
@@ -80,11 +76,10 @@ export const ContactForm: React.FC<ContactFormProps> = ({
       />
 
       <Input
-        label="Relación *"
-        value={formData.relationship}
-        onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
-        error={errors.relationship}
-        placeholder="Ej: Hijo/a, Esposo/a, etc."
+        label="Parentesco (opcional)"
+        value={formData.relationship_type}
+        onChange={(e) => setFormData({ ...formData, relationship_type: e.target.value })}
+        placeholder="Ej: Hijo/a, Esposo/a, Tutor, etc."
         disabled={loading}
       />
 
@@ -114,28 +109,17 @@ export const ContactForm: React.FC<ContactFormProps> = ({
       <div className="flex items-center">
         <input
           type="checkbox"
-          id="emergency"
-          checked={formData.is_emergency_contact}
+          id="primary"
+          checked={formData.is_primary}
           onChange={(e) =>
-            setFormData({ ...formData, is_emergency_contact: e.target.checked })
+            setFormData({ ...formData, is_primary: e.target.checked })
           }
           className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
           disabled={loading}
         />
-        <label htmlFor="emergency" className="ml-2 text-sm text-gray-700">
-          Contacto de emergencia
+        <label htmlFor="primary" className="ml-2 text-sm text-gray-700">
+          Contacto principal
         </label>
-      </div>
-
-      <div>
-        <label className="label">Notas</label>
-        <textarea
-          value={formData.notes}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          className="input-field"
-          rows={3}
-          disabled={loading}
-        />
       </div>
 
       {errors.submit && (

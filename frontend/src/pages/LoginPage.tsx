@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Input } from '../components/ui/Input';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
@@ -8,6 +8,7 @@ import { ResendVerificationForm } from '../components/auth/ResendVerificationFor
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, user, token } = useAuth();
 
   const [username, setUsername] = useState('');
@@ -16,6 +17,16 @@ export const LoginPage: React.FC = () => {
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const [showResendForm, setShowResendForm] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Leer mensaje del state de navegación (cuando viene de sesión expirada)
+  useEffect(() => {
+    const state = location.state as { message?: string; reason?: string } | null;
+    if (state?.message) {
+      setError(state.message);
+      // Limpiar el state para que no se muestre en recargas
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Si ya está autenticado, redirigir según rol/memberships
   useEffect(() => {

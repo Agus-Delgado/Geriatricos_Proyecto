@@ -49,13 +49,30 @@ class ApiClient {
 
       // Si es 401, limpiar token y notificar al handler
       if (response.status === 401) {
+        const reason = response.url?.includes('/auth/me') ? 'token_expired' : 'unauthorized';
+        
+        // Logging para diagnóstico
+        if (import.meta.env.DEV) {
+          console.debug(`[API] Error 401 detectado: ${reason}`, {
+            url: response.url,
+            endpoint: endpoint,
+          });
+        }
+        
         localStorage.removeItem('token');
+        localStorage.removeItem('original_token');
         localStorage.removeItem('facility_id');
+        localStorage.removeItem('activeFacilityId');
+        
         if (onUnauthorized) {
           onUnauthorized();
         } else {
-          // Fallback si no hay handler registrado
-          window.location.href = '/login';
+          // Fallback: usar navigate si está disponible en el contexto
+          // Si no, usar window.location como último recurso
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            // Solo redirigir si no estamos ya en login para evitar loops
+            window.location.href = '/login';
+          }
         }
       }
 

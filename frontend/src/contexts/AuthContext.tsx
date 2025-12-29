@@ -104,9 +104,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loadUserWithToken = async (authToken: string) => {
     try {
+      // Asegurar que el token está en localStorage antes de hacer la llamada
+      localStorage.setItem('token', authToken);
+      
+      // Logging para diagnóstico
+      if (import.meta.env.DEV) {
+        console.debug('[Auth] Rehidratando sesión con token del localStorage');
+      }
+      
       const userData = await authApi.getCurrentUser();
       setUser(userData);
       setToken(authToken);
+      
+      // Logging exitoso
+      if (import.meta.env.DEV) {
+        console.debug('[Auth] Sesión rehidratada exitosamente', {
+          userId: userData.id,
+          email: userData.email,
+        });
+      }
       
       // Sincronizar activeFacilityId: priorizar user.active_facility_id, luego localStorage
       const storedFacilityId = localStorage.getItem('activeFacilityId');
@@ -117,12 +133,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.setItem('activeFacilityId', facilityIdToUse);
       }
     } catch (error) {
-      // Token inválido, limpiar
+      // Logging de error para diagnóstico
+      const apiError = error as ApiError;
+      const reason = apiError.status === 401 ? 'token_expired' : 
+                     apiError.status === 403 ? 'token_invalid' : 
+                     'auth_rehydrate_failed';
+      
+      if (import.meta.env.DEV) {
+        console.debug(`[Auth] Error al rehidratar sesión: ${reason}`, {
+          status: apiError.status,
+          detail: apiError.detail,
+        });
+      }
+      
+      // Token inválido o expirado, limpiar
       localStorage.removeItem('token');
+      localStorage.removeItem('original_token');
       localStorage.removeItem('activeFacilityId');
       setToken(null);
       setUser(null);
       setActiveFacilityId(null);
+      setIsImpersonating(false);
+      setImpersonatedUser(null);
+      
+      // El error será manejado por el cliente API que redirigirá a login
+      // No redirigir aquí para evitar múltiples redirecciones
     } finally {
       setLoading(false);
     }
@@ -136,12 +171,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authApi.login({ username: normalizedUsername, password });
       const authToken = response.access_token;
       
+      // Guardar token en localStorage inmediatamente
       localStorage.setItem('token', authToken);
       setToken(authToken);
+      
+      // Logging para diagnóstico
+      if (import.meta.env.DEV) {
+        console.debug('[Auth] Login exitoso, guardando token en localStorage');
+      }
       
       // Cargar datos del usuario (incluye memberships y active_facility_id)
       const userData = await authApi.getCurrentUser();
       setUser(userData);
+      
+      // Logging exitoso
+      if (import.meta.env.DEV) {
+        console.debug('[Auth] Usuario cargado después de login', {
+          userId: userData.id,
+          email: userData.email,
+        });
+      }
       
       // Sincronizar activeFacilityId: priorizar user.active_facility_id, luego localStorage
       const storedFacilityId = localStorage.getItem('activeFacilityId');
@@ -153,6 +202,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       const apiError = error as ApiError;
+      
+      // Logging de error
+      if (import.meta.env.DEV) {
+        console.debug('[Auth] Error en login', {
+          status: apiError.status,
+          detail: apiError.detail,
+        });
+      }
+      
       throw new Error(apiError.detail || 'Error al iniciar sesión');
     }
   };

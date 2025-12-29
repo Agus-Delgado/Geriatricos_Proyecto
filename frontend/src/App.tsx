@@ -28,6 +28,15 @@ import { FinancePage } from './pages/FinancePage';
 import { StaffPage } from './pages/StaffPage';
 import { AttendancePage } from './pages/AttendancePage';
 import { DebugPage } from './pages/DebugPage';
+import ClinicalHistorySearchPage from './pages/ClinicalHistorySearchPage';
+import ClinicalHistoryPage from './pages/ClinicalHistoryPage';
+import ClinicalHistoryPrintPage from './pages/ClinicalHistoryPrintPage';
+import MedicalFolderSearchPage from './pages/MedicalFolderSearchPage';
+import MedicalFolderPage from './pages/MedicalFolderPage';
+import MedicalFolderPrintPage from './pages/MedicalFolderPrintPage';
+import PrescriptionsHistorySearchPage from './pages/PrescriptionsHistorySearchPage';
+import PrescriptionsHistoryPage from './pages/PrescriptionsHistoryPage';
+import PrescriptionPrintPage from './pages/PrescriptionPrintPage';
 
 function AppContent() {
   // Aplicar theme de facility activa (resetea a defaults si no hay activeMembership)
@@ -152,6 +161,69 @@ function AppContent() {
                   <AttendancePage />
                 </ProtectedRoute>
               }
+            />
+            {/* Historia Clínica */}
+            <Route
+              path="/clinical-history/search"
+              element={
+                <ProtectedRoute requireRole="MEDICO">
+                  <ClinicalHistorySearchPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/clinical-history/:patientId"
+              element={
+                <ProtectedRoute requireRole="MEDICO">
+                  <ClinicalHistoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/clinical-history/:patientId/print"
+              element={<ClinicalHistoryPrintPage />}
+            />
+            {/* Carpeta Médica */}
+            <Route
+              path="/medical-folder/search"
+              element={
+                <ProtectedRoute requireRole="MEDICO">
+                  <MedicalFolderSearchPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/medical-folder/:patientId"
+              element={
+                <ProtectedRoute requireRole="MEDICO">
+                  <MedicalFolderPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/medical-folder/:patientId/print"
+              element={<MedicalFolderPrintPage />}
+            />
+            {/* Historial de Recetas */}
+            <Route
+              path="/prescriptions-history/search"
+              element={
+                <ProtectedRoute requireRole="MEDICO">
+                  <PrescriptionsHistorySearchPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/prescriptions-history/:patientId"
+              element={
+                <ProtectedRoute requireRole="MEDICO">
+                  <PrescriptionsHistoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/prescriptions-history/:patientId/print"
+              element={<PrescriptionPrintPage />}
             />
             <Route path="/" element={<Navigate to="/residents" replace />} />
             {import.meta.env.DEV && (

@@ -4,6 +4,7 @@ from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
+from pydantic import ValidationError
 from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.schemas.auth import (
@@ -113,6 +114,7 @@ async def get_current_user_info(
             dni=current_user.dni,
             phone=current_user.phone,
             full_name=current_user.full_name,
+            license_number=current_user.license_number,  # Puede ser None para owners/platform admins
             is_active=current_user.is_active,
             is_verified=current_user.is_verified,
             is_platform_admin=current_user.is_platform_admin,
@@ -124,13 +126,19 @@ async def get_current_user_info(
     except HTTPException:
         # Re-raise HTTPException (ya es 401/403 de get_current_user)
         raise
-    except Exception as e:
-        # Cualquier error inesperado -> 401 (no 500)
-        logger.error(f"/auth/me: Error inesperado al obtener información del usuario {current_user.id if current_user else 'unknown'}: {type(e).__name__}", exc_info=True)
+    except ValidationError as e:
+        # ValidationError de Pydantic (schema) -> 500 con log, NO 401
+        logger.exception(f"/auth/me: ValidationError al construir UserResponse para usuario {current_user.id if current_user else 'unknown'}: {e}")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Error al obtener información del usuario",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno al procesar datos del usuario"
+        )
+    except Exception as e:
+        # Cualquier otro error inesperado -> 500 con log (no 401)
+        logger.exception(f"/auth/me: Error inesperado al obtener información del usuario {current_user.id if current_user else 'unknown'}: {type(e).__name__}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno al obtener información del usuario"
         )
 
 

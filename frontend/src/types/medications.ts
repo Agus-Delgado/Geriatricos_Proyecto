@@ -2,35 +2,35 @@ export interface MedicationPlan {
   id: string;
   resident_id: string;
   facility_id: string;
-  medication_name: string;
-  dosage: string;
-  frequency: string;
-  start_date: string;
-  end_date: string | null;
+  med_name: string;
+  dose: string;
+  route?: string | null;
+  instructions?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
   is_active: boolean;
-  notes: string | null;
-  created_by_user_id: string;
+  prescribed_by_user_id?: string | null;
   created_at: string;
-  schedule_times: MedicationScheduleTime[];
+  updated_at: string;
 }
 
 export interface MedicationPlanCreate {
-  medication_name: string;
-  dosage: string;
-  frequency: string;
-  start_date: string;
-  end_date?: string;
-  notes?: string;
+  med_name: string;
+  dose: string;
+  route?: string | null;
+  instructions?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
 export interface MedicationPlanUpdate {
-  medication_name?: string;
-  dosage?: string;
-  frequency?: string;
-  start_date?: string;
-  end_date?: string;
+  med_name?: string;
+  dose?: string;
+  route?: string | null;
+  instructions?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
   is_active?: boolean;
-  notes?: string;
 }
 
 export interface MedicationScheduleTime {

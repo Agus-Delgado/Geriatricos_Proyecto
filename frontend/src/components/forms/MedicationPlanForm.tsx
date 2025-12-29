@@ -15,12 +15,12 @@ export const MedicationPlanForm: React.FC<MedicationPlanFormProps> = ({
   onCancel,
 }) => {
   const [formData, setFormData] = useState({
-    medication_name: plan?.medication_name || '',
-    dosage: plan?.dosage || '',
-    frequency: plan?.frequency || '',
+    med_name: plan?.med_name || '',
+    dose: plan?.dose || '',
+    route: plan?.route || '',
+    instructions: plan?.instructions || '',
     start_date: plan?.start_date || new Date().toISOString().split('T')[0],
     end_date: plan?.end_date || '',
-    notes: plan?.notes || '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -29,14 +29,11 @@ export const MedicationPlanForm: React.FC<MedicationPlanFormProps> = ({
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.medication_name.trim()) {
-      newErrors.medication_name = 'El nombre del medicamento es requerido';
+    if (!formData.med_name.trim()) {
+      newErrors.med_name = 'El nombre del medicamento es requerido';
     }
-    if (!formData.dosage.trim()) {
-      newErrors.dosage = 'La dosis es requerida';
-    }
-    if (!formData.frequency.trim()) {
-      newErrors.frequency = 'La frecuencia es requerida';
+    if (!formData.dose.trim()) {
+      newErrors.dose = 'La dosis es requerida';
     }
     if (!formData.start_date) {
       newErrors.start_date = 'La fecha de inicio es requerida';
@@ -82,27 +79,27 @@ export const MedicationPlanForm: React.FC<MedicationPlanFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
         label="Nombre del Medicamento *"
-        value={formData.medication_name}
-        onChange={(e) => setFormData({ ...formData, medication_name: e.target.value })}
-        error={errors.medication_name}
+        value={formData.med_name}
+        onChange={(e) => setFormData({ ...formData, med_name: e.target.value })}
+        error={errors.med_name}
         disabled={loading}
       />
 
       <Input
         label="Dosis *"
-        value={formData.dosage}
-        onChange={(e) => setFormData({ ...formData, dosage: e.target.value })}
-        error={errors.dosage}
+        value={formData.dose}
+        onChange={(e) => setFormData({ ...formData, dose: e.target.value })}
+        error={errors.dose}
         placeholder="Ej: 500mg, 1 comprimido"
         disabled={loading}
       />
 
       <Input
-        label="Frecuencia *"
-        value={formData.frequency}
-        onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
-        error={errors.frequency}
-        placeholder="Ej: Cada 8 horas, 2 veces al día"
+        label="Vía de Administración (opcional)"
+        value={formData.route || ''}
+        onChange={(e) => setFormData({ ...formData, route: e.target.value })}
+        error={errors.route}
+        placeholder="Ej: VO, IM, SC"
         disabled={loading}
       />
 
@@ -125,12 +122,13 @@ export const MedicationPlanForm: React.FC<MedicationPlanFormProps> = ({
       />
 
       <div>
-        <label className="label">Notas</label>
+        <label className="label">Instrucciones (opcional)</label>
         <textarea
-          value={formData.notes}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          value={formData.instructions || ''}
+          onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
           className="input-field"
           rows={3}
+          placeholder="Ej: Tomar con las comidas, Cada 8 horas"
           disabled={loading}
         />
       </div>

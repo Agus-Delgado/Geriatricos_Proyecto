@@ -55,7 +55,6 @@ class ApiClient {
         if (import.meta.env.DEV) {
           console.debug(`[API] Error 401 detectado: ${reason}`, {
             url: response.url,
-            endpoint: endpoint,
           });
         }
         

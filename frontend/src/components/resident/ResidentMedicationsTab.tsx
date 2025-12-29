@@ -74,10 +74,6 @@ export const ResidentMedicationsTab: React.FC<ResidentMedicationsTabProps> = ({
     }
   };
 
-  const handleDeleteTimeClick = (timeId: string) => {
-    setSelectedTimeId(timeId);
-    setShowDeleteTimeConfirm(true);
-  };
 
   const handleDeleteTime = async () => {
     if (!selectedTimeId) return;
@@ -100,11 +96,6 @@ export const ResidentMedicationsTab: React.FC<ResidentMedicationsTabProps> = ({
     return new Date(dateString).toLocaleDateString('es-AR');
   };
 
-  const getDayName = (day: number | null) => {
-    if (day === null) return 'Diario';
-    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    return days[day];
-  };
 
   return (
     <div className="space-y-4">
@@ -133,14 +124,22 @@ export const ResidentMedicationsTab: React.FC<ResidentMedicationsTabProps> = ({
             <div key={plan.id} className="card">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900">{plan.medication_name}</h4>
+                  <h4 className="font-semibold text-gray-900">{plan.med_name}</h4>
                   <p className="text-sm text-gray-600 mt-1">
-                    {plan.dosage} - {plan.frequency}
+                    {plan.dose}
+                    {plan.route && ` - Vía: ${plan.route}`}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Desde: {formatDate(plan.start_date)}
-                    {plan.end_date && ` - Hasta: ${formatDate(plan.end_date)}`}
-                  </p>
+                  {plan.start_date && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Desde: {formatDate(plan.start_date)}
+                      {plan.end_date && ` - Hasta: ${formatDate(plan.end_date)}`}
+                    </p>
+                  )}
+                  {!plan.start_date && plan.created_at && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Creado: {formatDate(plan.created_at)}
+                    </p>
+                  )}
                   <span
                     className={`inline-block mt-2 px-2 py-1 text-xs rounded ${
                       plan.is_active
@@ -153,57 +152,9 @@ export const ResidentMedicationsTab: React.FC<ResidentMedicationsTabProps> = ({
                 </div>
               </div>
 
-              {plan.schedule_times && plan.schedule_times.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Horarios:</span>
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        setSelectedPlan(plan);
-                        setShowTimesModal(true);
-                      }}
-                    >
-                      Agregar Horario
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {plan.schedule_times.map((time) => (
-                      <div
-                        key={time.id}
-                        className="flex items-center space-x-2 bg-gray-50 px-3 py-1 rounded"
-                      >
-                        <span className="text-sm text-gray-700">
-                          {time.time} ({getDayName(time.day_of_week)})
-                        </span>
-                        <button
-                          onClick={() => handleDeleteTimeClick(time.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              {(!plan.schedule_times || plan.schedule_times.length === 0) && (
-                <div className="mt-3">
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setSelectedPlan(plan);
-                      setShowTimesModal(true);
-                    }}
-                  >
-                    Agregar Horario
-                  </Button>
-                </div>
-              )}
-
-              {plan.notes && (
-                <p className="text-sm text-gray-600 mt-2">{plan.notes}</p>
+              {plan.instructions && (
+                <p className="text-sm text-gray-600 mt-2">{plan.instructions}</p>
               )}
             </div>
           ))}

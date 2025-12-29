@@ -1,28 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { residentsApi } from '../api/residents';
 import { medicationsApi } from '../api/medications';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import type { Resident } from '../types/residents';
+import type { MedicationPlan } from '../types/medications';
 import type { ApiError } from '../api/client';
 import '../components/certificates/print.css';
-
-// Tipo temporal para MedicationPlan
-interface MedicationPlan {
-  id: string;
-  resident_id: string;
-  facility_id: string;
-  med_name: string;
-  dose: string;
-  route?: string | null;
-  instructions?: string | null;
-  start_date?: string | null;
-  end_date?: string | null;
-  is_active: boolean;
-  prescribed_by_user_id?: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 export default function PrescriptionPrintPage() {
   const { patientId } = useParams<{ patientId: string }>();
@@ -47,7 +31,7 @@ export default function PrescriptionPrintPage() {
 
       const [patientData, prescriptionsData] = await Promise.all([
         residentsApi.get(patientId),
-        medicationsApi.listPlans(patientId, false) as Promise<MedicationPlan[]>,
+        medicationsApi.listPlans(patientId, false),
       ]);
 
       setPatient(patientData);

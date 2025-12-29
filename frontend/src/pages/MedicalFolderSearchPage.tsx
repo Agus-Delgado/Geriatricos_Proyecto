@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PatientSearchSelect } from '../components/patients/PatientSearchSelect';
 import type { Resident } from '../types/residents';

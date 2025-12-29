@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { residentsApi } from '../api/residents';
 import { clinicalApi } from '../api/clinical';

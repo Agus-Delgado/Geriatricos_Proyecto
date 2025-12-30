@@ -2,7 +2,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
-import { registerSW } from 'virtual:pwa-register';
 
 // Self-heal para errores de chunks/workbox: solo intenta una vez para evitar loops infinitos
 // IMPORTANTE: Usar localStorage (no sessionStorage) para que el guard persista incluso si se limpia sessionStorage
@@ -197,9 +196,19 @@ const APP_BUILD_ID = import.meta.env.VITE_APP_BUILD_ID;
 const STORAGE_KEY = 'APP_BUILD_ID';
 
 // Solo procesar si hay un BUILD_ID definido (no usar fecha como fallback para evitar recargas inesperadas)
+// IMPORTANTE: NO recargar si ya hay un self-heal fallido (evitar loops)
 if (APP_BUILD_ID) {
   const storedBuildId = localStorage.getItem(STORAGE_KEY);
-  if (storedBuildId && storedBuildId !== APP_BUILD_ID) {
+  const hasRecoveryFailed = localStorage.getItem('__sw_recover_failed__') === '1';
+  
+  // Si hay un recovery fallido, NO hacer reload automático (evitar loops)
+  if (hasRecoveryFailed) {
+    console.warn('[APP_BUILD_ID] Detectado cambio de build, pero hay recovery fallido. No se recargará para evitar loop.');
+    // Solo actualizar el BUILD_ID sin recargar
+    if (!storedBuildId || storedBuildId !== APP_BUILD_ID) {
+      localStorage.setItem(STORAGE_KEY, APP_BUILD_ID);
+    }
+  } else if (storedBuildId && storedBuildId !== APP_BUILD_ID) {
     // Build cambió, limpiar caches y storage relacionado
     console.log('Build ID cambió, limpiando cache...');
     
@@ -219,7 +228,7 @@ if (APP_BUILD_ID) {
     // Guardar nuevo BUILD_ID
     localStorage.setItem(STORAGE_KEY, APP_BUILD_ID);
     
-    // Recargar página para aplicar cambios
+    // Recargar página para aplicar cambios (solo si no hay recovery fallido)
     window.location.reload();
   } else if (!storedBuildId) {
     // Primera vez, guardar BUILD_ID
@@ -227,14 +236,27 @@ if (APP_BUILD_ID) {
   }
 }
 
-// Registrar service worker para PWA (opcional: puede desactivarse con VITE_DISABLE_PWA=true)
-let updateSW: ((reloadPage?: boolean) => Promise<void>) | null = null;
-
+// Registrar service worker para PWA con import dinámico (lazy)
+// IMPORTANTE: Usar import dinámico para que workbox NO se cargue si VITE_DISABLE_PWA=true
+// Esto evita que workbox-window.prod.es5.js falle y cause loops infinitos
 const shouldDisablePWA = import.meta.env.PROD && import.meta.env.VITE_DISABLE_PWA === 'true';
 
-if (!shouldDisablePWA && 'serviceWorker' in navigator) {
+async function initPWA(): Promise<void> {
+  if (shouldDisablePWA) {
+    console.log('[PWA] Desactivado por VITE_DISABLE_PWA=true');
+    return;
+  }
+
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
   try {
-    updateSW = registerSW({
+    // Import dinámico: solo carga workbox si PWA está habilitada
+    const mod = await import('virtual:pwa-register');
+    const { registerSW } = mod;
+
+    const updateSW = registerSW({
       onNeedRefresh() {
         // Disparar evento personalizado cuando hay una nueva versión
         const event = new CustomEvent('pwa-update-available');
@@ -245,7 +267,7 @@ if (!shouldDisablePWA && 'serviceWorker' in navigator) {
         const event = new CustomEvent('pwa-offline-ready');
         window.dispatchEvent(event);
       },
-      onRegisterError(error) {
+      onRegisterError(error: unknown) {
         console.error('[PWA] Error al registrar service worker:', error);
         // Si falla el registro, no bloquear la app
       },
@@ -254,11 +276,14 @@ if (!shouldDisablePWA && 'serviceWorker' in navigator) {
     // Guardar updateSW en window para acceso desde React
     (window as any).__PWA_UPDATE_SW__ = updateSW;
   } catch (err) {
-    console.error('[PWA] Error al inicializar service worker:', err);
+    // CRÍTICO: si falla workbox, NO romper la app ni recargar en loop
+    console.error('[PWA] Falló import dinámico de virtual:pwa-register:', err);
+    // NO lanzar error, solo loguear
   }
-} else if (shouldDisablePWA) {
-  console.log('[PWA] Service Worker desactivado por VITE_DISABLE_PWA=true');
 }
+
+// Inicializar PWA de forma asíncrona (no bloquea el render)
+void initPWA();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

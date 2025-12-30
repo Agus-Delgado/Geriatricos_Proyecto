@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 
 // IMPORTANTE: Usar localStorage (no sessionStorage) para que el guard persista
 const SW_RECOVER_FAILED_KEY = '__sw_recover_failed__';
-const SW_RECOVER_KEY = '__sw_recover_attempted__';
 
 /**
  * Componente fallback que se muestra cuando el self-heal falla
@@ -24,9 +23,9 @@ export const SelfHealFallback: React.FC = () => {
     // Esto asegura que la limpieza ocurra ANTES de cargar el bundle
     const url = new URL(window.location.href);
     url.searchParams.set('recover', '1');
-    // Limpiar flags de fallo para permitir un nuevo intento
+    // Limpiar solo el flag de fallo para permitir un nuevo intento
+    // NO borrar SW_RECOVER_KEY para evitar reintentos peligrosos automáticos
     localStorage.removeItem(SW_RECOVER_FAILED_KEY);
-    localStorage.removeItem(SW_RECOVER_KEY);
     window.location.href = url.toString();
   };
 

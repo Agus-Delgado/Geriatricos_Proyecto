@@ -180,6 +180,15 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
                       <button
                         onClick={() => {
                           setShowUserMenu(false);
+                          navigate('/mi-cuenta');
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        Mi cuenta
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
                           handleLogout();
                         }}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"

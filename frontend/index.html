@@ -13,6 +13,80 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Recovery Bootstrap: se ejecuta ANTES del bundle para desregistrar SW y limpiar caches -->
+    <script>
+(function () {
+  try {
+    // Si el usuario entra con ?recover=1 o si detectamos loop previo, ejecutamos limpieza antes de cargar módulos.
+    var url = new URL(window.location.href);
+    var force = url.searchParams.get("recover") === "1";
+    var attempted = localStorage.getItem("__sw_recover_attempted__") === "1";
+    var failed = localStorage.getItem("__sw_recover_failed__") === "1";
+
+    // Si ya falló antes, NO hacer nada (evitar loop infinito)
+    if (failed && !force) return;
+
+    // Si forzamos recovery o si ya se intentó antes, hacemos un cleanup "early".
+    if (!force && !attempted) return;
+
+    // Marcar fail-safe para evitar loop (INMEDIATAMENTE)
+    localStorage.setItem("__sw_recover_attempted__","1");
+
+    var doReloadOnce = function () {
+      // Evitar reload infinito: solo una vez. Si ya tiene recover=1, removerlo.
+      if (url.searchParams.get("recover") === "1") {
+        url.searchParams.delete("recover");
+        window.location.replace(url.toString());
+      } else {
+        window.location.reload();
+      }
+    };
+
+    // Unregister SW + clear caches
+    var p = Promise.resolve();
+
+    if ("serviceWorker" in navigator) {
+      p = p.then(function () { 
+        return navigator.serviceWorker.getRegistrations(); 
+      })
+      .then(function (regs) { 
+        return Promise.all(regs.map(function (r) { 
+          return r.unregister(); 
+        })); 
+      })
+      .catch(function(err){
+        console.warn("[Recovery Bootstrap] Error al desregistrar SW:", err);
+      });
+    }
+
+    if ("caches" in window) {
+      p = p.then(function () { 
+        return caches.keys(); 
+      })
+      .then(function (keys) { 
+        return Promise.all(keys.map(function (k) { 
+          return caches.delete(k); 
+        })); 
+      })
+      .catch(function(err){
+        console.warn("[Recovery Bootstrap] Error al limpiar caches:", err);
+      });
+    }
+
+    p.then(function() {
+      console.log("[Recovery Bootstrap] Limpieza completada, recargando...");
+      doReloadOnce();
+    }).catch(function (err) {
+      console.error("[Recovery Bootstrap] Error durante limpieza:", err);
+      localStorage.setItem("__sw_recover_failed__","1");
+      // NO recargar si falla para evitar loop
+    });
+  } catch (e) {
+    console.error("[Recovery Bootstrap] Error crítico:", e);
+    localStorage.setItem("__sw_recover_failed__","1");
+  }
+})();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

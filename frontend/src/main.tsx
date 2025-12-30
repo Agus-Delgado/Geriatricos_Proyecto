@@ -5,6 +5,7 @@ import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 
 // Self-heal para errores de chunks/workbox: solo intenta una vez para evitar loops infinitos
+// IMPORTANTE: Usar localStorage (no sessionStorage) para que el guard persista incluso si se limpia sessionStorage
 const SW_RECOVER_KEY = '__sw_recover_attempted__';
 const SW_RECOVER_FAILED_KEY = '__sw_recover_failed__';
 
@@ -25,18 +26,20 @@ function isChunkOrWorkboxError(message: string): boolean {
 
 /**
  * Self-heal: desregistra SW, limpia caches y recarga UNA sola vez
+ * IMPORTANTE: Usa localStorage para el guard (no sessionStorage) para que persista
  */
 async function performSelfHeal(): Promise<void> {
-  const alreadyAttempted = sessionStorage.getItem(SW_RECOVER_KEY);
+  // Verificar si ya se intentó (usar localStorage para que persista)
+  const alreadyAttempted = localStorage.getItem(SW_RECOVER_KEY);
   if (alreadyAttempted === '1') {
     // Ya se intentó una vez, no recargar más para evitar loop
-    sessionStorage.setItem(SW_RECOVER_FAILED_KEY, '1');
+    localStorage.setItem(SW_RECOVER_FAILED_KEY, '1');
     console.error('[Self-heal] Ya se intentó reparar una vez. No se recargará más para evitar loop infinito.');
     return;
   }
 
-  // Marcar que se intentó
-  sessionStorage.setItem(SW_RECOVER_KEY, '1');
+  // Marcar que se intentó INMEDIATAMENTE en localStorage (antes de limpiar nada)
+  localStorage.setItem(SW_RECOVER_KEY, '1');
 
   try {
     console.warn('[Self-heal] Iniciando reparación automática...');
@@ -64,21 +67,25 @@ async function performSelfHeal(): Promise<void> {
     }
 
     // 3. Limpiar storage de sesión para evitar estados raros
+    // IMPORTANTE: NO borrar keys __sw_* (son el guard contra loops)
     try {
       localStorage.removeItem('token');
       localStorage.removeItem('original_token');
       localStorage.removeItem('activeFacilityId');
-      console.log('[Self-heal] Storage de sesión limpiado');
+      console.log('[Self-heal] Storage de sesión limpiado (guard __sw_* preservado)');
     } catch (err) {
       console.warn('[Self-heal] Error al limpiar storage:', err);
     }
 
-    // 4. Recargar UNA sola vez
-    console.log('[Self-heal] Recargando página...');
-    window.location.reload();
+    // 4. Recargar UNA sola vez con ?recover=1 para que el bootstrap script también limpie
+    console.log('[Self-heal] Recargando página con ?recover=1...');
+    const url = new URL(window.location.href);
+    url.searchParams.set('recover', '1');
+    window.location.replace(url.toString());
   } catch (err) {
     console.error('[Self-heal] Error durante reparación:', err);
-    sessionStorage.setItem(SW_RECOVER_FAILED_KEY, '1');
+    localStorage.setItem(SW_RECOVER_FAILED_KEY, '1');
+    // NO recargar si falla para evitar loop
   }
 }
 

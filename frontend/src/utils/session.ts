@@ -2,6 +2,7 @@ import type { User } from '../types/auth';
 
 /**
  * Limpia todo el storage relacionado con sesión y caches
+ * IMPORTANTE: NO borra keys __sw_* (son guards contra loops infinitos)
  */
 export function clearSessionStorage(): void {
   localStorage.removeItem('token');
@@ -10,10 +11,11 @@ export function clearSessionStorage(): void {
   localStorage.removeItem('lastActivityAt');
   
   // Limpiar caches relacionados
+  // IMPORTANTE: NO borrar keys que empiezan con __sw_* (guards de recovery)
   const keysToRemove: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && (key.startsWith('facility_') || key.startsWith('cache_'))) {
+    if (key && (key.startsWith('facility_') || key.startsWith('cache_')) && !key.startsWith('__sw_')) {
       keysToRemove.push(key);
     }
   }

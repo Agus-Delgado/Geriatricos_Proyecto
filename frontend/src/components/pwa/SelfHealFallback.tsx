@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
+// IMPORTANTE: Usar localStorage (no sessionStorage) para que el guard persista
 const SW_RECOVER_FAILED_KEY = '__sw_recover_failed__';
 const SW_RECOVER_KEY = '__sw_recover_attempted__';
 
@@ -11,56 +12,27 @@ export const SelfHealFallback: React.FC = () => {
   const [showFallback, setShowFallback] = useState(false);
 
   useEffect(() => {
-    // Verificar si el self-heal falló
-    const failed = sessionStorage.getItem(SW_RECOVER_FAILED_KEY);
+    // Verificar si el self-heal falló (usar localStorage para que persista)
+    const failed = localStorage.getItem(SW_RECOVER_FAILED_KEY);
     if (failed === '1') {
       setShowFallback(true);
     }
   }, []);
 
-  const handleRepair = async () => {
-    try {
-      console.log('[Self-heal] Reparación manual iniciada...');
-
-      // 1. Desregistrar todos los service workers
-      if ('serviceWorker' in navigator) {
-        try {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(registrations.map((reg) => reg.unregister()));
-          console.log('[Self-heal] Service Workers desregistrados');
-        } catch (err) {
-          console.warn('[Self-heal] Error al desregistrar SW:', err);
-        }
-      }
-
-      // 2. Limpiar Cache Storage
-      if ('caches' in window) {
-        try {
-          const cacheKeys = await caches.keys();
-          await Promise.all(cacheKeys.map((key) => caches.delete(key)));
-          console.log('[Self-heal] Cache Storage limpiado');
-        } catch (err) {
-          console.warn('[Self-heal] Error al limpiar caches:', err);
-        }
-      }
-
-      // 3. Limpiar flags y storage
-      sessionStorage.removeItem(SW_RECOVER_KEY);
-      sessionStorage.removeItem(SW_RECOVER_FAILED_KEY);
-      localStorage.removeItem('token');
-      localStorage.removeItem('original_token');
-      localStorage.removeItem('activeFacilityId');
-
-      // 4. Recargar
-      window.location.reload();
-    } catch (err) {
-      console.error('[Self-heal] Error durante reparación manual:', err);
-      alert('Error al reparar. Por favor, cierra y vuelve a abrir la aplicación.');
-    }
+  const handleRepair = () => {
+    // Navegar a la misma app con ?recover=1 para que el bootstrap script ejecute la limpieza
+    // Esto asegura que la limpieza ocurra ANTES de cargar el bundle
+    const url = new URL(window.location.href);
+    url.searchParams.set('recover', '1');
+    // Limpiar flags de fallo para permitir un nuevo intento
+    localStorage.removeItem(SW_RECOVER_FAILED_KEY);
+    localStorage.removeItem(SW_RECOVER_KEY);
+    window.location.href = url.toString();
   };
 
   const handleDismiss = () => {
-    sessionStorage.removeItem(SW_RECOVER_FAILED_KEY);
+    // NO borrar el flag de fallo al cerrar, para que se muestre de nuevo si el problema persiste
+    // El usuario puede usar el botón "Reparar" cuando quiera
     setShowFallback(false);
   };
 

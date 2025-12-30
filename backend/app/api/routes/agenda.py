@@ -4,16 +4,18 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import date
 from app.db.session import get_db
-from app.api.deps import get_current_user, require_facility_role_any
-from app.schemas.agenda import AgendaEntryCreate, AgendaEntryResponse
+from app.api.deps import get_current_user, require_facility_role_any, normalize_role
+from app.schemas.agenda import AgendaEntryCreate, AgendaEntryUpdate, AgendaEntryResponse
 from app.services.agenda_service import (
     get_agenda_entries_today,
     create_agenda_entry,
+    update_agenda_entry,
     delete_agenda_entry,
 )
 from app.models.auth import User
 from app.models.residents import Resident
 from app.models.agenda import AgendaEntry
+from app.models.org import FacilityUserAccess
 
 router = APIRouter(prefix="/agenda", tags=["agenda"])
 
@@ -93,6 +95,73 @@ async def create_agenda_entry_endpoint(
             db,
             current_user.active_facility_id,
             current_user.id,
+            data
+        )
+        
+        # Enriquecer con nombres
+        entry_dict = {
+            "id": entry.id,
+            "facility_id": entry.facility_id,
+            "doctor_user_id": entry.doctor_user_id,
+            "patient_id": entry.patient_id,
+            "seen_at": entry.seen_at,
+            "note": entry.note,
+            "created_at": entry.created_at,
+            "patient_name": None,
+            "doctor_name": current_user.full_name,
+        }
+        
+        if entry.patient:
+            entry_dict["patient_name"] = f"{entry.patient.last_name}, {entry.patient.first_name}"
+        
+        return AgendaEntryResponse(**entry_dict)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@router.patch("/{entry_id}", response_model=AgendaEntryResponse)
+async def update_agenda_entry_endpoint(
+    entry_id: UUID,
+    data: AgendaEntryUpdate,
+    current_user: User = Depends(require_facility_role_any(["DOCTOR", "ADMIN"])),
+    db: Session = Depends(get_db)
+):
+    """
+    Actualizar una entrada de agenda (nota y/o fecha/hora).
+    DOCTOR: solo puede editar entradas propias.
+    ADMIN: puede editar cualquier entrada de la facility activa.
+    """
+    if not current_user.active_facility_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No hay facility activa"
+        )
+    
+    # Determinar si el usuario es ADMIN usando normalización de roles
+    is_admin = False
+    if current_user.is_platform_admin:
+        is_admin = True
+    else:
+        membership = db.query(FacilityUserAccess).filter(
+            FacilityUserAccess.user_id == current_user.id,
+            FacilityUserAccess.facility_id == current_user.active_facility_id,
+            FacilityUserAccess.is_active == True
+        ).first()
+        
+        if membership:
+            normalized_role = normalize_role(membership.role)
+            is_admin = (normalized_role == "ADMIN")
+    
+    try:
+        entry = update_agenda_entry(
+            db,
+            entry_id,
+            current_user.active_facility_id,
+            current_user.id,
+            is_admin,
             data
         )
         

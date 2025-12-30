@@ -5,7 +5,7 @@ from uuid import UUID
 from datetime import datetime, date, time
 from app.models.agenda import AgendaEntry
 from app.models.residents import Resident
-from app.schemas.agenda import AgendaEntryCreate
+from app.schemas.agenda import AgendaEntryCreate, AgendaEntryUpdate
 
 
 def get_agenda_entries_today(
@@ -71,6 +71,42 @@ def create_agenda_entry(
     db.refresh(agenda_entry)
     
     return agenda_entry
+
+
+def update_agenda_entry(
+    db: Session,
+    entry_id: UUID,
+    facility_id: UUID,
+    current_user_id: UUID,
+    is_admin: bool,
+    data: AgendaEntryUpdate
+) -> AgendaEntry:
+    """
+    Actualizar una entrada de agenda.
+    Valida permisos: DOCTOR solo puede editar entradas propias, ADMIN puede editar cualquier entrada de la facility.
+    """
+    entry = db.query(AgendaEntry).filter(
+        AgendaEntry.id == entry_id,
+        AgendaEntry.facility_id == facility_id
+    ).first()
+    
+    if not entry:
+        raise ValueError(f"Entrada de agenda {entry_id} no encontrada o no pertenece a la facility {facility_id}")
+    
+    # Validar permisos
+    if not is_admin and entry.doctor_user_id != current_user_id:
+        raise ValueError("Solo puede editar entradas propias")
+    
+    # Actualizar campos proporcionados
+    if data.note is not None:
+        entry.note = data.note
+    if data.seen_at is not None:
+        entry.seen_at = data.seen_at
+    
+    db.commit()
+    db.refresh(entry)
+    
+    return entry
 
 
 def delete_agenda_entry(

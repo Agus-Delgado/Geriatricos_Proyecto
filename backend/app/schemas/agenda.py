@@ -11,6 +11,11 @@ class AgendaEntryCreate(BaseModel):
     note: Optional[str] = Field(None, description="Nota opcional sobre la atención")
 
 
+class AgendaEntryUpdate(BaseModel):
+    note: Optional[str] = Field(None, description="Nota opcional sobre la atención")
+    seen_at: Optional[datetime] = Field(None, description="Fecha/hora de la atención")
+
+
 class AgendaEntryResponse(BaseModel):
     id: UUID
     facility_id: UUID

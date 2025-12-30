@@ -16,3 +16,8 @@ export interface AgendaEntryCreate {
   seen_at?: string; // ISO datetime string, opcional (default: ahora)
   note?: string | null;
 }
+
+export interface AgendaEntryUpdate {
+  note?: string | null;
+  seen_at?: string; // ISO datetime string, opcional
+}

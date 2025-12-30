@@ -1,12 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { FacilityProvider } from './contexts/FacilityContext';
-import { PWAProvider } from './contexts/PWAContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { UnauthorizedHandler } from './components/auth/UnauthorizedHandler';
 import { SessionExpiredHandler } from './components/auth/SessionExpiredHandler';
 import { SessionBootstrap } from './components/auth/SessionBootstrap';
-import { UpdateBanner } from './components/pwa/UpdateBanner';
 import { Header } from './components/layout/Header';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { useFacilityTheme } from './hooks/useFacilityTheme';
@@ -50,7 +48,6 @@ function AppContent() {
     <BrowserRouter>
       <UnauthorizedHandler />
       <SessionExpiredHandler />
-      <UpdateBanner />
       <ImpersonationBanner />
       <Header />
       <Routes>
@@ -250,15 +247,13 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <PWAProvider>
-        <AuthProvider>
-          <SessionBootstrap>
-            <FacilityProvider>
-              <AppContent />
-            </FacilityProvider>
-          </SessionBootstrap>
-        </AuthProvider>
-      </PWAProvider>
+      <AuthProvider>
+        <SessionBootstrap>
+          <FacilityProvider>
+            <AppContent />
+          </FacilityProvider>
+        </SessionBootstrap>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { authApi } from '../api/auth';
+import { clearSessionStorage, syncActiveFacility } from '../utils/session';
 import type { User, FacilityMembership, UserRole } from '../types/auth';
 import type { ApiError } from '../api/client';
 
@@ -7,6 +8,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
+  isBootstrapping: boolean;
   activeFacilityId: string | null;
 
   login: (username: string, password: string) => Promise<void>;
@@ -88,15 +90,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
   const [activeFacilityId, setActiveFacilityId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isBootstrapping, setIsBootstrapping] = useState<boolean>(true);
 
   // Impersonation
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [impersonatedUser, setImpersonatedUser] = useState<User | null>(null);
 
   const clearAllAuth = (opts?: { redirect?: boolean; reason?: string }) => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('original_token');
-    localStorage.removeItem('activeFacilityId');
+    clearSessionStorage();
 
     setToken(null);
     setUser(null);
@@ -169,6 +170,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsImpersonating(Boolean(storedOriginalToken));
 
       syncActiveFacilityFromUser(userData);
+      // Sincronizar facility desde backend (fuente de verdad)
+      syncActiveFacility(userData);
     } catch (e) {
       const err = e as Partial<ApiError> & { message?: string };
       const msg = err?.message ?? '';
@@ -184,6 +187,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearAllAuth({ redirect: true, reason });
     } finally {
       setLoading(false);
+      setIsBootstrapping(false);
     }
   };
 
@@ -196,10 +200,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (storedOriginalToken) setIsImpersonating(true);
 
     if (storedToken) {
-      // Rehidratar sesión - syncActiveFacilityFromUser validará el activeFacilityId
+      // Rehidratar sesión - mantener isBootstrapping=true hasta que termine
+      setIsBootstrapping(true);
       void loadUserWithToken(storedToken);
     } else {
       setLoading(false);
+      setIsBootstrapping(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -217,6 +223,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userData = await withTimeout(authApi.getCurrentUser(), 12000, 'auth_me_after_login');
       setUser(userData);
       syncActiveFacilityFromUser(userData);
+      syncActiveFacility(userData);
     } catch (e) {
       clearAllAuth();
       const err = e as Partial<ApiError> & { message?: string };
@@ -237,6 +244,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userData = await withTimeout(authApi.getCurrentUser(), 12000, 'auth_me_manual');
       setUser(userData);
       syncActiveFacilityFromUser(userData);
+      syncActiveFacility(userData);
     } catch {
       clearAllAuth({ redirect: true, reason: 'session_expired' });
     } finally {
@@ -311,6 +319,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setImpersonatedUser(userData);
 
       syncActiveFacilityFromUser(userData);
+      syncActiveFacility(userData);
     } catch (e) {
       const err = e as Partial<ApiError> & { message?: string };
       throw new Error(err?.detail || err?.message || 'Error al iniciar impersonación');
@@ -342,6 +351,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Admin puede quedar sin facility
       syncActiveFacilityFromUser(userData);
+      syncActiveFacility(userData);
     } catch (e) {
       const err = e as Partial<ApiError> & { message?: string };
       throw new Error(err?.detail || err?.message || 'Error al detener impersonación');
@@ -356,6 +366,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         user,
         token,
         loading,
+        isBootstrapping,
         activeFacilityId,
 
         login,

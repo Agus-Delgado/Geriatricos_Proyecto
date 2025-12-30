@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { authApi } from '../../api/auth';
+import { clearSessionStorage, updateActivityTimestamp, checkInactivityTimeout } from '../../utils/session';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import type { ApiError } from '../../api/client';
 
@@ -17,9 +18,10 @@ type BootstrapStatus = 'checking' | 'ready' | 'redirecting' | 'error';
  * Todos los errores se manejan con estado y redirecciones.
  */
 export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { token, user, loading: authLoading, activeFacilityId, clearActiveFacility } = useAuth();
+  const { token, user, loading: authLoading, isBootstrapping, activeFacilityId, clearActiveFacility } = useAuth();
   const [status, setStatus] = useState<BootstrapStatus>('checking');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const inactivityIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /**
    * Normaliza cualquier error a un string con mensaje explícito.
@@ -48,8 +50,8 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     const validateSession = async () => {
-      // Esperar a que AuthContext termine de cargar
-      if (authLoading) {
+      // Esperar a que AuthContext termine de cargar y bootstrap esté completo
+      if (authLoading || isBootstrapping) {
         return;
       }
 
@@ -103,20 +105,8 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
         
         // Si es 401/403, limpiar y redirigir a login
         if (apiError.status === 401 || apiError.status === 403) {
-          // Limpiar manualmente
-          localStorage.removeItem('token');
-          localStorage.removeItem('original_token');
-          localStorage.removeItem('activeFacilityId');
-          
-          // Limpiar caches relacionados
-          const keysToRemove: string[] = [];
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && (key.startsWith('facility_') || key.startsWith('cache_'))) {
-              keysToRemove.push(key);
-            }
-          }
-          keysToRemove.forEach(key => localStorage.removeItem(key));
+          // Limpiar storage completo usando helper centralizado
+          clearSessionStorage();
           
           // Usar window.location para garantizar navegación incluso si router está roto
           setStatus('redirecting');
@@ -175,7 +165,7 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
             // activeFacilityId inválido, limpiar y redirigir a seleccionar hogar
             clearActiveFacility();
             
-            // Limpiar caches relacionados (si hay React Query u otro sistema de cache)
+            // Limpiar solo caches relacionados, NO el token
             const keysToRemove: string[] = [];
             for (let i = 0; i < localStorage.length; i++) {
               const key = localStorage.key(i);
@@ -214,10 +204,57 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     validateSession();
-  }, [token, user, authLoading, activeFacilityId, clearActiveFacility]);
+  }, [token, user, authLoading, isBootstrapping, activeFacilityId, clearActiveFacility]);
+
+  // Timeout por inactividad (60 minutos)
+  useEffect(() => {
+    if (!token || !user) {
+      // Limpiar intervalo si no hay sesión
+      if (inactivityIntervalRef.current) {
+        clearInterval(inactivityIntervalRef.current);
+        inactivityIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Actualizar timestamp inicial
+    updateActivityTimestamp();
+
+    // Handler para actualizar timestamp en actividad
+    const handleActivity = () => {
+      updateActivityTimestamp();
+    };
+
+    // Eventos de actividad (throttled implícitamente por el intervalo)
+    const activityEvents: (keyof WindowEventMap)[] = ['click', 'keydown', 'mousemove', 'scroll'];
+    activityEvents.forEach(event => {
+      window.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    // Verificar inactividad cada 5 minutos
+    inactivityIntervalRef.current = setInterval(() => {
+      if (checkInactivityTimeout(60)) {
+        // Inactivo por más de 60 minutos, limpiar sesión y redirigir
+        clearSessionStorage();
+        window.location.assign('/login?reason=inactivity');
+      }
+    }, 5 * 60 * 1000); // 5 minutos
+
+    // Cleanup
+    return () => {
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+      if (inactivityIntervalRef.current) {
+        clearInterval(inactivityIntervalRef.current);
+        inactivityIntervalRef.current = null;
+      }
+    };
+  }, [token, user]);
 
   // Render condicional basado en estado
-  if (status === 'checking' || authLoading) {
+  // Bloquear render hasta que bootstrap esté completo Y validación de sesión termine
+  if (status === 'checking' || authLoading || isBootstrapping) {
     return <LoadingSpinner fullScreen />;
   }
 

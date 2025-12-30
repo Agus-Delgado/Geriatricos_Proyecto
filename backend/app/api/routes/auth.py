@@ -16,7 +16,7 @@ from app.schemas.auth import (
 from app.services.auth_service import authenticate_user, create_user_token, get_user_memberships
 from app.models.auth import User, UserRoleAssignment, UserRole, EmailVerificationToken
 from app.models.org import Facility
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, verify_password
 from app.core.config import settings
 from app.services.email_service import send_email, render_verification_email
 from app.services.email_verification_service import (
@@ -162,7 +162,7 @@ async def update_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Actualizar perfil del usuario actual (nombre, apellido, email)"""
+    """Actualizar perfil del usuario actual (nombre, apellido, email, DNI)"""
     from sqlalchemy.exc import IntegrityError
     
     # Actualizar full_name si se proporciona first_name o last_name
@@ -202,6 +202,53 @@ async def update_profile(
         
         current_user.email = email_normalized
     
+    # Actualizar DNI si se proporciona y es diferente al actual
+    if profile_data.dni is not None:
+        dni_normalized = profile_data.dni.strip()
+        current_dni = (current_user.dni or "").strip()
+        
+        if dni_normalized != current_dni:
+            # Validar que se proporcionó contraseña actual
+            if not profile_data.current_password:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Se requiere contraseña actual para cambiar el DNI"
+                )
+            
+            # Verificar contraseña actual
+            if not verify_password(profile_data.current_password, current_user.password_hash):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Contraseña actual incorrecta"
+                )
+            
+            # Validar formato DNI (solo dígitos, longitud razonable)
+            if not dni_normalized or len(dni_normalized) < 7 or len(dni_normalized) > 16:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="DNI inválido (debe tener entre 7 y 16 caracteres)"
+                )
+            
+            if not dni_normalized.isdigit():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="DNI debe contener solo números"
+                )
+            
+            # Validar unicidad
+            existing_user = db.query(User).filter(
+                User.dni == dni_normalized,
+                User.id != current_user.id
+            ).first()
+            
+            if existing_user:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="DNI ya registrado"
+                )
+            
+            current_user.dni = dni_normalized
+    
     # Intentar guardar cambios
     try:
         db.commit()
@@ -213,6 +260,11 @@ async def update_profile(
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Email ya registrado"
+            )
+        elif 'dni' in error_msg.lower() or 'ix_users_dni' in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="DNI ya registrado"
             )
         logger.error(f"Error de integridad al actualizar perfil: {error_msg}")
         raise HTTPException(

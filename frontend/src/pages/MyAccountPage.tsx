@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../api/auth';
 import { Input } from '../components/ui/Input';
@@ -9,7 +10,8 @@ import type { UpdateProfileRequest } from '../types/auth';
 import type { ApiError } from '../api/client';
 
 export default function MyAccountPage() {
-  const { user, loadUser } = useAuth();
+  const navigate = useNavigate();
+  const { user, loadUser, logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [requestingReset, setRequestingReset] = useState(false);
@@ -20,6 +22,9 @@ export default function MyAccountPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [dni, setDni] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [dniChanged, setDniChanged] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -28,9 +33,16 @@ export default function MyAccountPage() {
       setFirstName(nameParts[0] || '');
       setLastName(nameParts[1] || '');
       setEmail(user.email || '');
+      setDni(user.dni || '');
       setLoading(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    const currentDni = (user?.dni || '').trim();
+    const newDni = dni.trim();
+    setDniChanged(newDni !== currentDni && newDni !== '');
+  }, [dni, user?.dni]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +63,24 @@ export default function MyAccountPage() {
         updateData.email = email.trim();
       }
 
+      // Manejar cambio de DNI
+      const currentDni = (user?.dni || '').trim();
+      const newDni = dni.trim();
+      if (newDni !== currentDni) {
+        if (!newDni) {
+          setError('El DNI no puede estar vacío');
+          setSaving(false);
+          return;
+        }
+        if (!currentPassword.trim()) {
+          setError('Se requiere contraseña actual para cambiar el DNI');
+          setSaving(false);
+          return;
+        }
+        updateData.dni = newDni;
+        updateData.current_password = currentPassword;
+      }
+
       if (Object.keys(updateData).length === 0) {
         setSuccess('No hay cambios para guardar');
         setSaving(false);
@@ -58,8 +88,19 @@ export default function MyAccountPage() {
       }
 
       await authApi.updateProfile(updateData);
-      await loadUser(); // Recargar datos del usuario
-      setSuccess('Perfil actualizado correctamente');
+      
+      // Si se cambió el DNI, forzar re-login
+      if (dniChanged) {
+        setSuccess('DNI actualizado. Debes volver a iniciar sesión con tu nuevo DNI.');
+        setTimeout(async () => {
+          await logout();
+          navigate('/login', { replace: true });
+        }, 2000);
+      } else {
+        await loadUser(); // Recargar datos del usuario
+        setSuccess('Perfil actualizado correctamente');
+        setCurrentPassword(''); // Limpiar contraseña después de guardar
+      }
     } catch (err) {
       const apiError = err as ApiError;
       setError(apiError.detail || 'Error al actualizar perfil');
@@ -143,6 +184,32 @@ export default function MyAccountPage() {
             onChange={(e) => setEmail(e.target.value)}
             disabled={saving}
           />
+
+          <Input
+            label="DNI"
+            value={dni}
+            onChange={(e) => setDni(e.target.value)}
+            disabled={saving}
+            placeholder="Ingrese su DNI"
+          />
+
+          {dniChanged && (
+            <Input
+              label="Contraseña actual"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              disabled={saving}
+              placeholder="Ingrese su contraseña actual"
+              required
+            />
+          )}
+
+          {dniChanged && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg text-sm">
+              Al cambiar el DNI, deberás volver a iniciar sesión con tu nuevo DNI.
+            </div>
+          )}
 
           {!email || !email.trim() ? (
             <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg text-sm">

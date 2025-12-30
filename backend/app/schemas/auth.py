@@ -155,6 +155,8 @@ class UpdateProfileRequest(BaseModel):
   first_name: Optional[str] = None
   last_name: Optional[str] = None
   email: Optional[EmailStr] = None
+  dni: Optional[str] = None
+  current_password: Optional[str] = None  # Requerido solo si se cambia DNI
 
 
 class PasswordResetRequest(BaseModel):

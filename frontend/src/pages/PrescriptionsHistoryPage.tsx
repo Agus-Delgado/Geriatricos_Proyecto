@@ -178,16 +178,6 @@ export default function PrescriptionsHistoryPage() {
     });
   };
 
-  const formatDateTime = (dateString: string): string => {
-    return new Date(dateString).toLocaleString('es-AR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   const calculateAge = (birthDate: string | null): number | null => {
     if (!birthDate) return null;
     const today = new Date();

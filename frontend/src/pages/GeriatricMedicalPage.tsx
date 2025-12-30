@@ -20,7 +20,7 @@ export default function GeriatricMedicalPage() {
   
   // Frase médica rotativa - cambia cada vez que se navega al dashboard
   const [medicalQuote, setMedicalQuote] = useState(getRandomMedicalQuote());
-  const [dayStats, setDayStats] = useStateReact<DayStats | null>(null);
+  const [dayStats, setDayStats] = useState<DayStats | null>(null);
   
   useEffect(() => {
     // Recalcular quote cuando se navega a esta ruta

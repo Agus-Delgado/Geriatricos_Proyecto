@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
 import type { Resident, ResidentCreate, ResidentUpdate, ResidentContactCreate } from '../../types/residents';
 
 interface ResidentFormProps {
@@ -45,6 +46,10 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [showStatusConfirm, setShowStatusConfirm] = useState(false);
+  const [pendingStatusAction, setPendingStatusAction] = useState<'archive' | 'deceased' | null>(null);
+  const [statusDate, setStatusDate] = useState(new Date().toISOString().split('T')[0]);
+  const [statusNote, setStatusNote] = useState('');
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -155,6 +160,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
   };
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <Input
@@ -243,6 +249,75 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
         disabled={loading}
       />
 
+      {/* Sección Estado (solo en modo edición) */}
+      {resident && (
+        <div className="border-t pt-4 mt-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Estado del Residente</h3>
+          {resident.stay_status === 'ACTIVE' ? (
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded">
+                  Activo
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setPendingStatusAction('archive');
+                    setStatusDate(new Date().toISOString().split('T')[0]);
+                    setStatusNote('');
+                    setShowStatusConfirm(true);
+                  }}
+                  disabled={loading}
+                  className="flex-1"
+                >
+                  Dar de baja / Archivar
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setPendingStatusAction('deceased');
+                    setStatusDate(new Date().toISOString().split('T')[0]);
+                    setStatusNote('');
+                    setShowStatusConfirm(true);
+                  }}
+                  disabled={loading}
+                  className="flex-1 bg-red-50 text-red-700 hover:bg-red-100"
+                >
+                  Marcar como fallecido
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <span className="px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded">
+                  Finalizado
+                </span>
+              </div>
+              {resident.end_date && (
+                <p className="text-sm text-gray-600">
+                  Fecha: {new Date(resident.end_date).toLocaleDateString('es-AR')}
+                </p>
+              )}
+              {resident.end_reason && (
+                <p className="text-sm text-gray-600">
+                  Motivo: {
+                    resident.end_reason === 'DISCHARGE' ? 'Alta / Archivado' :
+                    resident.end_reason === 'PASSING' ? 'Fallecido' :
+                    resident.end_reason === 'TRANSFER' ? 'Traslado' :
+                    resident.end_reason
+                  }
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Sección Contactos / Familiares */}
       <div className="border-t pt-4 mt-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Contactos / Familiares</h3>
@@ -322,5 +397,91 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
         </Button>
       </div>
     </form>
+
+    {/* Modal de confirmación para cambios de estado */}
+    <Modal
+      isOpen={showStatusConfirm}
+      onClose={() => {
+        setShowStatusConfirm(false);
+        setPendingStatusAction(null);
+        setStatusNote('');
+      }}
+      title={pendingStatusAction === 'archive' ? 'Dar de baja / Archivar Residente' : 'Marcar como Fallecido'}
+      size="md"
+    >
+      <div className="space-y-4">
+        <p className="text-gray-700">
+          {pendingStatusAction === 'archive'
+            ? '¿Está seguro de que desea dar de baja/archivar a este residente? El residente dejará de aparecer en la lista de activos pero permanecerá en el historial.'
+            : '¿Está seguro de que desea marcar a este residente como fallecido? El residente dejará de aparecer en la lista de activos pero permanecerá en el historial.'}
+        </p>
+        <Input
+          label="Fecha"
+          type="date"
+          value={statusDate}
+          onChange={(e) => setStatusDate(e.target.value)}
+          disabled={loading}
+        />
+        <div>
+          <label className="label">Observación (opcional)</label>
+          <textarea
+            value={statusNote}
+            onChange={(e) => setStatusNote(e.target.value)}
+            className="input-field"
+            rows={3}
+            placeholder="Nota sobre el cambio de estado..."
+            disabled={loading}
+          />
+        </div>
+        <div className="flex space-x-3 pt-4">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setShowStatusConfirm(false);
+              setPendingStatusAction(null);
+              setStatusNote('');
+            }}
+            fullWidth
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            onClick={async () => {
+              if (!pendingStatusAction) return;
+              setLoading(true);
+              try {
+                const updateData: ResidentUpdate = {
+                  stay_status: 'ENDED',
+                  end_date: statusDate,
+                  end_reason: pendingStatusAction === 'archive' ? 'DISCHARGE' : 'PASSING',
+                  notes: statusNote.trim() || resident?.notes || undefined,
+                };
+                await onSubmit(updateData);
+                setShowStatusConfirm(false);
+                setPendingStatusAction(null);
+                setStatusNote('');
+              } catch (error: any) {
+                if (error?.detail) {
+                  setErrors({ submit: error.detail });
+                } else {
+                  setErrors({ submit: 'Error al cambiar el estado del residente' });
+                }
+              } finally {
+                setLoading(false);
+              }
+            }}
+            fullWidth
+            disabled={loading}
+            className={pendingStatusAction === 'deceased' ? 'bg-red-600 hover:bg-red-700' : ''}
+          >
+            {loading ? 'Procesando...' : 'Confirmar'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  </>
   );
 };

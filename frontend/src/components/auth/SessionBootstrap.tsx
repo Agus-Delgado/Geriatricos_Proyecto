@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { authApi } from '../../api/auth';
 import { clearSessionStorage, updateActivityTimestamp, checkInactivityTimeout } from '../../utils/session';
@@ -17,11 +18,18 @@ type BootstrapStatus = 'checking' | 'ready' | 'redirecting' | 'error';
  * IMPORTANTE: Este componente NO debe usar throw en ningún caso.
  * Todos los errores se manejan con estado y redirecciones.
  */
+
+// Rutas públicas que NO requieren validación de sesión
+const PUBLIC_ROUTES = ['/login', '/register', '/verify-email', '/reset-password'];
+
 export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { token, user, loading: authLoading, isBootstrapping, activeFacilityId, clearActiveFacility } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [status, setStatus] = useState<BootstrapStatus>('checking');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const inactivityIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const redirectGuardRef = useRef(false); // Prevenir loops de redirect
 
   /**
    * Normaliza cualquier error a un string con mensaje explícito.
@@ -50,16 +58,39 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     const validateSession = async () => {
+      // Si estamos en una ruta pública, NO hacer validación (evitar loops)
+      const isPublicRoute = PUBLIC_ROUTES.some(route => 
+        location.pathname === route || location.pathname.startsWith(route + '/')
+      );
+      
+      if (isPublicRoute) {
+        // En rutas públicas, solo marcar como ready si no hay token
+        // Si hay token, dejar que el componente de login maneje el redirect
+        if (!token) {
+          setStatus('ready');
+        } else {
+          // Si hay token en ruta pública, validar pero no bloquear
+          setStatus('ready');
+        }
+        return;
+      }
+
       // Esperar a que AuthContext termine de cargar y bootstrap esté completo
       if (authLoading || isBootstrapping) {
         return;
       }
 
-      // Si no hay token, redirigir a login inmediatamente para evitar renders parciales
+      // Si no hay token y NO estamos en ruta pública, redirigir a login
       if (!token) {
+        // Guard para evitar loops
+        if (redirectGuardRef.current) {
+          setStatus('ready');
+          return;
+        }
+        redirectGuardRef.current = true;
         setStatus('redirecting');
         clearSessionStorage();
-        window.location.assign('/login');
+        navigate('/login', { replace: true });
         return;
       }
 
@@ -110,9 +141,14 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
           // Limpiar storage completo usando helper centralizado
           clearSessionStorage();
           
-          // Usar window.location para garantizar navegación incluso si router está roto
+          // Guard para evitar loops
+          if (redirectGuardRef.current) {
+            setStatus('ready');
+            return;
+          }
+          redirectGuardRef.current = true;
           setStatus('redirecting');
-          window.location.assign('/login');
+          navigate('/login', { replace: true });
           return;
         }
         
@@ -177,16 +213,22 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
             }
             keysToRemove.forEach(key => localStorage.removeItem(key));
             
-            // Redirigir a seleccionar hogar (usar window.location para garantizar navegación)
-            setStatus('redirecting');
-            window.location.assign('/select-facility');
+            // Redirigir a seleccionar hogar
+            if (!redirectGuardRef.current) {
+              redirectGuardRef.current = true;
+              setStatus('redirecting');
+              navigate('/select-facility', { replace: true });
+            }
             return;
           }
         } else {
           // No hay facility activa, redirigir a seleccionar
           if (userData.memberships && userData.memberships.filter(m => m.is_active).length > 0) {
-            setStatus('redirecting');
-            window.location.assign('/select-facility');
+            if (!redirectGuardRef.current) {
+              redirectGuardRef.current = true;
+              setStatus('redirecting');
+              navigate('/select-facility', { replace: true });
+            }
             return;
           }
         }
@@ -207,7 +249,7 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
 
     validateSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, user, authLoading, isBootstrapping]);
+  }, [token, user, authLoading, isBootstrapping, location.pathname]);
 
   // Timeout por inactividad (60 minutos)
   useEffect(() => {
@@ -239,7 +281,10 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
       if (checkInactivityTimeout(60)) {
         // Inactivo por más de 60 minutos, limpiar sesión y redirigir
         clearSessionStorage();
-        window.location.assign('/login?reason=inactivity');
+        // Solo redirigir si no estamos ya en login
+        if (location.pathname !== '/login') {
+          navigate('/login?reason=inactivity', { replace: true });
+        }
       }
     }, 5 * 60 * 1000); // 5 minutos
 
@@ -253,7 +298,7 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
         inactivityIntervalRef.current = null;
       }
     };
-  }, [token, user]);
+  }, [token, user, location.pathname, navigate]);
 
   // Render condicional basado en estado
   // Bloquear render hasta que bootstrap esté completo Y validación de sesión termine

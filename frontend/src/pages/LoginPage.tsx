@@ -28,9 +28,11 @@ export const LoginPage: React.FC = () => {
     }
   }, [location.state]);
 
-  // Si ya está autenticado, redirigir según rol/memberships
+  // Si ya está autenticado, redirigir según rol/memberships (solo una vez)
+  const hasRedirectedRef = React.useRef(false);
   useEffect(() => {
-    if (token && user) {
+    if (token && user && !hasRedirectedRef.current) {
+      hasRedirectedRef.current = true;
       redirectAfterLogin();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

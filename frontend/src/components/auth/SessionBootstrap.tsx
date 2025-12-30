@@ -55,9 +55,11 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
-      // Si no hay token, dejar que el flujo normal maneje (redirect a login)
+      // Si no hay token, redirigir a login inmediatamente para evitar renders parciales
       if (!token) {
-        setStatus('ready');
+        setStatus('redirecting');
+        clearSessionStorage();
+        window.location.assign('/login');
         return;
       }
 

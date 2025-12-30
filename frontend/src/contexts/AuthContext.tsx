@@ -210,6 +210,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Auto-logout cuando el usuario abandona la app (cierra pestaña/recarga/navega fuera)
+  // Esto previene bugs de UI duplicada al reabrir el link sin cerrar sesión
+  useEffect(() => {
+    const handlePageLeave = () => {
+      // Silent logout: solo limpiar estado local, sin redirect
+      clearAllAuth({ redirect: false });
+    };
+
+    window.addEventListener('pagehide', handlePageLeave);
+    window.addEventListener('beforeunload', handlePageLeave);
+
+    return () => {
+      window.removeEventListener('pagehide', handlePageLeave);
+      window.removeEventListener('beforeunload', handlePageLeave);
+    };
+  }, []);
+
   const login = async (username: string, password: string) => {
     setLoading(true);
     try {

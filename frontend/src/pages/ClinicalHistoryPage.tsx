@@ -9,8 +9,9 @@ import { BackHeader } from '../components/ui/BackHeader';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
+import { Modal } from '../components/ui/Modal';
 import type { Resident } from '../types/residents';
-import type { ClinicalNote } from '../types/clinical';
+import type { ClinicalNote, ClinicalNoteCreate } from '../types/clinical';
 import type { ApiError } from '../api/client';
 
 export default function ClinicalHistoryPage() {
@@ -21,6 +22,10 @@ export default function ClinicalHistoryPage() {
   const [notes, setNotes] = useState<ClinicalNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [content, setContent] = useState('');
+  const [recordedAt, setRecordedAt] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (patientId) {
@@ -71,14 +76,63 @@ export default function ClinicalHistoryPage() {
 
   const calculateAge = (birthDate: string | null): number | null => {
     if (!birthDate) return null;
-    const today = new Date();
+    const now = new Date();
     const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    let age = now.getFullYear() - birth.getFullYear();
+    const monthDiff = now.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
       age--;
     }
     return age;
+  };
+
+  const handleOpenAddModal = () => {
+    setContent('');
+    // Inicializar fecha/hora con ahora (formato local para input datetime-local)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    setRecordedAt(`${year}-${month}-${day}T${hours}:${minutes}`);
+    setShowAddModal(true);
+  };
+
+  const handleSaveEvolution = async () => {
+    if (!patientId || !content.trim()) {
+      setError('El contenido es obligatorio');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      const payload: ClinicalNoteCreate = {
+        note_type: 'EVOLUTION',
+        content: content.trim(),
+        recorded_at: recordedAt ? new Date(recordedAt).toISOString() : undefined,
+      };
+
+      await clinicalApi.createNote(patientId, payload);
+      setShowAddModal(false);
+      setContent('');
+      setRecordedAt('');
+      await loadData();
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.detail || 'Error al crear evolución');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelAdd = () => {
+    setShowAddModal(false);
+    setContent('');
+    setRecordedAt('');
+    setError(null);
   };
 
   if (loading) {
@@ -150,14 +204,83 @@ export default function ClinicalHistoryPage() {
         className="rounded-xl shadow-lg p-6"
         style={{ backgroundColor: 'var(--facility-card, white)' }}
       >
-        <h2
-          className="text-xl font-semibold text-gray-900 mb-4"
-          style={{ color: 'var(--facility-accent, #667eea)' }}
-        >
-          Últimas Evoluciones
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2
+            className="text-xl font-semibold text-gray-900"
+            style={{ color: 'var(--facility-accent, #667eea)' }}
+          >
+            Últimas Evoluciones
+          </h2>
+          <Button
+            onClick={handleOpenAddModal}
+            style={{ backgroundColor: 'var(--facility-accent, #667eea)' }}
+          >
+            + Agregar evolución
+          </Button>
+        </div>
         <EvolutionsList notes={notes} loading={false} />
       </div>
+
+      {/* Modal para agregar evolución */}
+      <Modal
+        isOpen={showAddModal}
+        onClose={handleCancelAdd}
+        title="Agregar evolución"
+        size="md"
+      >
+        <div className="space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Contenido <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Describa la evolución clínica..."
+              rows={8}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              disabled={saving}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Fecha y hora (opcional)
+            </label>
+            <input
+              type="datetime-local"
+              value={recordedAt}
+              onChange={(e) => setRecordedAt(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={saving}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Si no se especifica, se usará la fecha y hora actual
+            </p>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              variant="secondary"
+              onClick={handleCancelAdd}
+              disabled={saving}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveEvolution}
+              disabled={saving || !content.trim()}
+              style={{ backgroundColor: 'var(--facility-accent, #667eea)' }}
+            >
+              {saving ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

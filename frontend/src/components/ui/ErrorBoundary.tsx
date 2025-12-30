@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, type ReactNode } from 'react';
+import { clearSessionStorage } from '../../utils/session';
 
 interface Props {
   children: ReactNode;
@@ -70,6 +71,13 @@ export class ErrorBoundary extends Component<Props, State> {
       componentStack: errorInfo.componentStack,
     });
     
+    // Auto-recuperación: limpiar sesión para evitar estados corruptos
+    try {
+      clearSessionStorage();
+    } catch (e) {
+      console.warn('ErrorBoundary: Error al limpiar storage', e);
+    }
+    
     // Guardar errorInfo y error normalizado en state
     this.setState({
       error: normalized,
@@ -85,6 +93,12 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   handleReload = (): void => {
+    // Limpiar sesión antes de recargar para auto-recuperación
+    try {
+      clearSessionStorage();
+    } catch (e) {
+      console.warn('ErrorBoundary: Error al limpiar storage en reload', e);
+    }
     // Recargar página completamente
     window.location.reload();
   };
@@ -258,7 +272,7 @@ export class ErrorBoundary extends Component<Props, State> {
                     e.currentTarget.style.backgroundColor = '#f3f4f6';
                   }}
                 >
-                  Recargar página
+                  Reintentar
                 </button>
               </div>
             </div>

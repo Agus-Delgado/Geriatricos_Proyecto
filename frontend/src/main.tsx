@@ -7,6 +7,15 @@ import { registerSW } from 'virtual:pwa-register';
 // Handlers globales para capturar errores no manejados
 window.addEventListener('error', (event) => {
   const error = event.error || event.message;
+  const message = String(error?.message || error || '');
+  
+  // Manejo de chunk load errors (común en Vercel post-deploy)
+  if (message.includes('Loading chunk') || message.includes('ChunkLoadError') || message.includes('Failed to fetch dynamically imported module')) {
+    console.warn('[ChunkLoadError] Detectado, recargando...');
+    window.location.reload();
+    return;
+  }
+  
   console.error('window.error:', error, event);
   
   // Si el error no es una instancia de Error, normalizarlo
@@ -20,6 +29,16 @@ window.addEventListener('error', (event) => {
 
 window.addEventListener('unhandledrejection', (event) => {
   const reason = event.reason;
+  const message = String(reason?.message || reason || '');
+  
+  // Manejo de chunk load errors en promise rejections
+  if (message.includes('Loading chunk') || message.includes('ChunkLoadError') || message.includes('Failed to fetch dynamically imported module')) {
+    console.warn('[ChunkLoadError] Detectado en promise rejection, recargando...');
+    event.preventDefault(); // Prevenir log en consola
+    window.location.reload();
+    return;
+  }
+  
   console.error('unhandledrejection:', reason, event);
   
   // Normalizar el reason si no es Error

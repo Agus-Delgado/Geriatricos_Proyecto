@@ -206,7 +206,8 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     validateSession();
-  }, [token, user, authLoading, isBootstrapping, activeFacilityId, clearActiveFacility]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, user, authLoading, isBootstrapping]);
 
   // Timeout por inactividad (60 minutos)
   useEffect(() => {

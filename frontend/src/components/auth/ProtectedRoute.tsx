@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Navigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFacility } from '../../contexts/FacilityContext';
@@ -41,6 +41,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   const [syncingFacility, setSyncingFacility] = useState(false);
   const [syncFailed, setSyncFailed] = useState(false);
+  const syncingRef = useRef(false); // Prevenir loops infinitos
 
   // Detectar si estamos en una ruta /g/:id/*
   const urlFacilityId = params.id;
@@ -52,8 +53,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Hook SIEMPRE arriba (sin returns antes)
   useEffect(() => {
     if (!user || authLoading) return;
+    
+    // Prevenir ejecución concurrente
+    if (syncingRef.current) return;
 
-    // Sincronizar activeFacilityId desde backend (fuente de verdad)
+    // Sincronizar activeFacilityId desde backend (fuente de verdad) - solo localStorage
     if (user.active_facility_id !== activeFacilityId) {
       syncActiveFacility(user);
     }
@@ -70,7 +74,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     const hasMembership = memberships.some(m => m.facility_id === urlFacilityId && m.is_active);
     if (!hasMembership) return;
 
-    if (activeFacilityId !== urlFacilityId) {
+    // Solo sincronizar si realmente es necesario y no estamos ya sincronizando
+    if (activeFacilityId !== urlFacilityId && !syncingFacility) {
+      syncingRef.current = true;
       setSyncingFacility(true);
       setActiveFacility(urlFacilityId)
         .catch(() => {
@@ -79,10 +85,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         })
         .finally(() => {
           setSyncingFacility(false);
+          // Permitir nueva sincronización después de un breve delay para evitar loops
+          setTimeout(() => {
+            syncingRef.current = false;
+          }, 100);
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mustHaveFacility, isGeriatricRoute, urlFacilityId, user, authLoading, activeFacilityId]);
+  }, [mustHaveFacility, isGeriatricRoute, urlFacilityId, user, authLoading]);
 
   // 1) Verificar token primero
   if (!token) {

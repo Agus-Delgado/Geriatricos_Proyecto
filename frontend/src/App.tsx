@@ -5,6 +5,7 @@ import { PWAProvider } from './contexts/PWAContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { UnauthorizedHandler } from './components/auth/UnauthorizedHandler';
 import { SessionExpiredHandler } from './components/auth/SessionExpiredHandler';
+import { SessionBootstrap } from './components/auth/SessionBootstrap';
 import { UpdateBanner } from './components/pwa/UpdateBanner';
 import { Header } from './components/layout/Header';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
@@ -240,9 +241,11 @@ function App() {
     <ErrorBoundary>
       <PWAProvider>
         <AuthProvider>
-          <FacilityProvider>
-            <AppContent />
-          </FacilityProvider>
+          <SessionBootstrap>
+            <FacilityProvider>
+              <AppContent />
+            </FacilityProvider>
+          </SessionBootstrap>
         </AuthProvider>
       </PWAProvider>
     </ErrorBoundary>

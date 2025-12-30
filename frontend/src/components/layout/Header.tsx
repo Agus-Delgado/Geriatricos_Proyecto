@@ -21,8 +21,17 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
   // Detectar si estamos en una ruta /g/* para mostrar botón "Volver"
   const isGeriatricRoute = location.pathname.startsWith('/g/');
   
+  // Detectar rutas médicas que necesitan botón volver
+  const isMedicalRoute = 
+    location.pathname.startsWith('/medical-folder') ||
+    location.pathname.startsWith('/clinical-history') ||
+    location.pathname.startsWith('/prescriptions-history');
+  
   // Detectar si estamos en una ruta interna (no login, no select-facility)
   const isInternalRoute = !location.pathname.startsWith('/login') && location.pathname !== '/select-facility';
+  
+  // Determinar si debemos mostrar botón volver
+  const shouldShowBack = showBack || isGeriatricRoute || isMedicalRoute;
 
   // Cerrar menú de usuario al hacer click fuera
   useEffect(() => {
@@ -51,11 +60,33 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
   };
 
   const handleBack = () => {
-    // Lógica robusta: si hay historial suficiente, volver atrás, sino ir a selector
+    // Lógica robusta: determinar fallback según la ruta actual
+    let fallbackPath = '/select-facility';
+    
+    if (isMedicalRoute) {
+      // Para rutas médicas, volver al dashboard médico si hay facility activa
+      if (activeMembership?.facility_id) {
+        fallbackPath = `/g/${activeMembership.facility_id}/medical`;
+      } else {
+        fallbackPath = '/select-facility';
+      }
+    } else if (isGeriatricRoute) {
+      // Para rutas geriátricas, intentar volver al dashboard correspondiente
+      const facilityId = location.pathname.match(/\/g\/([^/]+)/)?.[1];
+      if (facilityId) {
+        const role = getActiveRole();
+        if (role === 'ADMIN') fallbackPath = `/g/${facilityId}/dashboard`;
+        else if (role === 'MEDICO') fallbackPath = `/g/${facilityId}/medical`;
+        else if (role === 'STAFF') fallbackPath = `/g/${facilityId}/tasks`;
+        else fallbackPath = `/g/${facilityId}/dashboard`;
+      }
+    }
+    
+    // Si hay historial suficiente, volver atrás, sino usar fallback
     if (window.history.length > 1) {
       navigate(-1);
     } else {
-      navigate('/select-facility');
+      navigate(fallbackPath);
     }
   };
 
@@ -70,8 +101,8 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
         <div className="flex items-center justify-between">
           {/* Sección izquierda: Botón Volver (si aplica) + Título + Facility */}
           <div className="flex items-center space-x-3 flex-1 min-w-0">
-            {/* Botón Volver para rutas /g/* o si showBack está activo */}
-            {(showBack || isGeriatricRoute) && (
+            {/* Botón Volver para rutas /g/*, rutas médicas o si showBack está activo */}
+            {shouldShowBack && (
               <button
                 onClick={handleBack}
                 className="flex-shrink-0 text-gray-600 hover:text-gray-800 transition-colors"

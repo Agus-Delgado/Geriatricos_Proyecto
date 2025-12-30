@@ -304,7 +304,12 @@ export default function PrescriptionsHistoryPage() {
           Accesos para recetar
         </h3>
         <button
-          onClick={() => openExternal('https://cup.pami.org.ar/')}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openExternal('https://cup.pami.org.ar/');
+          }}
           className="w-full px-4 py-3 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 font-medium transition-colors text-left flex items-center justify-between"
           style={{ minHeight: '44px' }}
         >

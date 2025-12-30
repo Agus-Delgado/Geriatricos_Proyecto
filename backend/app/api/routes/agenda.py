@@ -21,19 +21,18 @@ router = APIRouter(prefix="/agenda", tags=["agenda"])
 @router.get("/today", response_model=List[AgendaEntryResponse])
 async def list_agenda_today(
     date_param: Optional[date] = Query(None, alias="date", description="Fecha (YYYY-MM-DD). Default: hoy"),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_facility_role_any(["DOCTOR", "ADMIN"])),
     db: Session = Depends(get_db)
 ):
     """
-    Listar entradas de agenda del día para la facility activa y el doctor actual.
+    Listar entradas de agenda del día para la facility activa.
+    Requiere rol DOCTOR o ADMIN.
     """
     if not current_user.active_facility_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No hay facility activa"
         )
-    
-    # Validación implícita: si active_facility_id existe, ya tiene acceso
     
     entries = get_agenda_entries_today(
         db,

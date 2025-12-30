@@ -1,5 +1,4 @@
 import { Component, ErrorInfo, type ReactNode } from 'react';
-import { clearSessionStorage } from '../../utils/session';
 
 interface Props {
   children: ReactNode;
@@ -106,12 +105,8 @@ export class ErrorBoundary extends Component<Props, State> {
     // Loguear componentStack siempre
     console.error('[ErrorBoundary] componentStack:', errorInfo?.componentStack);
     
-    // Auto-recuperación: limpiar sesión para evitar estados corruptos
-    try {
-      clearSessionStorage();
-    } catch (e) {
-      console.warn('[ErrorBoundary] Error al limpiar storage', e);
-    }
+    // NO auto-limpieza de sesión (evita cascadas de redirect)
+    // El usuario puede usar el botón "Reparar" si necesita limpiar
     
     // Guardar errorInfo y error normalizado en state
     this.setState({
@@ -128,14 +123,15 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   handleReload = (): void => {
-    // Limpiar sesión antes de recargar para auto-recuperación
-    try {
-      clearSessionStorage();
-    } catch (e) {
-      console.warn('ErrorBoundary: Error al limpiar storage en reload', e);
-    }
-    // Recargar página completamente
+    // Recargar página completamente (sin limpiar sesión)
     window.location.reload();
+  };
+
+  handleRepair = (): void => {
+    // Navegar a la misma URL con ?recover=1 para disparar boot.js
+    const url = new URL(window.location.href);
+    url.searchParams.set('recover', '1');
+    window.location.replace(url.toString());
   };
 
   render(): ReactNode {
@@ -283,6 +279,31 @@ export class ErrorBoundary extends Component<Props, State> {
                   }}
                 >
                   Volver al inicio
+                </button>
+                <button
+                  type="button"
+                  onClick={this.handleRepair}
+                  style={{
+                    padding: '0.625rem 1.25rem',
+                    borderRadius: '0.5rem',
+                    backgroundColor: '#f59e0b',
+                    color: 'white',
+                    fontWeight: '500',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    pointerEvents: 'auto',
+                    minHeight: '44px',
+                    minWidth: '120px',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#d97706';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f59e0b';
+                  }}
+                >
+                  Reparar
                 </button>
                 <button
                   type="button"

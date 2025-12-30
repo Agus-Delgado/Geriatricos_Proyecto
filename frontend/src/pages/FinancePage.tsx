@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFacility } from '../contexts/FacilityContext';
 import { financeApi } from '../api/finance';
-import { Header } from '../components/layout/Header';
 import { BottomNav } from '../components/layout/BottomNav';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -83,8 +82,6 @@ export const FinancePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <Header title="Finanzas" />
-
       <div className="px-4 py-4 space-y-4">
         <Input
           label="Mes"

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFacility } from '../contexts/FacilityContext';
 import { medicationsApi } from '../api/medications';
-import { Header } from '../components/layout/Header';
 import { BottomNav } from '../components/layout/BottomNav';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -105,8 +104,6 @@ export const MedicationDuePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <Header title="Medicaciones del Día" />
-
       <div className="px-4 py-4 space-y-4">
         <Input
           label="Fecha"

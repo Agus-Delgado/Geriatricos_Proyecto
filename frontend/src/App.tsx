@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { FacilityProvider } from './contexts/FacilityContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -43,13 +43,20 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 function AppContent() {
   // Aplicar theme de facility activa (resetea a defaults si no hay activeMembership)
   useFacilityTheme();
+  const location = useLocation();
+  
+  // Header solo en rutas privadas (no en login, reset-password, etc.)
+  const isPublic = location.pathname.startsWith('/login') || 
+                   location.pathname.startsWith('/register') || 
+                   location.pathname.startsWith('/verify-email') || 
+                   location.pathname.startsWith('/reset-password');
 
   return (
-    <BrowserRouter>
+    <>
       <UnauthorizedHandler />
       <SessionExpiredHandler />
       <ImpersonationBanner />
-      <Header />
+      {!isPublic && <Header />}
       <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -240,21 +247,23 @@ function AppContent() {
               <Route path="/debug" element={<DebugPage />} />
             )}
       </Routes>
-    </BrowserRouter>
+    </>
   );
 }
 
 function App() {
   return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <SessionBootstrap>
-          <FacilityProvider>
-            <AppContent />
-          </FacilityProvider>
-        </SessionBootstrap>
-      </AuthProvider>
-    </ErrorBoundary>
+    <BrowserRouter>
+      <ErrorBoundary>
+        <AuthProvider>
+          <SessionBootstrap>
+            <FacilityProvider>
+              <AppContent />
+            </FacilityProvider>
+          </SessionBootstrap>
+        </AuthProvider>
+      </ErrorBoundary>
+    </BrowserRouter>
   );
 }
 

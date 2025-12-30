@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFacility } from '../contexts/FacilityContext';
-import { Header } from '../components/layout/Header';
 import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 
@@ -29,8 +28,6 @@ export const DebugPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <Header title="Debug Info" showBack />
-      
       <div className="px-4 py-4 space-y-4">
         <div className="card">
           <h3 className="font-semibold text-gray-900 mb-4">Información de Usuario</h3>

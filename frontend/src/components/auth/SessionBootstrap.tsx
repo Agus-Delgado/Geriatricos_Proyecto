@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { authApi } from '../../api/auth';
@@ -136,20 +136,19 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
               }
             }
           } catch (err) {
-            const unknownErr = err as unknown;
-            const apiErr = unknownErr as Partial<ApiError>;
+            const errTyped = err as Partial<ApiError> & { message?: string };
             const msg =
-              (typeof (unknownErr as any)?.message === 'string' ? (unknownErr as any).message : '') ||
-              (typeof apiErr?.detail === 'string' ? apiErr.detail : '') ||
+              (typeof errTyped?.message === 'string' ? errTyped.message : '') ||
+              (typeof errTyped?.detail === 'string' ? errTyped.detail : '') ||
               'Error inesperado';
             console.error('[SessionBootstrap] error en /me', {
-              status: apiErr.status,
+              status: errTyped.status,
               message: msg,
-              error: unknownErr
+              error: err
             });
             
             // Si es 401/403, limpiar y redirigir a login
-            if (apiErr.status === 401 || apiErr.status === 403) {
+            if (errTyped.status === 401 || errTyped.status === 403) {
               console.log('[SessionBootstrap] 401/403, limpiar sesión y redirigir');
               if (!cancelled) {
                 clearSessionStorage();

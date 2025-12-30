@@ -1,6 +1,5 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Header } from '../components/layout/Header';
 import { Link } from 'react-router-dom';
 
 export const PlatformPage: React.FC = () => {
@@ -8,7 +7,6 @@ export const PlatformPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Plataforma Admin" />
       <div className="p-8">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow p-6">

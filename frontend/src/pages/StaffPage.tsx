@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFacility } from '../contexts/FacilityContext';
 import { staffApi } from '../api/staff';
-import { Header } from '../components/layout/Header';
 import { BottomNav } from '../components/layout/BottomNav';
 import { SearchBar } from '../components/ui/SearchBar';
 import { Button } from '../components/ui/Button';
@@ -86,8 +85,6 @@ export const StaffPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <Header title="Personal" />
-      
       <div className="px-4 py-4 space-y-4">
         <div className="flex space-x-2">
           <div className="flex-1">

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useFacility } from '../contexts/FacilityContext';
 import { useAuth } from '../contexts/AuthContext';
 import { residentsApi } from '../api/residents';
-import { Header } from '../components/layout/Header';
 import { BottomNav } from '../components/layout/BottomNav';
 import { SearchBar } from '../components/ui/SearchBar';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -93,8 +92,6 @@ export const ResidentsListPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <Header title="Residentes" />
-      
       <div className="px-4 py-4 space-y-4">
         <div className="flex space-x-2">
           <div className="flex-1">

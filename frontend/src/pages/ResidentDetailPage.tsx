@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { residentsApi } from '../api/residents';
-import { Header } from '../components/layout/Header';
 import { Tabs } from '../components/ui/Tabs';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
@@ -74,7 +73,6 @@ export const ResidentDetailPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Residente" showBack />
         <div className="flex justify-center py-8">
           <LoadingSpinner />
         </div>
@@ -85,7 +83,6 @@ export const ResidentDetailPage: React.FC = () => {
   if (error || !resident) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Residente" showBack />
         <div className="px-4 py-8">
           <ErrorMessage
             message={error || 'Residente no encontrado'}
@@ -98,11 +95,6 @@ export const ResidentDetailPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <Header
-        title={`${resident.first_name} ${resident.last_name}`}
-        showBack
-      />
-
       <div className="px-4 py-4">
         <Tabs 
           tabs={availableTabs.map((t) => ({ id: t.id, label: t.label }))} 

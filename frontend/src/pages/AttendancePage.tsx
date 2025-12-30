@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useFacility } from '../contexts/FacilityContext';
 import { attendanceApi } from '../api/attendance';
 import { staffApi } from '../api/staff';
-import { Header } from '../components/layout/Header';
 import { BottomNav } from '../components/layout/BottomNav';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -121,8 +120,6 @@ export const AttendancePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <Header title="Asistencia" />
-      
       <div className="px-4 py-4 space-y-4">
         <div className="flex space-x-2">
           <Input

@@ -6,12 +6,13 @@ import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
+import { BackHeader } from '../components/ui/BackHeader';
 import type { UpdateProfileRequest } from '../types/auth';
 import type { ApiError } from '../api/client';
 
 export default function MyAccountPage() {
   const navigate = useNavigate();
-  const { user, loadUser, logout } = useAuth();
+  const { user, loadUser, logout, activeFacilityId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [requestingReset, setRequestingReset] = useState(false);
@@ -139,11 +140,19 @@ export default function MyAccountPage() {
     );
   }
 
+  const getFallbackPath = () => {
+    if (activeFacilityId) {
+      return `/g/${activeFacilityId}/medical`;
+    }
+    return '/residents';
+  };
+
   return (
     <div className="container mx-auto px-4 py-6 max-w-2xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6" style={{ color: 'var(--facility-accent, #667eea)' }}>
-        Mi cuenta
-      </h1>
+      <BackHeader
+        title="Mi cuenta"
+        fallbackPath={getFallbackPath()}
+      />
 
       {error && (
         <div className="mb-4">

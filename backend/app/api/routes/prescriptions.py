@@ -70,8 +70,6 @@ async def create_prescription_log_endpoint(
     db: Session = Depends(get_db)
 ):
     """Crear un nuevo log de receta (requiere rol DOCTOR o ADMIN)"""
-    # Validar rol
-    require_facility_role_any(['DOCTOR', 'ADMIN'])(current_user, db)
     
     # Obtener paciente para validar facility
     patient = db.query(Resident).filter(Resident.id == patient_id).first()

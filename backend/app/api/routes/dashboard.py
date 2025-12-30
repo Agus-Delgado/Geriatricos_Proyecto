@@ -24,6 +24,11 @@ async def get_dashboard_summary(
             detail="No hay facility activa"
         )
 
-    summary = get_day_summary(db, current_user.active_facility_id, date_param)
+    summary = get_day_summary(
+        db,
+        current_user.active_facility_id,
+        date_param,
+        doctor_user_id=current_user.id
+    )
 
     return DayStatsResponse(**summary)

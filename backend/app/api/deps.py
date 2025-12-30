@@ -13,6 +13,20 @@ logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=False)  # auto_error=False para manejar manualmente
 
 
+def normalize_role(role: Optional[str]) -> str:
+    """
+    Normalizar roles: MEDICO -> DOCTOR, superadmin -> ADMIN.
+    
+    Esta función permite que los endpoints usen "DOCTOR" mientras la DB almacena "MEDICO".
+    """
+    role_upper = (role or "").strip().upper()
+    if role_upper == "MEDICO":
+        return "DOCTOR"
+    if role_upper in {"SUPERADMIN", "PLATFORM_ADMIN"}:
+        return "ADMIN"
+    return role_upper
+
+
 def get_current_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
@@ -226,7 +240,7 @@ def get_current_facility_context(
 def require_facility_role(role: str):
     """
     Dependency factory para requerir un rol específico en la facility activa.
-    role: 'ADMIN', 'MEDICO', o 'STAFF'
+    role: 'ADMIN', 'MEDICO', o 'STAFF' (se normaliza internamente)
     Platform admin siempre tiene acceso.
     """
     def role_checker(
@@ -243,15 +257,24 @@ def require_facility_role(role: str):
                 detail="No hay facility activa"
             )
         
-        # Obtener membership activa
+        # Obtener membership activa sin filtrar por rol (para normalizar después)
         membership = db.query(FacilityUserAccess).filter(
             FacilityUserAccess.user_id == current_user.id,
             FacilityUserAccess.facility_id == current_user.active_facility_id,
-            FacilityUserAccess.is_active == True,
-            FacilityUserAccess.role == role
+            FacilityUserAccess.is_active == True
         ).first()
         
         if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tiene acceso a esta sede"
+            )
+        
+        # Normalizar roles antes de comparar
+        normalized_user_role = normalize_role(membership.role)
+        normalized_required_role = normalize_role(role)
+        
+        if normalized_user_role != normalized_required_role:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Se requiere rol '{role}' en esta facility"
@@ -266,8 +289,11 @@ def require_facility_role_any(allowed_roles: List[str]):
     """
     Dependency factory para requerir que el usuario tenga uno de los roles especificados
     en la facility activa.
-    allowed_roles: Lista de roles permitidos, ej: ['MEDICO', 'ADMIN']
+    allowed_roles: Lista de roles permitidos, ej: ['DOCTOR', 'ADMIN'] (se normalizan internamente)
     Platform admin siempre tiene acceso.
+    
+    Nota: Esta función normaliza roles antes de comparar, permitiendo que endpoints usen
+    "DOCTOR" mientras la DB almacena "MEDICO".
     """
     def role_checker(
         current_user: User = Depends(get_current_user),
@@ -283,15 +309,24 @@ def require_facility_role_any(allowed_roles: List[str]):
                 detail="No hay facility activa"
             )
         
-        # Obtener membership activa
+        # Obtener membership activa sin filtrar por rol (para normalizar después)
         membership = db.query(FacilityUserAccess).filter(
             FacilityUserAccess.user_id == current_user.id,
             FacilityUserAccess.facility_id == current_user.active_facility_id,
-            FacilityUserAccess.is_active == True,
-            FacilityUserAccess.role.in_(allowed_roles)
+            FacilityUserAccess.is_active == True
         ).first()
         
         if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tiene acceso a esta sede"
+            )
+        
+        # Normalizar roles antes de comparar
+        normalized_allowed = {normalize_role(r) for r in allowed_roles}
+        user_role = normalize_role(membership.role)
+        
+        if user_role not in normalized_allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Se requiere uno de los roles: {', '.join(allowed_roles)}"

@@ -18,11 +18,14 @@ export const ResidentsListPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [stayStatusFilter, setStayStatusFilter] = useState<string>('');
+  const [stayStatusFilter, setStayStatusFilter] = useState<string>('ACTIVE');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingResident, setEditingResident] = useState<Resident | null>(null);
   const { facility } = useFacility();
-  const { isDoctor } = useAuth();
+  const { isDoctor, getActiveRole } = useAuth();
   const navigate = useNavigate();
+  const canEdit = isDoctor || getActiveRole() === 'ADMIN';
 
   useEffect(() => {
     if (facility) {
@@ -38,7 +41,7 @@ export const ResidentsListPage: React.FC = () => {
       setError(null);
       const data = await residentsApi.list(facility.id, {
         q: searchQuery || undefined,
-        stay_status: stayStatusFilter || undefined,
+        stay_status: stayStatusFilter === '' ? undefined : stayStatusFilter,
       });
       setResidents(data);
     } catch (err) {
@@ -60,6 +63,30 @@ export const ResidentsListPage: React.FC = () => {
     }
   };
 
+  const handleEditResident = async (resident: Resident) => {
+    try {
+      const residentData = await residentsApi.get(resident.id);
+      setEditingResident(residentData);
+      setShowEditModal(true);
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.detail || 'Error al cargar residente');
+    }
+  };
+
+  const handleUpdateResident = async (data: any) => {
+    if (!editingResident) return;
+    try {
+      await residentsApi.update(editingResident.id, data);
+      setShowEditModal(false);
+      setEditingResident(null);
+      loadResidents();
+    } catch (err) {
+      const apiError = err as ApiError;
+      throw new Error(apiError.detail || 'Error al actualizar residente');
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-AR');
   };
@@ -77,6 +104,14 @@ export const ResidentsListPage: React.FC = () => {
               placeholder="Buscar por nombre o DNI..."
             />
           </div>
+          {canEdit && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
+            >
+              Agregar
+            </button>
+          )}
         </div>
 
         <div>
@@ -85,9 +120,9 @@ export const ResidentsListPage: React.FC = () => {
             onChange={(e) => setStayStatusFilter(e.target.value)}
             className="input-field"
           >
-            <option value="">Todos los estados</option>
             <option value="ACTIVE">Activos</option>
             <option value="ENDED">Finalizados</option>
+            <option value="">Todos los estados</option>
           </select>
         </div>
 
@@ -108,13 +143,15 @@ export const ResidentsListPage: React.FC = () => {
         ) : (
           <div className="space-y-3">
             {residents.map((resident) => (
-              <button
+              <div
                 key={resident.id}
-                onClick={() => navigate(`/residents/${resident.id}`)}
-                className="card w-full text-left hover:shadow-md transition-shadow"
+                className="card w-full hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                  <button
+                    onClick={() => navigate(`/residents/${resident.id}`)}
+                    className="flex-1 text-left"
+                  >
                     <h3 className="font-semibold text-gray-900">
                       {resident.first_name} {resident.last_name}
                     </h3>
@@ -133,9 +170,21 @@ export const ResidentsListPage: React.FC = () => {
                     >
                       {resident.stay_status === 'ACTIVE' ? 'Activo' : 'Finalizado'}
                     </span>
-                  </div>
+                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditResident(resident);
+                      }}
+                      className="ml-2 px-3 py-1 text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded transition-colors"
+                      title="Editar paciente"
+                    >
+                      Editar
+                    </button>
+                  )}
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -164,6 +213,28 @@ export const ResidentsListPage: React.FC = () => {
           <ResidentForm
             onSubmit={handleCreateResident}
             onCancel={() => setShowCreateModal(false)}
+            facilityId={facility.id}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingResident(null);
+        }}
+        title="Editar Residente"
+        size="lg"
+      >
+        {editingResident && facility && (
+          <ResidentForm
+            resident={editingResident}
+            onSubmit={handleUpdateResident}
+            onCancel={() => {
+              setShowEditModal(false);
+              setEditingResident(null);
+            }}
             facilityId={facility.id}
           />
         )}

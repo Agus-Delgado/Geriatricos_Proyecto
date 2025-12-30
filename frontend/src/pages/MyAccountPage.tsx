@@ -81,9 +81,7 @@ export default function MyAccountPage() {
       await authApi.requestPasswordReset(email);
       // Mostrar mensaje genérico
       alert('Si el email es válido, te enviaremos un enlace para restablecer tu contraseña.');
-    } catch (err) {
-      const apiError = err as ApiError;
-      // Aún así mostrar mensaje genérico por seguridad
+    } catch {
       alert('Si el email es válido, te enviaremos un enlace para restablecer tu contraseña.');
     } finally {
       setRequestingReset(false);

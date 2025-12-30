@@ -4,7 +4,7 @@ import type {
   RegisterRequest, RegisterResponse, VerifyEmailRequest, VerifyEmailResponse,
   ResendVerificationRequest, ResendVerificationResponse,
   ImpersonateRequest, ImpersonateResponse, AdminUsersListResponse,
-  UpdateUserStatusRequest, UpdateProfileRequest, PasswordResetRequest, PasswordResetConfirm
+  UpdateUserStatusRequest, UpdateProfileRequest
 } from '../types/auth';
 
 export const authApi = {

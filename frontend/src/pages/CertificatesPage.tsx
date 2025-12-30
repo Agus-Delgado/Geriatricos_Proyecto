@@ -298,13 +298,9 @@ export default function CertificatesPage() {
                   Paciente seleccionado: {selectedPatient.last_name}, {selectedPatient.first_name}
                 </div>
                 <div className="text-sm text-gray-600">DNI: {selectedPatient.dni || 'N/A'}</div>
-                <Button
-                  variant="secondary"
-                  onClick={() => setSelectedPatient(null)}
-                  className="mt-2"
-                >
-                  Cambiar paciente
-                </Button>
+                <p className="text-xs text-gray-500 mt-2">
+                  Para cambiar de paciente, busque otro en el campo de búsqueda arriba
+                </p>
               </div>
             )}
           </div>

@@ -1,14 +1,23 @@
 import type { User } from '../types/auth';
 
 /**
- * Limpia todo el storage relacionado con sesión y caches
- * IMPORTANTE: NO borra keys __sw_* (son guards contra loops infinitos)
+ * Limpia SOLO las keys de autenticación (para uso en handlers de salida)
+ * IMPORTANTE: NO borra keys __sw_* ni APP_BUILD_ID (son críticas para evitar loops)
  */
-export function clearSessionStorage(): void {
+export function clearAuthStorageOnly(): void {
   localStorage.removeItem('token');
   localStorage.removeItem('original_token');
   localStorage.removeItem('activeFacilityId');
   localStorage.removeItem('lastActivityAt');
+  // NO borrar __sw_recover_attempted__, __sw_recover_failed__, APP_BUILD_ID
+}
+
+/**
+ * Limpia todo el storage relacionado con sesión y caches
+ * IMPORTANTE: NO borra keys __sw_* (son guards contra loops infinitos)
+ */
+export function clearSessionStorage(): void {
+  clearAuthStorageOnly();
   
   // Limpiar caches relacionados
   // IMPORTANTE: NO borrar keys que empiezan con __sw_* (guards de recovery)

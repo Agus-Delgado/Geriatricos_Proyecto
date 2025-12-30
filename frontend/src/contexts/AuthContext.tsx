@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { authApi } from '../api/auth';
-import { clearSessionStorage, syncActiveFacility } from '../utils/session';
+import { clearSessionStorage, clearAuthStorageOnly, syncActiveFacility } from '../utils/session';
 import type { User, FacilityMembership, UserRole } from '../types/auth';
 import type { ApiError } from '../api/client';
 
@@ -212,10 +212,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Auto-logout cuando el usuario abandona la app (cierra pestaña/recarga/navega fuera)
   // Esto previene bugs de UI duplicada al reabrir el link sin cerrar sesión
+  // IMPORTANTE: Usar clearAuthStorageOnly() para NO borrar keys __sw_* (guards contra loops)
   useEffect(() => {
     const handlePageLeave = () => {
-      // Silent logout: solo limpiar estado local, sin redirect
-      clearAllAuth({ redirect: false });
+      // Silent logout: solo limpiar keys de auth, sin redirect
+      // NO usar clearAllAuth() porque puede interferir con self-heal
+      // Usar clearAuthStorageOnly() que preserva keys críticas __sw_*
+      clearAuthStorageOnly();
+      
+      // Limpiar estado de React sin tocar localStorage crítico
+      setToken(null);
+      setUser(null);
+      setActiveFacilityId(null);
+      setIsImpersonating(false);
+      setImpersonatedUser(null);
     };
 
     window.addEventListener('pagehide', handlePageLeave);

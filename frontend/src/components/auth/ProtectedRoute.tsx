@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
   requireOwner?: boolean;
   requireFacility?: boolean;
   requireRole?: 'ADMIN' | 'MEDICO' | 'STAFF';
+  requireRoles?: ('ADMIN' | 'MEDICO' | 'STAFF')[];
   requirePlatformAdmin?: boolean;
 }
 
@@ -17,6 +18,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireOwner = false,
   requireFacility = true,
   requireRole,
+  requireRoles,
   requirePlatformAdmin = false,
 }) => {
   const {
@@ -135,7 +137,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // 7) Verificar rol requerido (si no es platform admin)
-  if (requireRole && !isPlatformAdmin) {
+  // Soporta tanto requireRole (string) como requireRoles (array)
+  const rolesToCheck = requireRoles || (requireRole ? [requireRole] : null);
+  
+  if (rolesToCheck && rolesToCheck.length > 0 && !isPlatformAdmin) {
     let roleToCheck: 'ADMIN' | 'MEDICO' | 'STAFF' | null = null;
 
     if (isGeriatricRoute && urlFacilityId) {
@@ -146,7 +151,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       roleToCheck = getActiveRole();
     }
 
-    if (roleToCheck !== requireRole) {
+    // Verificar si el rol del usuario está en la lista de roles permitidos
+    if (!roleToCheck || !rolesToCheck.includes(roleToCheck)) {
       const currentFacilityId = urlFacilityId ?? activeFacilityId ?? user.active_facility_id;
       if (currentFacilityId) {
         if (roleToCheck === 'ADMIN') return <Navigate to={`/g/${currentFacilityId}/dashboard`} replace />;

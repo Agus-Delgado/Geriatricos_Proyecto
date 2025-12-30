@@ -98,7 +98,7 @@ function AppContent() {
             <Route
               path="/g/:id/medical"
               element={
-                <ProtectedRoute requireRole="MEDICO">
+                <ProtectedRoute requireRoles={['MEDICO', 'ADMIN']}>
                   <GeriatricMedicalPage />
                 </ProtectedRoute>
               }

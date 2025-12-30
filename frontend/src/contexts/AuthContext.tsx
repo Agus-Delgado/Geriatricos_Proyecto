@@ -111,20 +111,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const stored = localStorage.getItem('activeFacilityId');
     const facilityIdToUse = u.active_facility_id ?? stored ?? null;
 
-    if (facilityIdToUse) {
-      setActiveFacilityId(facilityIdToUse);
-      localStorage.setItem('activeFacilityId', facilityIdToUse);
-      return;
-    }
-
     // Platform admin puede no tener facility (válido)
     if (u.is_platform_admin) {
-      setActiveFacilityId(null);
-      localStorage.removeItem('activeFacilityId');
-      return;
+      // Si es platform admin y no hay facility, está bien
+      if (!facilityIdToUse) {
+        setActiveFacilityId(null);
+        localStorage.removeItem('activeFacilityId');
+        return;
+      }
+      // Si tiene facility, validar que exista en memberships (puede tener acceso a cualquier facility)
+      // Para platform admin, permitimos cualquier facility si está en memberships o si no hay memberships
+      if (facilityIdToUse) {
+        const hasMembership = !u.memberships || u.memberships.length === 0 || 
+          u.memberships.some(m => m.facility_id === facilityIdToUse && m.is_active);
+        if (hasMembership) {
+          setActiveFacilityId(facilityIdToUse);
+          localStorage.setItem('activeFacilityId', facilityIdToUse);
+          return;
+        }
+      }
     }
 
-    // Otros roles: si no hay facility activa, limpiamos
+    // Para usuarios no platform admin: validar que facilityIdToUse esté en memberships activos
+    if (facilityIdToUse) {
+      const activeMemberships = u.memberships?.filter(m => m.is_active) ?? [];
+      const hasValidMembership = activeMemberships.some(m => m.facility_id === facilityIdToUse);
+      
+      if (hasValidMembership) {
+        setActiveFacilityId(facilityIdToUse);
+        localStorage.setItem('activeFacilityId', facilityIdToUse);
+        return;
+      } else {
+        // activeFacilityId no está en memberships activos, limpiar
+        setActiveFacilityId(null);
+        localStorage.removeItem('activeFacilityId');
+        return;
+      }
+    }
+
+    // No hay facility activa, limpiar
     setActiveFacilityId(null);
     localStorage.removeItem('activeFacilityId');
   };
@@ -164,14 +189,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
-    const storedFacilityId = localStorage.getItem('activeFacilityId');
     const storedOriginalToken = localStorage.getItem('original_token');
 
-    if (storedFacilityId) setActiveFacilityId(storedFacilityId);
+    // NO setear activeFacilityId desde localStorage aquí
+    // Se validará después de recibir /me en syncActiveFacilityFromUser
     if (storedOriginalToken) setIsImpersonating(true);
 
     if (storedToken) {
-      // Rehidratar sesión
+      // Rehidratar sesión - syncActiveFacilityFromUser validará el activeFacilityId
       void loadUserWithToken(storedToken);
     } else {
       setLoading(false);

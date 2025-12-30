@@ -30,7 +30,7 @@ export function BackHeader({ title, fallbackPath, rightActions }: BackHeaderProp
 
   return (
     <div
-      className="sticky top-0 z-10 mb-4 rounded-xl shadow-md p-4"
+      className="sticky top-0 z-40 mb-4 rounded-xl shadow-md p-4"
       style={{ backgroundColor: 'var(--facility-card, white)' }}
     >
       <div className="flex items-center justify-between gap-4">

@@ -20,25 +20,25 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     const validateSession = async () => {
+      // Esperar a que AuthContext termine de cargar
+      if (authLoading) {
+        return;
+      }
+
       // Si no hay token, dejar que el flujo normal maneje (redirect a login)
       if (!token) {
         setValidating(false);
         return;
       }
 
-      // Si ya hay user y no está cargando, validar activeFacilityId
-      if (user && !authLoading) {
+      // Si ya hay user cargado, validar activeFacilityId
+      if (user) {
         await validateActiveFacility(user);
         setValidating(false);
         return;
       }
 
-      // Si está cargando auth, esperar
-      if (authLoading) {
-        return;
-      }
-
-      // Si hay token pero no user, validar con /me
+      // Si hay token pero no user (caso de rehidratación), validar con /me
       try {
         setValidating(true);
         const userData = await authApi.getCurrentUser();
@@ -56,11 +56,13 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
           localStorage.removeItem('token');
           localStorage.removeItem('original_token');
           localStorage.removeItem('activeFacilityId');
-          navigate('/login', { replace: true, state: { reason: 'session_expired' } });
+          // Usar window.location para garantizar navegación incluso si router está roto
+          window.location.assign('/login');
           return;
         }
         
         // Otros errores: mostrar error pero continuar
+        console.error('SessionBootstrap: Error al validar sesión', err);
         setValidationError('Error al validar sesión');
         setValidating(false);
       }
@@ -112,14 +114,14 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
           }
           keysToRemove.forEach(key => localStorage.removeItem(key));
           
-          // Redirigir a seleccionar hogar
-          navigate('/select-facility', { replace: true });
+          // Redirigir a seleccionar hogar (usar window.location para garantizar navegación)
+          window.location.assign('/select-facility');
           return;
         }
       } else {
         // No hay facility activa, redirigir a seleccionar
         if (userData.memberships && userData.memberships.filter(m => m.is_active).length > 0) {
-          navigate('/select-facility', { replace: true });
+          window.location.assign('/select-facility');
           return;
         }
       }

@@ -30,8 +30,14 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
   // Detectar si estamos en una ruta interna (no login, no select-facility)
   const isInternalRoute = !location.pathname.startsWith('/login') && location.pathname !== '/select-facility';
   
+  // Detectar si estamos en dashboard raíz (no mostrar flecha aquí)
+  const isRootDashboard = 
+    location.pathname === '/' ||
+    location.pathname.match(/^\/g\/[^/]+\/(dashboard|medical|tasks)$/) !== null;
+  
   // Determinar si debemos mostrar botón volver
-  const shouldShowBack = showBack || isGeriatricRoute || isMedicalRoute;
+  // No mostrar en dashboard raíz, pero sí en sub-rutas y secciones
+  const shouldShowBack = (showBack || isGeriatricRoute || isMedicalRoute) && !isRootDashboard;
 
   // Cerrar menú de usuario al hacer click fuera
   useEffect(() => {

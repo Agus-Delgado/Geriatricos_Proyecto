@@ -1,5 +1,4 @@
 import { Component, ErrorInfo, type ReactNode } from 'react';
-import { Button } from './Button';
 
 interface Props {
   children: ReactNode;
@@ -9,6 +8,7 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  errorInfo: ErrorInfo | null;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -17,10 +17,11 @@ export class ErrorBoundary extends Component<Props, State> {
     this.state = {
       hasError: false,
       error: null,
+      errorInfo: null,
     };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return {
       hasError: true,
       error,
@@ -28,19 +29,23 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error to console in development
-    if (import.meta.env.DEV) {
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
-    }
+    // SIEMPRE loguear el error (también en producción para diagnóstico)
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    
+    // Guardar errorInfo en state para mostrar detalles si es necesario
+    this.setState({
+      errorInfo,
+    });
   }
 
-  handleReset = (): void => {
-    this.setState({
-      hasError: false,
-      error: null,
-    });
-    // Navigate to home or reload
-    window.location.href = '/';
+  handleGoHome = (): void => {
+    // Usar window.location.assign para garantizar navegación incluso si router está roto
+    window.location.assign('/');
+  };
+
+  handleReload = (): void => {
+    // Recargar página completamente
+    window.location.reload();
   };
 
   render(): ReactNode {
@@ -51,42 +56,153 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div
-          className="min-h-screen flex items-center justify-center p-4"
-          style={{ backgroundColor: 'var(--facility-bg, #f9fafb)' }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(4px)',
+            pointerEvents: 'auto',
+          }}
         >
           <div
-            className="max-w-md w-full rounded-xl shadow-lg p-6"
-            style={{ backgroundColor: 'var(--facility-card, white)' }}
+            style={{
+              maxWidth: '28rem',
+              width: '100%',
+              borderRadius: '0.75rem',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              padding: '1.5rem',
+              backgroundColor: 'white',
+              pointerEvents: 'auto',
+            }}
           >
-            <div className="text-center">
-              <div className="text-6xl mb-4">⚠️</div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>⚠️</div>
+              <h1
+                style={{
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  marginBottom: '0.5rem',
+                }}
+              >
                 Algo salió mal
               </h1>
-              <p className="text-gray-600 mb-6">
+              <p
+                style={{
+                  color: '#4b5563',
+                  marginBottom: '1.5rem',
+                }}
+              >
                 Ocurrió un error inesperado. Por favor, intenta volver al inicio
                 o recargar la página.
               </p>
-              {this.state.error && import.meta.env.DEV && (
-                <div className="mb-4 p-3 bg-red-50 rounded text-left">
-                  <p className="text-sm font-mono text-red-800 break-all">
-                    {this.state.error.message}
-                  </p>
+              
+              {/* Mostrar error en desarrollo o si hay errorInfo */}
+              {(this.state.error || this.state.errorInfo) && (
+                <div
+                  style={{
+                    marginBottom: '1rem',
+                    padding: '0.75rem',
+                    backgroundColor: '#fef2f2',
+                    borderRadius: '0.375rem',
+                    textAlign: 'left',
+                  }}
+                >
+                  {this.state.error && (
+                    <p
+                      style={{
+                        fontSize: '0.875rem',
+                        fontFamily: 'monospace',
+                        color: '#991b1b',
+                        wordBreak: 'break-all',
+                        marginBottom: this.state.errorInfo ? '0.5rem' : 0,
+                      }}
+                    >
+                      {this.state.error.message}
+                    </p>
+                  )}
+                  {this.state.errorInfo && import.meta.env.DEV && (
+                    <details style={{ fontSize: '0.75rem', color: '#991b1b' }}>
+                      <summary style={{ cursor: 'pointer', marginTop: '0.5rem' }}>
+                        Detalles técnicos
+                      </summary>
+                      <pre
+                        style={{
+                          marginTop: '0.5rem',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-all',
+                        }}
+                      >
+                        {this.state.errorInfo.componentStack}
+                      </pre>
+                    </details>
+                  )}
                 </div>
               )}
-              <div className="flex gap-3 justify-center">
-                <Button
-                  onClick={this.handleReset}
-                  style={{ backgroundColor: 'var(--facility-accent, #667eea)' }}
+
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '0.75rem',
+                  justifyContent: 'center',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={this.handleGoHome}
+                  style={{
+                    padding: '0.625rem 1.25rem',
+                    borderRadius: '0.5rem',
+                    backgroundColor: '#667eea',
+                    color: 'white',
+                    fontWeight: '500',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    pointerEvents: 'auto',
+                    minHeight: '44px',
+                    minWidth: '120px',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#5568d3';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#667eea';
+                  }}
                 >
                   Volver al inicio
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => window.location.reload()}
+                </button>
+                <button
+                  type="button"
+                  onClick={this.handleReload}
+                  style={{
+                    padding: '0.625rem 1.25rem',
+                    borderRadius: '0.5rem',
+                    backgroundColor: '#f3f4f6',
+                    color: '#374151',
+                    fontWeight: '500',
+                    border: '1px solid #d1d5db',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    pointerEvents: 'auto',
+                    minHeight: '44px',
+                    minWidth: '120px',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#e5e7eb';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                  }}
                 >
                   Recargar página
-                </Button>
+                </button>
               </div>
             </div>
           </div>

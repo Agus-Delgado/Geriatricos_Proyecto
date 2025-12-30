@@ -2,29 +2,25 @@ import type { User } from '../types/auth';
 
 /**
  * Limpia SOLO las keys de autenticación (para uso en handlers de salida)
- * IMPORTANTE: NO borra keys __sw_* ni APP_BUILD_ID (son críticas para evitar loops)
  */
 export function clearAuthStorageOnly(): void {
   localStorage.removeItem('token');
   localStorage.removeItem('original_token');
   localStorage.removeItem('activeFacilityId');
   localStorage.removeItem('lastActivityAt');
-  // NO borrar __sw_recover_attempted__, __sw_recover_failed__, APP_BUILD_ID
 }
 
 /**
  * Limpia todo el storage relacionado con sesión y caches
- * IMPORTANTE: NO borra keys __sw_* (son guards contra loops infinitos)
  */
 export function clearSessionStorage(): void {
   clearAuthStorageOnly();
   
   // Limpiar caches relacionados
-  // IMPORTANTE: NO borrar keys que empiezan con __sw_* (guards de recovery)
   const keysToRemove: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && (key.startsWith('facility_') || key.startsWith('cache_')) && !key.startsWith('__sw_')) {
+    if (key && (key.startsWith('facility_') || key.startsWith('cache_'))) {
       keysToRemove.push(key);
     }
   }

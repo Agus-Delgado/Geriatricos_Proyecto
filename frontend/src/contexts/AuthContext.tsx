@@ -211,40 +211,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // DESACTIVADO: Auto-logout en pagehide/beforeunload causaba loops infinitos
-  // El problema: se ejecutaba en CADA recarga (incluyendo self-heal), causando loop
   // Solución alternativa: usar timeout de inactividad en SessionBootstrap (ya implementado)
-  // Si se necesita auto-logout al cerrar pestaña, implementar con flag para evitar recargas
-  /*
-  useEffect(() => {
-    const handlePageLeave = (event: PageTransitionEvent | BeforeUnloadEvent) => {
-      // Solo ejecutar si NO es una recarga programada (self-heal, etc.)
-      // Verificar si hay un flag de recarga programada
-      const isProgrammedReload = sessionStorage.getItem('__programmed_reload__') === '1';
-      if (isProgrammedReload) {
-        sessionStorage.removeItem('__programmed_reload__');
-        return; // No hacer logout en recargas programadas
-      }
-
-      // Silent logout: solo limpiar keys de auth, sin redirect
-      clearAuthStorageOnly();
-      
-      // Limpiar estado de React sin tocar localStorage crítico
-      setToken(null);
-      setUser(null);
-      setActiveFacilityId(null);
-      setIsImpersonating(false);
-      setImpersonatedUser(null);
-    };
-
-    window.addEventListener('pagehide', handlePageLeave);
-    window.addEventListener('beforeunload', handlePageLeave);
-
-    return () => {
-      window.removeEventListener('pagehide', handlePageLeave);
-      window.removeEventListener('beforeunload', handlePageLeave);
-    };
-  }, []);
-  */
 
   const login = async (username: string, password: string) => {
     setLoading(true);

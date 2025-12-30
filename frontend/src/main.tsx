@@ -9,6 +9,9 @@ import { registerSW } from 'virtual:pwa-register';
 const SW_RECOVER_KEY = '__sw_recover_attempted__';
 const SW_RECOVER_FAILED_KEY = '__sw_recover_failed__';
 
+// Guard en memoria para evitar múltiples self-heal concurrentes
+let selfHealInProgress = false;
+
 /**
  * Detecta si un error es relacionado con chunks/workbox
  */
@@ -29,6 +32,12 @@ function isChunkOrWorkboxError(message: string): boolean {
  * IMPORTANTE: Usa localStorage para el guard (no sessionStorage) para que persista
  */
 async function performSelfHeal(): Promise<void> {
+  // Guard en memoria: evitar múltiples self-heal concurrentes
+  if (selfHealInProgress) {
+    console.warn('[Self-heal] Ya hay un self-heal en progreso, ignorando...');
+    return;
+  }
+
   // Verificar si ya se intentó (usar localStorage para que persista)
   const alreadyAttempted = localStorage.getItem(SW_RECOVER_KEY);
   if (alreadyAttempted === '1') {
@@ -38,7 +47,8 @@ async function performSelfHeal(): Promise<void> {
     return;
   }
 
-  // Marcar que se intentó INMEDIATAMENTE en localStorage (antes de limpiar nada)
+  // Marcar en memoria y localStorage INMEDIATAMENTE (antes de limpiar nada)
+  selfHealInProgress = true;
   localStorage.setItem(SW_RECOVER_KEY, '1');
 
   try {
@@ -77,14 +87,14 @@ async function performSelfHeal(): Promise<void> {
       console.warn('[Self-heal] Error al limpiar storage:', err);
     }
 
-    // 4. Recargar UNA sola vez con ?recover=1 para que el bootstrap script también limpie
-    console.log('[Self-heal] Recargando página con ?recover=1...');
-    const url = new URL(window.location.href);
-    url.searchParams.set('recover', '1');
-    window.location.replace(url.toString());
+    // 4. Recargar UNA sola vez (simple reload, no navegación con query params)
+    // El bootstrap script en index.html ya maneja ?recover=1 si es necesario
+    console.log('[Self-heal] Recargando página...');
+    window.location.reload();
   } catch (err) {
     console.error('[Self-heal] Error durante reparación:', err);
     localStorage.setItem(SW_RECOVER_FAILED_KEY, '1');
+    selfHealInProgress = false; // Reset guard en memoria
     // NO recargar si falla para evitar loop
   }
 }
@@ -139,10 +149,22 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 // Reset por URL: ?reset=1 limpia todo el storage y caches
+// IMPORTANTE: Preservar keys __sw_* y APP_BUILD_ID para evitar loops
 const resetParams = new URLSearchParams(window.location.search);
 if (resetParams.get('reset') === '1') {
   try {
-    localStorage.clear();
+    // NO usar localStorage.clear() - preservar keys críticas
+    const keysToPreserve = ['__sw_recover_attempted__', '__sw_recover_failed__', 'APP_BUILD_ID'];
+    const keysToRemove: string[] = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && !keysToPreserve.includes(key)) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
   } catch (e) {
     console.warn('Error clearing localStorage:', e);
   }
@@ -167,36 +189,40 @@ if (resetParams.get('reset') === '1') {
 }
 
 // APP_BUILD_ID: Usado para limpiar cache cuando cambia el deploy
-// Si cambia entre sesiones, limpiar localStorage y recargar
-const APP_BUILD_ID = import.meta.env.VITE_APP_BUILD_ID || new Date().toISOString().split('T')[0];
+// IMPORTANTE: Solo actuar si VITE_APP_BUILD_ID está definido (no usar fecha como fallback)
+// Preservar keys __sw_* para evitar loops infinitos
+const APP_BUILD_ID = import.meta.env.VITE_APP_BUILD_ID;
 const STORAGE_KEY = 'APP_BUILD_ID';
 
-const storedBuildId = localStorage.getItem(STORAGE_KEY);
-if (storedBuildId && storedBuildId !== APP_BUILD_ID) {
-  // Build cambió, limpiar caches y storage relacionado
-  console.log('Build ID cambió, limpiando cache...');
-  
-  // Limpiar localStorage (excepto token y algunos valores críticos)
-  const keysToKeep = ['token', 'original_token'];
-  const keysToRemove: string[] = [];
-  
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && !keysToKeep.includes(key)) {
-      keysToRemove.push(key);
+// Solo procesar si hay un BUILD_ID definido (no usar fecha como fallback para evitar recargas inesperadas)
+if (APP_BUILD_ID) {
+  const storedBuildId = localStorage.getItem(STORAGE_KEY);
+  if (storedBuildId && storedBuildId !== APP_BUILD_ID) {
+    // Build cambió, limpiar caches y storage relacionado
+    console.log('Build ID cambió, limpiando cache...');
+    
+    // Limpiar localStorage (excepto keys críticas: auth y guards de recovery)
+    const keysToKeep = ['token', 'original_token', '__sw_recover_attempted__', '__sw_recover_failed__', STORAGE_KEY];
+    const keysToRemove: string[] = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && !keysToKeep.includes(key)) {
+        keysToRemove.push(key);
+      }
     }
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Guardar nuevo BUILD_ID
+    localStorage.setItem(STORAGE_KEY, APP_BUILD_ID);
+    
+    // Recargar página para aplicar cambios
+    window.location.reload();
+  } else if (!storedBuildId) {
+    // Primera vez, guardar BUILD_ID
+    localStorage.setItem(STORAGE_KEY, APP_BUILD_ID);
   }
-  
-  keysToRemove.forEach(key => localStorage.removeItem(key));
-  
-  // Guardar nuevo BUILD_ID
-  localStorage.setItem(STORAGE_KEY, APP_BUILD_ID);
-  
-  // Recargar página para aplicar cambios
-  window.location.reload();
-} else if (!storedBuildId) {
-  // Primera vez, guardar BUILD_ID
-  localStorage.setItem(STORAGE_KEY, APP_BUILD_ID);
 }
 
 // Registrar service worker para PWA (opcional: puede desactivarse con VITE_DISABLE_PWA=true)

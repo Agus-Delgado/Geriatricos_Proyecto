@@ -3,6 +3,7 @@ from app.models.org import OwnerGroup, Facility, FacilityUserAccess
 from app.models.residents import Resident, ResidentContact
 from app.models.clinical import ClinicalSummary, ClinicalNote, VitalSign
 from app.models.medications import MedicationPlan, MedicationScheduleTime, MedicationAdministration
+from app.models.prescriptions import PrescriptionLog
 from app.models.documents import Document
 from app.models.certificates import Certificate
 from app.models.external import ExternalPlatform, ResidentExternalEvent
@@ -26,6 +27,7 @@ __all__ = [
     "MedicationPlan",
     "MedicationScheduleTime",
     "MedicationAdministration",
+    "PrescriptionLog",
     "Document",
     "Certificate",
     "ExternalPlatform",

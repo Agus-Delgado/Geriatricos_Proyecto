@@ -7,6 +7,7 @@ import { UnauthorizedHandler } from './components/auth/UnauthorizedHandler';
 import { SessionExpiredHandler } from './components/auth/SessionExpiredHandler';
 import { UpdateBanner } from './components/pwa/UpdateBanner';
 import { Header } from './components/layout/Header';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { useFacilityTheme } from './hooks/useFacilityTheme';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -236,13 +237,15 @@ function AppContent() {
 
 function App() {
   return (
-    <PWAProvider>
-      <AuthProvider>
-        <FacilityProvider>
-          <AppContent />
-        </FacilityProvider>
-      </AuthProvider>
-    </PWAProvider>
+    <ErrorBoundary>
+      <PWAProvider>
+        <AuthProvider>
+          <FacilityProvider>
+            <AppContent />
+          </FacilityProvider>
+        </AuthProvider>
+      </PWAProvider>
+    </ErrorBoundary>
   );
 }
 

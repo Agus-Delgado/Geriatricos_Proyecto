@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
 from app.api.routes import (
-    auth, facilities, residents, resident_contacts, clinical, medications,
+    auth, facilities, residents, resident_contacts, clinical, medications, prescriptions,
     documents, certificates, external_platforms, resident_external_events, finance,
     staff, attendance, admin
 )
@@ -105,6 +105,7 @@ app.include_router(residents.router)
 app.include_router(resident_contacts.router)
 app.include_router(clinical.router)
 app.include_router(medications.router)
+app.include_router(prescriptions.router)
 app.include_router(documents.router)
 app.include_router(certificates.router)
 app.include_router(external_platforms.router)

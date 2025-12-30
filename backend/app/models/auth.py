@@ -75,6 +75,20 @@ class EmailVerificationToken(Base):
     user = relationship("User", foreign_keys=[user_id])
 
 
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, index=True)  # SHA256 hex = 64 chars
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    used_at = Column(DateTime(timezone=True), nullable=True)  # Para invalidar token tras uso
+    
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+
+
 class AdminAuditLog(Base):
     __tablename__ = "admin_audit_log"
     

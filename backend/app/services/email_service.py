@@ -147,3 +147,87 @@ Este enlace expira en 24 horas. Si no solicitaste esta cuenta, ignorá este mens
 """
     
     return text_body, html_body
+
+
+def render_password_reset_email(reset_url: str, user_name: str, expiry_minutes: int = 60) -> Tuple[str, str]:
+    """
+    Generar plantilla de email de restablecimiento de contraseña.
+    
+    Args:
+        reset_url: URL completa de restablecimiento (incluye token)
+        user_name: Nombre del usuario
+        expiry_minutes: Minutos de validez del token (default: 60)
+        
+    Returns:
+        Tuple con (text_body, html_body)
+    """
+    text_body = f"""Hola, {user_name}:
+
+Recibimos una solicitud para restablecer la contraseña de tu cuenta en la Plataforma Geriátricos.
+
+Para restablecer tu contraseña, abrí este enlace:
+
+{reset_url}
+
+Este enlace es válido por {expiry_minutes} minutos.
+
+Si no solicitaste este cambio, ignorá este mensaje. Tu contraseña no se modificará.
+
+Saludos,
+Equipo de Soporte – Plataforma Geriátricos
+"""
+    
+    html_body = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restablecimiento de contraseña</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0;">Restablecimiento de contraseña</h1>
+    </div>
+    
+    <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+        <p style="font-size: 16px; margin-bottom: 20px;">Hola, {user_name}:</p>
+        
+        <p style="font-size: 16px; margin-bottom: 30px;">
+            Recibimos una solicitud para restablecer la contraseña de tu cuenta en la Plataforma Geriátricos.
+        </p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{reset_url}" 
+               style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                      color: white; padding: 15px 30px; text-decoration: none; 
+                      border-radius: 5px; font-weight: bold; font-size: 16px;">
+                Restablecer contraseña
+            </a>
+        </div>
+        
+        <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            O copiá y pegá este enlace en tu navegador:<br>
+            <a href="{reset_url}" style="color: #667eea; word-break: break-all;">{reset_url}</a>
+        </p>
+        
+        <div style="margin-top: 30px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+            <p style="font-size: 14px; margin: 0; color: #856404;">
+                <strong>Importante:</strong> Este enlace es válido por {expiry_minutes} minutos. Si no solicitaste este cambio, ignorá este mensaje. Tu contraseña no se modificará.
+            </p>
+        </div>
+        
+        <div style="margin-top: 30px; padding: 15px; background: #e7f3ff; border-left: 4px solid #2196F3; border-radius: 4px;">
+            <p style="font-size: 14px; margin: 0; color: #0c5460;">
+                <strong>Tip:</strong> Si no aparece en tu bandeja de entrada en 2-3 minutos, revisá la carpeta de Spam o Promociones.
+            </p>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 20px; padding: 20px; color: #999; font-size: 12px;">
+        <p>Equipo de Soporte – Plataforma Geriátricos</p>
+    </div>
+</body>
+</html>
+"""
+    
+    return text_body, html_body

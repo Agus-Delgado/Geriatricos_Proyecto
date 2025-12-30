@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { residentsApi } from '../api/residents';
 import { certificatesApi } from '../api/certificates';
 import { facilitiesApi } from '../api/facilities';
@@ -18,6 +18,7 @@ import type { ApiError } from '../api/client';
 
 export default function CertificatesPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { user, activeFacilityId } = useAuth();
   const facilityId = id ?? activeFacilityId ?? '';
 
@@ -38,6 +39,17 @@ export default function CertificatesPage() {
       loadData();
     }
   }, [facilityId]);
+
+  // Auto-seleccionar paciente si viene en query param
+  useEffect(() => {
+    const residentId = searchParams.get('resident_id');
+    if (residentId && patients.length > 0 && !selectedPatient) {
+      const patient = patients.find(p => p.id === residentId);
+      if (patient) {
+        setSelectedPatient(patient);
+      }
+    }
+  }, [patients, searchParams, selectedPatient]);
 
   useEffect(() => {
     if (selectedPatient) {

@@ -11,10 +11,21 @@ export const DoctorBanner: React.FC<DoctorBannerProps> = ({
   facilityName,
   medicalQuote,
 }) => {
-  // Determinar saludo
-  const greeting = userName
-    ? `Buen día, ${userName}`
-    : 'Buen día';
+  // Determinar saludo según hora del día
+  const getGreeting = (userName?: string): string => {
+    const hour = new Date().getHours();
+    let timeGreeting: string;
+    if (hour >= 5 && hour < 12) {
+      timeGreeting = 'Buenos días';
+    } else if (hour >= 12 && hour < 20) {
+      timeGreeting = 'Buenas tardes';
+    } else {
+      timeGreeting = 'Buenas noches';
+    }
+    return userName ? `${timeGreeting}, ${userName}` : timeGreeting;
+  };
+
+  const greeting = getGreeting(userName);
 
   // Determinar subtítulo
   const subtitle = facilityName

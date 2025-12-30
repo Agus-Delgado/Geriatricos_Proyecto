@@ -11,6 +11,7 @@ from . import facilities
 from . import finance
 from . import medications
 from . import prescriptions
+from . import agenda
 from . import resident_contacts
 from . import resident_external_events
 from . import residents
@@ -29,6 +30,7 @@ __all__ = [
     "finance",
     "medications",
     "prescriptions",
+    "agenda",
     "resident_contacts",
     "resident_external_events",
     "residents",

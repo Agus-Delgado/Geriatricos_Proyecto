@@ -34,7 +34,7 @@ export default function MedicalFolderSearchPage() {
         style={{ backgroundColor: 'var(--facility-card, white)' }}
       >
         <p className="text-gray-600 mb-6">
-          Busque un paciente para ver su carpeta médica completa con evoluciones, recetas y certificados.
+          Busque un paciente para ver su carpeta médica completa con evoluciones, recetas y constancias.
         </p>
         <PatientSearchSelect onSelect={handleSelectPatient} />
       </div>

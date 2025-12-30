@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { agendaApi } from '../../api/agenda';
@@ -22,8 +22,26 @@ export const AgendaToday: React.FC<AgendaTodayProps> = ({ onRefreshStats }) => {
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addingPatient, setAddingPatient] = useState(false);
+  const [selectedDateString, setSelectedDateString] = useState<string>('');
+  const [showHistory, setShowHistory] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<AgendaEntry | null>(null);
+  const [noteText, setNoteText] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
 
-  const loadEntries = async () => {
+  // Formatear fecha a YYYY-MM-DD sin problemas de timezone
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getTodayString = (): string => {
+    return formatDateLocal(new Date());
+  };
+
+  const loadEntries = useCallback(async (dateString?: string) => {
     if (!activeFacilityId) {
       setLoading(false);
       return;
@@ -32,8 +50,8 @@ export const AgendaToday: React.FC<AgendaTodayProps> = ({ onRefreshStats }) => {
     try {
       setLoading(true);
       setError(null);
-      const today = new Date().toISOString().split('T')[0];
-      const data = await agendaApi.listToday(today);
+      const targetDate = dateString || getTodayString();
+      const data = await agendaApi.listToday(targetDate);
       setEntries(data);
     } catch (err) {
       const apiError = err as ApiError;
@@ -41,11 +59,31 @@ export const AgendaToday: React.FC<AgendaTodayProps> = ({ onRefreshStats }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeFacilityId]);
 
   useEffect(() => {
-    loadEntries();
-  }, [activeFacilityId]);
+    const dateToLoad = showHistory && selectedDateString ? selectedDateString : getTodayString();
+    loadEntries(dateToLoad);
+  }, [activeFacilityId, showHistory, selectedDateString, loadEntries]);
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.value) {
+      setSelectedDateString(e.target.value);
+    }
+  };
+
+  const handleToggleHistory = () => {
+    setShowHistory(!showHistory);
+    if (!showHistory) {
+      // Al activar historial, inicializar con fecha de hoy si no hay seleccionada
+      if (!selectedDateString) {
+        setSelectedDateString(getTodayString());
+      }
+    } else {
+      // Al volver a "Hoy", limpiar fecha seleccionada
+      setSelectedDateString('');
+    }
+  };
 
   const handleAddPatient = async (patient: Resident) => {
     if (!activeFacilityId) return;
@@ -70,19 +108,46 @@ export const AgendaToday: React.FC<AgendaTodayProps> = ({ onRefreshStats }) => {
     }
   };
 
-  const handleQuickAction = (action: 'evolution' | 'prescription' | 'certificate' | 'notes', patientId: string) => {
+  const handleQuickAction = (action: 'evolution' | 'prescription' | 'certificate' | 'notes', patientId: string, entry?: AgendaEntry) => {
     if (action === 'evolution') {
       navigate(`/clinical-history/${patientId}`);
     } else if (action === 'prescription') {
       navigate(`/prescriptions-history/${patientId}`);
     } else if (action === 'certificate') {
-      // Navegar a certificados del paciente si existe la ruta
-      // Por ahora, placeholder
-      alert('Módulo de certificados por paciente en desarrollo');
+      if (activeFacilityId) {
+        navigate(`/g/${activeFacilityId}/certificates?resident_id=${patientId}`);
+      }
     } else if (action === 'notes') {
-      // Por ahora, placeholder - podría ser un modal para editar note de AgendaEntry
-      alert('Edición de notas en desarrollo');
+      if (entry) {
+        setEditingEntry(entry);
+        setNoteText(entry.note || '');
+        setShowNoteModal(true);
+      }
     }
+  };
+
+  const handleSaveNote = async () => {
+    if (!editingEntry) return;
+
+    try {
+      setSavingNote(true);
+      await agendaApi.update(editingEntry.id, { note: noteText.trim() || null });
+      setShowNoteModal(false);
+      setEditingEntry(null);
+      setNoteText('');
+      await loadEntries();
+    } catch (err) {
+      const apiError = err as ApiError;
+      alert(apiError.detail || 'Error al guardar nota');
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const handleCancelNote = () => {
+    setShowNoteModal(false);
+    setEditingEntry(null);
+    setNoteText('');
   };
 
   const formatTime = (dateString: string): string => {
@@ -110,12 +175,21 @@ export const AgendaToday: React.FC<AgendaTodayProps> = ({ onRefreshStats }) => {
         style={{ backgroundColor: 'var(--facility-card, white)' }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2
-            className="text-xl font-semibold text-gray-900"
-            style={{ color: 'var(--facility-accent, #667eea)' }}
-          >
-            Agenda de hoy
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2
+              className="text-xl font-semibold text-gray-900"
+              style={{ color: 'var(--facility-accent, #667eea)' }}
+            >
+              {showHistory ? 'Historial de Agenda' : 'Agenda de hoy'}
+            </h2>
+            <button
+              onClick={handleToggleHistory}
+              className="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-50 transition-colors"
+              style={{ color: 'var(--facility-accent, #667eea)' }}
+            >
+              {showHistory ? 'Hoy' : 'Historial'}
+            </button>
+          </div>
           <Button
             onClick={() => setShowAddModal(true)}
             style={{ backgroundColor: 'var(--facility-accent, #667eea)' }}
@@ -123,6 +197,21 @@ export const AgendaToday: React.FC<AgendaTodayProps> = ({ onRefreshStats }) => {
             + Agregar paciente
           </Button>
         </div>
+
+        {showHistory && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Seleccionar fecha
+            </label>
+            <input
+              type="date"
+              value={selectedDateString || getTodayString()}
+              onChange={handleDateChange}
+              max={getTodayString()}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-8">
@@ -133,7 +222,10 @@ export const AgendaToday: React.FC<AgendaTodayProps> = ({ onRefreshStats }) => {
             <p>{error}</p>
             <Button
               variant="secondary"
-              onClick={loadEntries}
+              onClick={() => {
+                const dateToLoad = showHistory && selectedDateString ? selectedDateString : getTodayString();
+                loadEntries(dateToLoad);
+              }}
               className="mt-4"
             >
               Reintentar
@@ -186,14 +278,14 @@ export const AgendaToday: React.FC<AgendaTodayProps> = ({ onRefreshStats }) => {
                     className="text-xs px-3 py-1.5 rounded bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
                     style={{ minHeight: '44px' }}
                   >
-                    Certificado
+                    Constancia
                   </button>
                   <button
-                    onClick={() => handleQuickAction('notes', entry.patient_id)}
+                    onClick={() => handleQuickAction('notes', entry.patient_id, entry)}
                     className="text-xs px-3 py-1.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
                     style={{ minHeight: '44px' }}
                   >
-                    Notas
+                    {entry.note ? 'Notas ✓' : 'Notas'}
                   </button>
                 </div>
               </div>
@@ -218,6 +310,46 @@ export const AgendaToday: React.FC<AgendaTodayProps> = ({ onRefreshStats }) => {
             <LoadingSpinner />
           </div>
         )}
+      </Modal>
+
+      {/* Modal para editar nota */}
+      <Modal
+        isOpen={showNoteModal}
+        onClose={handleCancelNote}
+        title="Editar nota"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Nota
+            </label>
+            <textarea
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Agregar una nota sobre esta atención..."
+              rows={6}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              disabled={savingNote}
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              variant="secondary"
+              onClick={handleCancelNote}
+              disabled={savingNote}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveNote}
+              disabled={savingNote}
+              style={{ backgroundColor: 'var(--facility-accent, #667eea)' }}
+            >
+              {savingNote ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </>
   );

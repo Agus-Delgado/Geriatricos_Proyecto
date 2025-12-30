@@ -204,12 +204,12 @@ export default function MedicalFolderPage() {
         )}
       />
 
-      {/* Sección Certificados */}
+      {/* Sección Constancias */}
       <FolderSection
-        title="Certificados / Constancias"
+        title="Constancias"
         count={certificates.length}
         items={lastCertificates}
-        emptyMessage="No hay certificados registrados"
+        emptyMessage="No hay constancias registradas"
         renderItem={(certificate: Certificate) => (
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">

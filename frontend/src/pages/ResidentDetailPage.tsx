@@ -21,7 +21,7 @@ const ALL_TABS = [
   { id: 'medications', label: 'Medicaciones', roles: ['DOCTOR'] },
   { id: 'contacts', label: 'Contactos', roles: ['DOCTOR'] },
   { id: 'documents', label: 'Documentos', roles: ['DOCTOR'] },
-  { id: 'certificates', label: 'Certificados', roles: ['DOCTOR'] },
+  { id: 'certificates', label: 'Constancias', roles: ['DOCTOR'] },
 ];
 
 export const ResidentDetailPage: React.FC = () => {

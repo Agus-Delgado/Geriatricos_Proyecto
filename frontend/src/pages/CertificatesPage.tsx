@@ -243,7 +243,7 @@ export default function CertificatesPage() {
             className="rounded-2xl shadow-lg mb-6 p-8"
             style={{ backgroundColor: 'var(--facility-card, white)' }}
           >
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Certificados</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Constancias</h1>
             <p className="text-sm text-gray-600">{facility?.name}</p>
           </div>
 

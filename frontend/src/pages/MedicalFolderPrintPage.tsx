@@ -269,14 +269,14 @@ export default function MedicalFolderPrintPage() {
               )}
             </div>
 
-            {/* Certificados */}
+            {/* Constancias */}
             <div style={{ marginTop: '30px', marginBottom: '30px' }}>
               <h3 style={{ fontSize: '14pt', fontWeight: 600, marginBottom: '15px' }}>
-                Certificados / Constancias ({certificates.length})
+                Constancias ({certificates.length})
               </h3>
               {certificates.length === 0 ? (
                 <p style={{ fontStyle: 'italic', color: '#666' }}>
-                  No hay certificados registrados.
+                  No hay constancias registradas.
                 </p>
               ) : (
                 <div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFacility } from '../../contexts/FacilityContext';
+import { syncActiveFacility } from '../../utils/session';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 interface ProtectedRouteProps {
@@ -50,12 +51,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Hook SIEMPRE arriba (sin returns antes)
   useEffect(() => {
+    if (!user || authLoading) return;
+
+    // Sincronizar activeFacilityId desde backend (fuente de verdad)
+    if (user.active_facility_id !== activeFacilityId) {
+      syncActiveFacility(user);
+    }
+
     // Solo sincronizamos si: se requiere facility, no es platform admin, estamos en /g/:id/*, hay id, hay usuario y ya terminó authLoading
     if (!mustHaveFacility) return;
     if (!isGeriatricRoute) return;
     if (!urlFacilityId) return;
-    if (!user) return;
-    if (authLoading) return;
 
     // Reset del error si cambia el id
     setSyncFailed(false);
@@ -113,6 +119,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Si estamos sincronizando o cargando facility, spinner
     if (syncingFacility || facilityLoading) {
       return <LoadingSpinner fullScreen />;
+    }
+
+    // Validar que activeFacilityId existe Y está en memberships activos
+    if (activeFacilityId) {
+      const memberships = getMemberships();
+      const hasValidMembership = memberships.some(m => m.facility_id === activeFacilityId && m.is_active);
+      
+      if (!hasValidMembership) {
+        // activeFacilityId inválido, redirigir inmediatamente
+        return <Navigate to="/select-facility" replace />;
+      }
     }
 
     // Si estamos en /g/:id/* verificar membership

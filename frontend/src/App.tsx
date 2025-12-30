@@ -39,6 +39,8 @@ import MedicalFolderPrintPage from './pages/MedicalFolderPrintPage';
 import PrescriptionsHistorySearchPage from './pages/PrescriptionsHistorySearchPage';
 import PrescriptionsHistoryPage from './pages/PrescriptionsHistoryPage';
 import PrescriptionPrintPage from './pages/PrescriptionPrintPage';
+import MyAccountPage from './pages/MyAccountPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function AppContent() {
   // Aplicar theme de facility activa (resetea a defaults si no hay activeMembership)
@@ -55,12 +57,21 @@ function AppContent() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/login/:geriatricSlug" element={<GeriatricLoginPage />} />
             <Route
               path="/select-facility"
               element={
                 <ProtectedRoute requireFacility={false}>
                   <SelectFacilityPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/mi-cuenta"
+              element={
+                <ProtectedRoute requireFacility={false}>
+                  <MyAccountPage />
                 </ProtectedRoute>
               }
             />

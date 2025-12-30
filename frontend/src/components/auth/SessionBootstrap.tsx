@@ -15,7 +15,7 @@ type BootstrapStatus = 'checking' | 'ready' | 'redirecting' | 'error';
  * - Limpia caches si hay inconsistencias
  * - Redirige a login o select-facility según corresponda
  * 
- * IMPORTANTE: Este componente NO debe usar throw en ningún caso.
+ * IMPORTANTE: Este componente NUNCA debe usar throw.
  * Todos los errores se manejan con estado y redirecciones.
  */
 
@@ -30,165 +30,213 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const inactivityIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const redirectGuardRef = useRef(false); // Prevenir loops de redirect
+  const bootstrapAttemptedRef = useRef(false); // Prevenir múltiples intentos
 
-  /**
-   * Normaliza cualquier error a un string con mensaje explícito.
-   * NUNCA retorna string vacío.
-   */
-  const normalizeError = (err: unknown): string => {
-    if (err instanceof Error) {
-      return err.message || 'Error desconocido';
-    }
-    if (typeof err === 'string') {
-      return err || 'Error desconocido';
-    }
-    if (typeof err === 'object' && err !== null) {
-      try {
-        const apiErr = err as Partial<ApiError> & { message?: string };
-        if (apiErr.detail) return apiErr.detail;
-        if (apiErr.message) return apiErr.message;
-        const jsonStr = JSON.stringify(err);
-        return jsonStr || 'Error desconocido';
-      } catch {
-        return String(err) || 'Error desconocido';
-      }
-    }
-    return String(err) || 'Error desconocido';
-  };
-
+  // Bootstrap principal - TODO encapsulado en try/catch
   useEffect(() => {
-    const validateSession = async () => {
-      // Si estamos en una ruta pública, NO hacer validación (evitar loops)
-      const isPublicRoute = PUBLIC_ROUTES.some(route => 
-        location.pathname === route || location.pathname.startsWith(route + '/')
-      );
-      
-      if (isPublicRoute) {
-        // En rutas públicas, solo marcar como ready si no hay token
-        // Si hay token, dejar que el componente de login maneje el redirect
-        if (!token) {
-          setStatus('ready');
-        } else {
-          // Si hay token en ruta pública, validar pero no bloquear
-          setStatus('ready');
-        }
-        return;
-      }
+    let cancelled = false;
 
-      // Esperar a que AuthContext termine de cargar y bootstrap esté completo
-      if (authLoading || isBootstrapping) {
-        return;
-      }
+    const bootstrap = async () => {
+      try {
+        // Checkpoint: inicio
+        console.log('[SessionBootstrap] start', { 
+          path: location.pathname,
+          hasToken: !!token,
+          hasUser: !!user,
+          authLoading,
+          isBootstrapping
+        });
 
-      // Si no hay token y NO estamos en ruta pública, redirigir a login
-      if (!token) {
-        // Guard para evitar loops
-        if (redirectGuardRef.current) {
-          setStatus('ready');
+        // Si ya intentamos bootstrap, no reintentar
+        if (bootstrapAttemptedRef.current && status !== 'checking') {
+          console.log('[SessionBootstrap] bootstrap ya intentado, skip');
           return;
         }
-        redirectGuardRef.current = true;
-        setStatus('redirecting');
-        clearSessionStorage();
-        navigate('/login', { replace: true });
-        return;
-      }
 
-      // Si ya hay user cargado, validar activeFacilityId
-      if (user) {
-        try {
-          await validateActiveFacility(user);
-          setStatus('ready');
-        } catch (err) {
-          // validateActiveFacility nunca debería lanzar, pero por seguridad
-          const errorMessage = normalizeError(err);
-          console.error('SessionBootstrap: Error inesperado en validateActiveFacility', {
-            err,
-            errorMessage,
-            context: { hasUser: !!user, activeFacilityId }
-          });
-          setErrorMsg(`SessionBootstrap: error inesperado al validar facility - ${errorMessage}`);
-          setStatus('error');
-        }
-        return;
-      }
-
-      // Si hay token pero no user (caso de rehidratación), validar con /me
-      try {
-        setStatus('checking');
-        const userData = await authApi.getCurrentUser();
+        // Si estamos en una ruta pública, NO hacer validación (evitar loops)
+        const isPublicRoute = PUBLIC_ROUTES.some(route => 
+          location.pathname === route || location.pathname.startsWith(route + '/')
+        );
         
-        // Validar activeFacilityId
-        try {
-          await validateActiveFacility(userData);
-          setStatus('ready');
-        } catch (err) {
-          // validateActiveFacility nunca debería lanzar, pero por seguridad
-          const errorMessage = normalizeError(err);
-          console.error('SessionBootstrap: Error inesperado en validateActiveFacility', {
-            err,
-            errorMessage,
-            context: { hasUserData: !!userData, activeFacilityId }
-          });
-          setErrorMsg(`SessionBootstrap: error inesperado al validar facility - ${errorMessage}`);
-          setStatus('error');
-        }
-      } catch (err) {
-        const apiError = err as Partial<ApiError>;
-        
-        // Si es 401/403, limpiar y redirigir a login
-        if (apiError.status === 401 || apiError.status === 403) {
-          // Limpiar storage completo usando helper centralizado
-          clearSessionStorage();
-          
-          // Guard para evitar loops
-          if (redirectGuardRef.current) {
+        if (isPublicRoute) {
+          console.log('[SessionBootstrap] ruta pública detectada, marcar ready');
+          if (!cancelled) {
             setStatus('ready');
+          }
+          return;
+        }
+
+        // Esperar a que AuthContext termine de cargar y bootstrap esté completo
+        if (authLoading || isBootstrapping) {
+          console.log('[SessionBootstrap] esperando auth context...', { authLoading, isBootstrapping });
+          return;
+        }
+
+        // Checkpoint: verificar token
+        const storedToken = localStorage.getItem('token');
+        console.log('[SessionBootstrap] token check', { 
+          hasStoredToken: !!storedToken,
+          hasContextToken: !!token
+        });
+
+        // Si no hay token y NO estamos en ruta pública, redirigir a login
+        if (!token && !storedToken) {
+          console.log('[SessionBootstrap] sin token, redirigir a login');
+          if (redirectGuardRef.current || cancelled) {
+            if (!cancelled) setStatus('ready');
             return;
           }
           redirectGuardRef.current = true;
-          setStatus('redirecting');
-          navigate('/login', { replace: true });
+          if (!cancelled) {
+            setStatus('redirecting');
+            clearSessionStorage();
+            navigate('/login', { replace: true });
+          }
           return;
         }
-        
-        // Otros errores: log detallado y mostrar UI de error
-        const errorMessage = normalizeError(err);
-        console.error('SessionBootstrap: error inesperado al validar sesión', {
-          err,
-          errorMessage,
-          apiErrorStatus: apiError.status,
-          context: { hasToken: !!token, authLoading }
-        });
-        setErrorMsg(`SessionBootstrap: error inesperado al validar sesión - ${errorMessage}`);
-        setStatus('error');
+
+        // Si ya hay user cargado, validar activeFacilityId
+        if (user) {
+          console.log('[SessionBootstrap] user cargado, validar facility');
+          try {
+            await validateActiveFacility(user);
+            if (!cancelled) {
+              setStatus('ready');
+              bootstrapAttemptedRef.current = true;
+            }
+          } catch (err) {
+            // validateActiveFacility nunca debería lanzar, pero por seguridad
+            console.error('[SessionBootstrap] error en validateActiveFacility', err);
+            if (!cancelled) {
+              // En caso de error, limpiar y redirigir a login
+              handleBootstrapError(err, 'validateActiveFacility');
+            }
+          }
+          return;
+        }
+
+        // Si hay token pero no user (caso de rehidratación), validar con /me
+        if (token || storedToken) {
+          console.log('[SessionBootstrap] token sin user, validar con /me');
+          try {
+            if (!cancelled) setStatus('checking');
+            const userData = await authApi.getCurrentUser();
+            console.log('[SessionBootstrap] /me response', { hasUserData: !!userData });
+            
+            // Validar activeFacilityId
+            try {
+              await validateActiveFacility(userData);
+              if (!cancelled) {
+                setStatus('ready');
+                bootstrapAttemptedRef.current = true;
+              }
+            } catch (err) {
+              console.error('[SessionBootstrap] error en validateActiveFacility después de /me', err);
+              if (!cancelled) {
+                handleBootstrapError(err, 'validateActiveFacility_after_me');
+              }
+            }
+          } catch (err) {
+            const apiError = err as Partial<ApiError>;
+            console.error('[SessionBootstrap] error en /me', {
+              status: apiError.status,
+              message: apiError.message || apiError.detail,
+              error: err
+            });
+            
+            // Si es 401/403, limpiar y redirigir a login
+            if (apiError.status === 401 || apiError.status === 403) {
+              console.log('[SessionBootstrap] 401/403, limpiar sesión y redirigir');
+              if (!cancelled) {
+                clearSessionStorage();
+                if (!redirectGuardRef.current) {
+                  redirectGuardRef.current = true;
+                  setStatus('redirecting');
+                  navigate('/login', { replace: true });
+                } else {
+                  setStatus('ready');
+                }
+              }
+              return;
+            }
+            
+            // Otros errores: log detallado y recuperación
+            if (!cancelled) {
+              handleBootstrapError(err, 'auth_me_failed');
+            }
+          }
+        }
+      } catch (e) {
+        // Catch general para cualquier error inesperado
+        console.error('[SessionBootstrap] bootstrap error (catch general)', e);
+        if (!cancelled) {
+          handleBootstrapError(e, 'bootstrap_general');
+        }
+      }
+    };
+
+    const handleBootstrapError = (err: unknown, context: string) => {
+      // Normalizar error
+      const normalized = err instanceof Error 
+        ? err 
+        : new Error(typeof err === 'string' ? err : JSON.stringify(err));
+      
+      console.error('[SessionBootstrap] normalized error', {
+        context,
+        name: normalized.name,
+        message: normalized.message || 'Error sin mensaje',
+        stack: normalized.stack,
+        originalError: err
+      });
+
+      // RECUPERACIÓN: limpiar sesión y mandar a login SIN throw
+      try {
+        clearSessionStorage();
+      } catch (clearErr) {
+        console.warn('[SessionBootstrap] error al limpiar storage', clearErr);
+      }
+
+      if (!redirectGuardRef.current) {
+        redirectGuardRef.current = true;
+        setStatus('redirecting');
+        navigate('/login?reason=bootstrap_error', { replace: true });
+      } else {
+        // Si ya redirigimos, solo marcar como ready para evitar loops
+        setStatus('ready');
       }
     };
 
     const validateActiveFacility = async (userData: typeof user): Promise<void> => {
       if (!userData) {
+        console.log('[SessionBootstrap] validateActiveFacility: sin userData');
         return;
       }
 
       try {
         const storedFacilityId = localStorage.getItem('activeFacilityId');
         const facilityIdToCheck = userData.active_facility_id || storedFacilityId;
+        console.log('[SessionBootstrap] validateActiveFacility', {
+          userFacilityId: userData.active_facility_id,
+          storedFacilityId,
+          facilityIdToCheck,
+          isPlatformAdmin: userData.is_platform_admin,
+          membershipsCount: userData.memberships?.length || 0
+        });
 
         // Platform admin puede no tener facility
         if (userData.is_platform_admin) {
           if (!facilityIdToCheck) {
-            // No hay facility, está bien para platform admin
+            console.log('[SessionBootstrap] platform admin sin facility, OK');
             clearActiveFacility();
             return;
           }
-          // Si tiene facility, validar que esté en memberships (puede tener acceso a cualquier facility)
+          // Si tiene facility, validar que esté en memberships
           if (facilityIdToCheck && userData.memberships) {
             const hasMembership = userData.memberships.length === 0 || 
               userData.memberships.some(m => m.facility_id === facilityIdToCheck && m.is_active);
             if (!hasMembership) {
-              // Facility inválida, limpiar
+              console.log('[SessionBootstrap] platform admin con facility inválida, limpiar');
               clearActiveFacility();
-              // No redirigir, platform admin puede seguir sin facility
             }
           }
           return;
@@ -199,22 +247,32 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
           const activeMemberships = userData.memberships?.filter(m => m.is_active) ?? [];
           const hasValidMembership = activeMemberships.some(m => m.facility_id === facilityIdToCheck);
           
+          console.log('[SessionBootstrap] validar membership', {
+            facilityIdToCheck,
+            activeMembershipsCount: activeMemberships.length,
+            hasValidMembership
+          });
+          
           if (!hasValidMembership) {
-            // activeFacilityId inválido, limpiar y redirigir a seleccionar hogar
+            console.log('[SessionBootstrap] facility inválida, limpiar y redirigir');
             clearActiveFacility();
             
             // Limpiar solo caches relacionados, NO el token
-            const keysToRemove: string[] = [];
-            for (let i = 0; i < localStorage.length; i++) {
-              const key = localStorage.key(i);
-              if (key && (key.startsWith('facility_') || key.startsWith('cache_'))) {
-                keysToRemove.push(key);
+            try {
+              const keysToRemove: string[] = [];
+              for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.startsWith('facility_') || key.startsWith('cache_'))) {
+                  keysToRemove.push(key);
+                }
               }
+              keysToRemove.forEach(key => localStorage.removeItem(key));
+            } catch (clearErr) {
+              console.warn('[SessionBootstrap] error al limpiar caches', clearErr);
             }
-            keysToRemove.forEach(key => localStorage.removeItem(key));
             
             // Redirigir a seleccionar hogar
-            if (!redirectGuardRef.current) {
+            if (!redirectGuardRef.current && !cancelled) {
               redirectGuardRef.current = true;
               setStatus('redirecting');
               navigate('/select-facility', { replace: true });
@@ -223,8 +281,10 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         } else {
           // No hay facility activa, redirigir a seleccionar
-          if (userData.memberships && userData.memberships.filter(m => m.is_active).length > 0) {
-            if (!redirectGuardRef.current) {
+          const activeMemberships = userData.memberships?.filter(m => m.is_active) ?? [];
+          if (activeMemberships.length > 0) {
+            console.log('[SessionBootstrap] sin facility pero hay memberships, redirigir');
+            if (!redirectGuardRef.current && !cancelled) {
               redirectGuardRef.current = true;
               setStatus('redirecting');
               navigate('/select-facility', { replace: true });
@@ -232,24 +292,27 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
             return;
           }
         }
+        
+        console.log('[SessionBootstrap] validateActiveFacility OK');
       } catch (err) {
-        // Si hay error accediendo a propiedades, loguear y re-lanzar para que validateSession lo maneje
-        const errorMessage = normalizeError(err);
-        console.error('SessionBootstrap: Error accediendo a propiedades de userData', {
+        // Si hay error accediendo a propiedades, loguear pero NO lanzar
+        console.error('[SessionBootstrap] error en validateActiveFacility', {
           err,
-          errorMessage,
-          context: { hasUserData: !!userData }
+          hasUserData: !!userData
         });
-        // NO usar throw - en su lugar, dejar que el código continúe
-        // El error ya fue logueado, simplemente retornar
-        // Si necesitamos propagar el error, lo haremos a través del estado
-        // Por ahora, solo logueamos y continuamos
+        // NO usar throw - solo loguear y continuar
       }
     };
 
-    validateSession();
+    // Ejecutar bootstrap
+    bootstrap();
+
+    // Cleanup
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, user, authLoading, isBootstrapping, location.pathname]);
+  }, [token, user, authLoading, isBootstrapping, location.pathname, navigate]);
 
   // Timeout por inactividad (60 minutos)
   useEffect(() => {
@@ -301,12 +364,13 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [token, user, location.pathname, navigate]);
 
   // Render condicional basado en estado
-  // Bloquear render hasta que bootstrap esté completo Y validación de sesión termine
+  // NUNCA navegar durante render - solo mostrar UI
   if (status === 'checking' || authLoading || isBootstrapping) {
     return <LoadingSpinner fullScreen />;
   }
 
   if (status === 'redirecting') {
+    // Durante redirect, mostrar loader simple (nunca throw)
     return (
       <div style={{ 
         position: 'fixed', 
@@ -325,116 +389,18 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
   }
 
   if (status === 'error') {
-    return (
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 2147483647,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1rem',
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          backdropFilter: 'blur(4px)',
-          pointerEvents: 'auto',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '28rem',
-            width: '100%',
-            borderRadius: '0.75rem',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            padding: '1.5rem',
-            backgroundColor: 'white',
-            pointerEvents: 'auto',
-          }}
-        >
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>⚠️</div>
-            <h1
-              style={{
-                fontSize: '1.5rem',
-                fontWeight: 'bold',
-                color: '#111827',
-                marginBottom: '0.5rem',
-              }}
-            >
-              Error al validar sesión
-            </h1>
-            <p
-              style={{
-                color: '#4b5563',
-                marginBottom: '1.5rem',
-              }}
-            >
-              {errorMsg || 'Ocurrió un error inesperado al validar tu sesión.'}
-            </p>
-            
-            <div
-              style={{
-                display: 'flex',
-                gap: '0.75rem',
-                justifyContent: 'center',
-                flexWrap: 'wrap',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => window.location.reload()}
-                style={{
-                  padding: '0.625rem 1.25rem',
-                  borderRadius: '0.5rem',
-                  backgroundColor: '#667eea',
-                  color: 'white',
-                  fontWeight: '500',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  pointerEvents: 'auto',
-                  minHeight: '44px',
-                  minWidth: '120px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#5568d3';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#667eea';
-                }}
-              >
-                Recargar
-              </button>
-              <button
-                type="button"
-                onClick={() => window.location.assign('/')}
-                style={{
-                  padding: '0.625rem 1.25rem',
-                  borderRadius: '0.5rem',
-                  backgroundColor: '#f3f4f6',
-                  color: '#374151',
-                  fontWeight: '500',
-                  border: '1px solid #d1d5db',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  pointerEvents: 'auto',
-                  minHeight: '44px',
-                  minWidth: '120px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#e5e7eb';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f3f4f6';
-                }}
-              >
-                Ir al inicio
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    // En caso de error, redirigir a login en lugar de mostrar UI de error
+    // Esto evita que el usuario quede atrapado
+    if (!redirectGuardRef.current) {
+      redirectGuardRef.current = true;
+      // Usar setTimeout para asegurar que la navegación ocurra después del render
+      setTimeout(() => {
+        clearSessionStorage();
+        navigate('/login?reason=bootstrap_error', { replace: true });
+      }, 0);
+    }
+    // Mientras tanto, mostrar loader
+    return <LoadingSpinner fullScreen />;
   }
 
   // status === 'ready'

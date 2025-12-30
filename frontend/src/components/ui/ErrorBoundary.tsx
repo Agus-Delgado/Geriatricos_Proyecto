@@ -16,25 +16,42 @@ interface State {
 
 /**
  * Normaliza cualquier valor a un Error con mensaje y stack
+ * Asegura que siempre haya un mensaje útil
  */
 function normalizeError(error: unknown): Error {
   if (error instanceof Error) {
-    return error;
+    // Si el error ya tiene mensaje, usarlo
+    if (error.message && error.message.trim()) {
+      return error;
+    }
+    // Si no tiene mensaje pero tiene name, usar name
+    if (error.name && error.name !== 'Error') {
+      return new Error(error.name);
+    }
+    // Si tiene stack, intentar extraer info del stack
+    if (error.stack) {
+      const stackLines = error.stack.split('\n');
+      if (stackLines.length > 0) {
+        return new Error(stackLines[0] || 'Error desconocido');
+      }
+    }
+    return new Error('Error inesperado');
   }
   
   if (typeof error === 'string') {
-    return new Error(error);
+    return new Error(error.trim() || 'Error desconocido');
   }
   
   if (typeof error === 'object' && error !== null) {
     try {
-      return new Error(JSON.stringify(error));
+      const jsonStr = JSON.stringify(error);
+      return new Error(jsonStr || 'Error desconocido');
     } catch {
-      return new Error(String(error));
+      return new Error(String(error) || 'Error desconocido');
     }
   }
   
-  return new Error(String(error));
+  return new Error(String(error) || 'Error desconocido');
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -51,10 +68,17 @@ export class ErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: unknown): Partial<State> {
     const normalized = normalizeError(error);
+    // Asegurar que siempre haya un mensaje de display útil
+    const displayMessage = normalized.message?.trim() 
+      ? normalized.message 
+      : (normalized.name && normalized.name !== 'Error' 
+          ? normalized.name 
+          : 'Error inesperado');
+    
     return {
       hasError: true,
       error: normalized,
-      errorMessage: normalized.message || 'Error desconocido',
+      errorMessage: displayMessage,
       errorStack: normalized.stack || null,
     };
   }
@@ -62,27 +86,38 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: unknown, errorInfo: ErrorInfo): void {
     const normalized = normalizeError(error);
     
+    // Asegurar mensaje de display útil
+    const displayMessage = normalized.message?.trim() 
+      ? normalized.message 
+      : (normalized.name && normalized.name !== 'Error' 
+          ? normalized.name 
+          : 'Error inesperado');
+    
     // SIEMPRE loguear el error con mensaje y stack (también en producción)
-    console.error('ErrorBoundary caught an error:', {
-      message: normalized.message,
+    console.error('[ErrorBoundary] caught an error:', {
+      name: normalized.name,
+      message: normalized.message || 'Error sin mensaje',
+      displayMessage,
       stack: normalized.stack,
       error: normalized,
-      errorInfo,
-      componentStack: errorInfo.componentStack,
+      originalError: error,
     });
+    
+    // Loguear componentStack siempre
+    console.error('[ErrorBoundary] componentStack:', errorInfo?.componentStack);
     
     // Auto-recuperación: limpiar sesión para evitar estados corruptos
     try {
       clearSessionStorage();
     } catch (e) {
-      console.warn('ErrorBoundary: Error al limpiar storage', e);
+      console.warn('[ErrorBoundary] Error al limpiar storage', e);
     }
     
     // Guardar errorInfo y error normalizado en state
     this.setState({
       error: normalized,
       errorInfo,
-      errorMessage: normalized.message || 'Error desconocido',
+      errorMessage: displayMessage,
       errorStack: normalized.stack || null,
     });
   }
@@ -177,7 +212,7 @@ export class ErrorBoundary extends Component<Props, State> {
                       marginBottom: (this.state.errorStack || this.state.errorInfo) ? '0.5rem' : 0,
                     }}
                   >
-                    {this.state.errorMessage || 'Error desconocido'}
+                    {this.state.errorMessage || this.state.error?.name || 'Error inesperado'}
                   </p>
                   {(this.state.errorStack || import.meta.env.VITE_DEBUG_ERRORS === '1') && this.state.errorStack && (
                     <details style={{ fontSize: '0.75rem', color: '#991b1b', marginTop: '0.5rem' }}>

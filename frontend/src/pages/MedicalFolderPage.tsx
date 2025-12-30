@@ -133,14 +133,6 @@ export default function MedicalFolderPage() {
       <BackHeader
         title={`${patient.last_name}, ${patient.first_name}`}
         fallbackPath="/medical-folder/search"
-        rightActions={
-          <Button
-            onClick={handlePrint}
-            style={{ backgroundColor: 'var(--facility-accent, #667eea)' }}
-          >
-            Imprimir
-          </Button>
-        }
       />
 
       <FolderSummaryHeader patient={patient} />

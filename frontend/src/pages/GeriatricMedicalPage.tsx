@@ -4,7 +4,10 @@ import { PatientList } from '../components/medical/PatientList';
 import { DoctorBanner } from '../components/dashboard/DoctorBanner';
 import { DaySummaryCards } from '../components/dashboard/DaySummaryCards';
 import { getRandomMedicalQuote } from '../data/medicalQuotes';
+import { dashboardApi } from '../api/dashboard';
+import { getPatientsViewedCount } from '../utils/patientTracking';
 import { useAuth } from '../contexts/AuthContext';
+import type { DayStats } from '../types/dashboard';
 
 export default function GeriatricMedicalPage() {
   const { id } = useParams();
@@ -17,6 +20,7 @@ export default function GeriatricMedicalPage() {
   
   // Frase médica rotativa - cambia cada vez que se navega al dashboard
   const [medicalQuote, setMedicalQuote] = useState(getRandomMedicalQuote());
+  const [dayStats, setDayStats] = useStateReact<DayStats | null>(null);
   
   useEffect(() => {
     // Recalcular quote cuando se navega a esta ruta
@@ -24,6 +28,54 @@ export default function GeriatricMedicalPage() {
       setMedicalQuote(getRandomMedicalQuote());
     }
   }, [location.pathname, facilityId]);
+
+  // Cargar estadísticas del día
+  useEffect(() => {
+    const loadDayStats = async () => {
+      const today = new Date().toISOString().split('T')[0];
+      
+      try {
+        // Intentar cargar desde API
+        const stats = await dashboardApi.getDaySummary(today);
+        
+        if (stats) {
+          // Si tenemos stats de API pero no tiene patients_viewed_today, agregar desde localStorage
+          if (stats.patients_viewed_today === undefined && activeFacilityId) {
+            stats.patients_viewed_today = getPatientsViewedCount(activeFacilityId, today);
+          }
+          setDayStats(stats);
+        } else {
+          // Si no hay API, crear stats desde localStorage
+          if (activeFacilityId) {
+            setDayStats({
+              facilityId: activeFacilityId,
+              date: today,
+              patients_viewed_today: getPatientsViewedCount(activeFacilityId, today),
+              prescriptions_created_today: undefined,
+              clinical_notes_created_today: undefined,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading day stats:', error);
+        // Fallback a localStorage solo
+        if (activeFacilityId) {
+          const today = new Date().toISOString().split('T')[0];
+          setDayStats({
+            facilityId: activeFacilityId,
+            date: today,
+            patients_viewed_today: getPatientsViewedCount(activeFacilityId, today),
+            prescriptions_created_today: undefined,
+            clinical_notes_created_today: undefined,
+          });
+        }
+      }
+    };
+
+    if (activeFacilityId) {
+      loadDayStats();
+    }
+  }, [activeFacilityId]);
 
   const navigate = useNavigate();
 
@@ -65,7 +117,7 @@ export default function GeriatricMedicalPage() {
           <DaySummaryCards
             facilityName={facilityName}
             date={new Date().toISOString().split('T')[0]}
-            stats={undefined} // Por ahora undefined, se puede agregar cuando esté el endpoint
+            stats={dayStats || undefined}
           />
 
           {/* Quick Actions */}

@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.api.routes import (
     auth, facilities, residents, resident_contacts, clinical, medications, prescriptions,
     documents, certificates, external_platforms, resident_external_events, finance,
-    staff, attendance, admin
+    staff, attendance, admin, dashboard
 )
 from app.db.session import SessionLocal
 from app.db.bootstrap import bootstrap_production_users
@@ -113,6 +113,7 @@ app.include_router(resident_external_events.router)
 app.include_router(finance.router)
 app.include_router(staff.router)
 app.include_router(attendance.router)
+app.include_router(dashboard.router)
 
 
 @app.on_event("startup")

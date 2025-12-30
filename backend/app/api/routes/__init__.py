@@ -4,6 +4,7 @@ from . import auth
 from . import attendance
 from . import certificates
 from . import clinical
+from . import dashboard
 from . import documents
 from . import external_platforms
 from . import facilities
@@ -21,6 +22,7 @@ __all__ = [
     "attendance",
     "certificates",
     "clinical",
+    "dashboard",
     "documents",
     "external_platforms",
     "facilities",

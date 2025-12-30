@@ -9,6 +9,8 @@ import { PrescriptionFormModal } from '../components/prescriptions/PrescriptionF
 import { Button } from '../components/ui/Button';
 import { copyToClipboard } from '../utils/clipboard';
 import { openExternal } from '../utils/externalLinks';
+import { trackPatientView } from '../utils/patientTracking';
+import { useAuth } from '../contexts/AuthContext';
 import type { Resident } from '../types/residents';
 import type { MedicationPlan } from '../types/medications';
 import type { PrescriptionLog, PrescriptionLogCreate } from '../types/prescriptions';
@@ -26,6 +28,7 @@ type PrescriptionItem = {
 export default function PrescriptionsHistoryPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
+  const { activeFacilityId } = useAuth();
   const [patient, setPatient] = useState<Resident | null>(null);
   const [prescriptionLogs, setPrescriptionLogs] = useState<PrescriptionLog[]>([]);
   const [medicationPlans, setMedicationPlans] = useState<MedicationPlan[]>([]);
@@ -58,6 +61,11 @@ export default function PrescriptionsHistoryPage() {
       setPatient(patientData);
       setPrescriptionLogs(logsData);
       setMedicationPlans(plansData);
+
+      // Track patient view (localStorage fallback)
+      if (activeFacilityId && patientId) {
+        trackPatientView(activeFacilityId, patientId);
+      }
     } catch (err) {
       const apiError = err as ApiError;
       setError(apiError.detail || 'Error al cargar datos');

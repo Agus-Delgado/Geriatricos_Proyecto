@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { trackPatientView } from '../utils/patientTracking';
 import { residentsApi } from '../api/residents';
 import { clinicalApi } from '../api/clinical';
 import { EvolutionsList } from '../components/clinical/EvolutionsList';
@@ -13,6 +15,7 @@ import type { ApiError } from '../api/client';
 export default function ClinicalHistoryPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
+  const { activeFacilityId } = useAuth();
   const [patient, setPatient] = useState<Resident | null>(null);
   const [notes, setNotes] = useState<ClinicalNote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +43,11 @@ export default function ClinicalHistoryPage() {
       setNotes(notesData.sort((a, b) => 
         new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
       ));
+
+      // Track patient view (localStorage fallback)
+      if (activeFacilityId && patientId) {
+        trackPatientView(activeFacilityId, patientId);
+      }
     } catch (err) {
       const apiError = err as ApiError;
       setError(apiError.detail || 'Error al cargar datos');

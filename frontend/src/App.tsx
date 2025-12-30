@@ -7,6 +7,7 @@ import { UnauthorizedHandler } from './components/auth/UnauthorizedHandler';
 import { SessionExpiredHandler } from './components/auth/SessionExpiredHandler';
 import { SessionBootstrap } from './components/auth/SessionBootstrap';
 import { UpdateBanner } from './components/pwa/UpdateBanner';
+import { SelfHealFallback } from './components/pwa/SelfHealFallback';
 import { Header } from './components/layout/Header';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { useFacilityTheme } from './hooks/useFacilityTheme';
@@ -250,6 +251,7 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
+      <SelfHealFallback />
       <PWAProvider>
         <AuthProvider>
           <SessionBootstrap>

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from datetime import date
 from app.db.session import get_db
-from app.api.deps import get_current_user, get_current_facility_context
+from app.api.deps import get_current_user
 from app.schemas.dashboard import DayStatsResponse
 from app.services.dashboard_service import get_day_summary
 from app.models.auth import User
@@ -18,14 +18,12 @@ async def get_dashboard_summary(
     db: Session = Depends(get_db)
 ):
     """Obtener resumen del día para la facility activa"""
-    user, active_facility_id, _ = get_current_facility_context(current_user, db)
-
-    if not active_facility_id:
+    if not current_user.active_facility_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No hay facility activa"
         )
 
-    summary = get_day_summary(db, active_facility_id, date_param)
+    summary = get_day_summary(db, current_user.active_facility_id, date_param)
 
     return DayStatsResponse(**summary)

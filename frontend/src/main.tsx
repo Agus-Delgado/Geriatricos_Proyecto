@@ -89,6 +89,8 @@ async function performSelfHeal(): Promise<void> {
 
     // 4. Recargar UNA sola vez (simple reload, no navegación con query params)
     // El bootstrap script en index.html ya maneja ?recover=1 si es necesario
+    // Marcar como recarga programada para evitar que auto-logout interfiera
+    sessionStorage.setItem('__programmed_reload__', '1');
     console.log('[Self-heal] Recargando página...');
     window.location.reload();
   } catch (err) {

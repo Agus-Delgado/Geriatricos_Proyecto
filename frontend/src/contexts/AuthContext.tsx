@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { authApi } from '../api/auth';
-import { clearSessionStorage, clearAuthStorageOnly, syncActiveFacility } from '../utils/session';
+import { clearSessionStorage, syncActiveFacility } from '../utils/session';
 import type { User, FacilityMembership, UserRole } from '../types/auth';
 import type { ApiError } from '../api/client';
 
@@ -210,14 +210,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-logout cuando el usuario abandona la app (cierra pestaña/recarga/navega fuera)
-  // Esto previene bugs de UI duplicada al reabrir el link sin cerrar sesión
-  // IMPORTANTE: Usar clearAuthStorageOnly() para NO borrar keys __sw_* (guards contra loops)
+  // DESACTIVADO: Auto-logout en pagehide/beforeunload causaba loops infinitos
+  // El problema: se ejecutaba en CADA recarga (incluyendo self-heal), causando loop
+  // Solución alternativa: usar timeout de inactividad en SessionBootstrap (ya implementado)
+  // Si se necesita auto-logout al cerrar pestaña, implementar con flag para evitar recargas
+  /*
   useEffect(() => {
-    const handlePageLeave = () => {
+    const handlePageLeave = (event: PageTransitionEvent | BeforeUnloadEvent) => {
+      // Solo ejecutar si NO es una recarga programada (self-heal, etc.)
+      // Verificar si hay un flag de recarga programada
+      const isProgrammedReload = sessionStorage.getItem('__programmed_reload__') === '1';
+      if (isProgrammedReload) {
+        sessionStorage.removeItem('__programmed_reload__');
+        return; // No hacer logout en recargas programadas
+      }
+
       // Silent logout: solo limpiar keys de auth, sin redirect
-      // NO usar clearAllAuth() porque puede interferir con self-heal
-      // Usar clearAuthStorageOnly() que preserva keys críticas __sw_*
       clearAuthStorageOnly();
       
       // Limpiar estado de React sin tocar localStorage crítico
@@ -236,6 +244,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       window.removeEventListener('beforeunload', handlePageLeave);
     };
   }, []);
+  */
 
   const login = async (username: string, password: string) => {
     setLoading(true);

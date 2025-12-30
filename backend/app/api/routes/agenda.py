@@ -123,6 +123,7 @@ async def create_agenda_entry_endpoint(
 
 
 @router.patch("/{entry_id}", response_model=AgendaEntryResponse)
+@router.put("/{entry_id}", response_model=AgendaEntryResponse)
 async def update_agenda_entry_endpoint(
     entry_id: UUID,
     data: AgendaEntryUpdate,
@@ -133,6 +134,7 @@ async def update_agenda_entry_endpoint(
     Actualizar una entrada de agenda (nota y/o fecha/hora).
     DOCTOR: solo puede editar entradas propias.
     ADMIN: puede editar cualquier entrada de la facility activa.
+    Soporta tanto PATCH como PUT para compatibilidad.
     """
     if not current_user.active_facility_id:
         raise HTTPException(

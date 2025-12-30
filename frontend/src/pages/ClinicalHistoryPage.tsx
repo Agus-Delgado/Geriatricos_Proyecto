@@ -5,6 +5,7 @@ import { trackPatientView } from '../utils/patientTracking';
 import { residentsApi } from '../api/residents';
 import { clinicalApi } from '../api/clinical';
 import { EvolutionsList } from '../components/clinical/EvolutionsList';
+import { BackHeader } from '../components/ui/BackHeader';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
@@ -105,42 +106,41 @@ export default function ClinicalHistoryPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-6xl">
-      {/* Header con datos del paciente */}
-      <div
-        className="rounded-xl shadow-lg p-6 mb-6"
-        style={{ backgroundColor: 'var(--facility-card, white)' }}
-      >
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h1
-              className="text-2xl font-bold text-gray-900 mb-2"
-              style={{ color: 'var(--facility-accent, #667eea)' }}
-            >
-              Historia Clínica
-            </h1>
-            <h2 className="text-xl font-semibold text-gray-900">
-              {patient.last_name}, {patient.first_name}
-            </h2>
-            <div className="mt-2 text-sm text-gray-600 space-y-1">
-              <p>DNI: {patient.dni || 'N/A'}</p>
-              {age !== null && <p>Edad: {age} años</p>}
-              {patient.coverage_type && <p>Obra Social: {patient.coverage_type}</p>}
-            </div>
-          </div>
-          <div className="flex gap-3">
+      <BackHeader
+        title={`${patient.last_name}, ${patient.first_name}`}
+        fallbackPath="/clinical-history/search"
+        rightActions={
+          <>
             <Button
               variant="secondary"
               onClick={handleViewMedicalFolder}
               style={{ borderColor: 'var(--facility-accent, #667eea)' }}
             >
-              Ver Carpeta Médica
+              Carpeta
             </Button>
             <Button
               onClick={handlePrint}
               style={{ backgroundColor: 'var(--facility-accent, #667eea)' }}
             >
-              Imprimir Ficha
+              Imprimir
             </Button>
+          </>
+        }
+      />
+
+      {/* Header con datos del paciente */}
+      <div
+        className="rounded-xl shadow-lg p-6 mb-6"
+        style={{ backgroundColor: 'var(--facility-card, white)' }}
+      >
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Historia Clínica
+          </h2>
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>DNI: {patient.dni || 'N/A'}</p>
+            {age !== null && <p>Edad: {age} años</p>}
+            {patient.coverage_type && <p>Obra Social: {patient.coverage_type}</p>}
           </div>
         </div>
       </div>

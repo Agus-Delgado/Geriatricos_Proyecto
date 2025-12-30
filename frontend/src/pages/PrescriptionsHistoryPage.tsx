@@ -6,6 +6,7 @@ import { prescriptionsApi } from '../api/prescriptions';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { PrescriptionFormModal } from '../components/prescriptions/PrescriptionFormModal';
+import { BackHeader } from '../components/ui/BackHeader';
 import { Button } from '../components/ui/Button';
 import { copyToClipboard } from '../utils/clipboard';
 import { openExternal } from '../utils/externalLinks';
@@ -215,52 +216,68 @@ export default function PrescriptionsHistoryPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-6xl">
+      <BackHeader
+        title={`${patient.last_name}, ${patient.first_name}`}
+        fallbackPath="/prescriptions-history/search"
+      />
+
       {/* Header con datos del paciente */}
       <div
         className="rounded-xl shadow-lg p-6 mb-6"
         style={{ backgroundColor: 'var(--facility-card, white)' }}
       >
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h1
-              className="text-2xl font-bold text-gray-900 mb-2"
-              style={{ color: 'var(--facility-accent, #667eea)' }}
-            >
-              Historial de Recetas
-            </h1>
-            <h2 className="text-xl font-semibold text-gray-900">
-              {patient.last_name}, {patient.first_name}
-            </h2>
-            <div className="mt-2 text-sm text-gray-600 space-y-1">
-              <p>DNI: {patient.dni || 'N/A'}</p>
-              {age !== null && <p>Edad: {age} años</p>}
-              {patient.coverage_type && <p>Obra Social: {patient.coverage_type}</p>}
-            </div>
-            {/* Acciones rápidas */}
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                onClick={async () => {
-                  if (patient.dni) {
-                    try {
-                      await copyToClipboard(patient.dni);
-                      alert('DNI copiado al portapapeles');
-                    } catch (err) {
-                      console.error('Error al copiar:', err);
-                    }
-                  }
-                }}
-                disabled={!patient.dni}
-                className="text-xs px-3 py-1.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ minHeight: '44px' }}
-              >
-                📋 Copiar DNI
-              </button>
-              <button
-                onClick={async () => {
-                  const fullName = `${patient.last_name}, ${patient.first_name}`;
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Historial de Recetas
+          </h2>
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>DNI: {patient.dni || 'N/A'}</p>
+            {age !== null && <p>Edad: {age} años</p>}
+            {patient.coverage_type && <p>Obra Social: {patient.coverage_type}</p>}
+          </div>
+          {/* Acciones rápidas */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={async () => {
+                if (patient.dni) {
                   try {
-                    await copyToClipboard(fullName);
-                    alert('Nombre copiado al portapapeles');
+                    await copyToClipboard(patient.dni);
+                    alert('DNI copiado al portapapeles');
+                  } catch (err) {
+                    console.error('Error al copiar:', err);
+                  }
+                }
+              }}
+              disabled={!patient.dni}
+              className="text-xs px-3 py-1.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ minHeight: '44px' }}
+            >
+              📋 Copiar DNI
+            </button>
+            <button
+              onClick={async () => {
+                const fullName = `${patient.last_name}, ${patient.first_name}`;
+                try {
+                  await copyToClipboard(fullName);
+                  alert('Nombre copiado al portapapeles');
+                } catch (err) {
+                  console.error('Error al copiar:', err);
+                }
+              }}
+              className="text-xs px-3 py-1.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              style={{ minHeight: '44px' }}
+            >
+              📋 Copiar Nombre
+            </button>
+            {(patient.coverage_type || patient.coverage_number) && (
+              <button
+                onClick={async () => {
+                  const coverageInfo = patient.coverage_number
+                    ? `${patient.coverage_type || 'Obra Social'}: ${patient.coverage_number}`
+                    : patient.coverage_type || '';
+                  try {
+                    await copyToClipboard(coverageInfo);
+                    alert('Obra social copiada al portapapeles');
                   } catch (err) {
                     console.error('Error al copiar:', err);
                   }
@@ -268,28 +285,9 @@ export default function PrescriptionsHistoryPage() {
                 className="text-xs px-3 py-1.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
                 style={{ minHeight: '44px' }}
               >
-                📋 Copiar Nombre
+                📋 Copiar Obra Social
               </button>
-              {(patient.coverage_type || patient.coverage_number) && (
-                <button
-                  onClick={async () => {
-                    const coverageInfo = patient.coverage_number
-                      ? `${patient.coverage_type || 'Obra Social'}: ${patient.coverage_number}`
-                      : patient.coverage_type || '';
-                    try {
-                      await copyToClipboard(coverageInfo);
-                      alert('Obra social copiada al portapapeles');
-                    } catch (err) {
-                      console.error('Error al copiar:', err);
-                    }
-                  }}
-                  className="text-xs px-3 py-1.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                  style={{ minHeight: '44px' }}
-                >
-                  📋 Copiar Obra Social
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>

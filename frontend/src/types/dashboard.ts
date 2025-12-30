@@ -4,4 +4,5 @@ export interface DayStats {
   patients_viewed_today?: number;
   prescriptions_created_today?: number;
   clinical_notes_created_today?: number;
+  agenda_entries_today?: number;
 }

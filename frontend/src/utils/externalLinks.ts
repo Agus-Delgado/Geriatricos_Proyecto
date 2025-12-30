@@ -16,18 +16,19 @@ export function openExternal(url: string): void {
     return;
   }
 
-  // Try to open in new window with security attributes
+  // Open in new window with security attributes
+  // IMPORTANT: NO usar window.location.href como fallback porque navegaría la pestaña actual
   try {
     const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
     
-    // Fallback: if window.open fails (popup blocked), try location.href
+    // Si popup fue bloqueado, solo loguear el error pero NO navegar la pestaña actual
     if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-      // Popup was blocked, fallback to direct navigation
-      window.location.href = url;
+      console.warn('openExternal: Popup bloqueado. No se puede abrir la URL en nueva pestaña:', url);
+      // Opcional: mostrar mensaje al usuario si queremos en el futuro
+      // Por ahora solo no hacemos nada para no romper la experiencia
     }
   } catch (error) {
-    // Last resort: use location.href
+    // Solo loguear el error, NO navegar la pestaña actual
     console.error('openExternal: Error opening window', error);
-    window.location.href = url;
   }
 }

@@ -73,6 +73,17 @@ export const DaySummaryCards: React.FC<DaySummaryCardsProps> = ({
           <p className="text-lg font-semibold text-gray-900">{stats.clinical_notes_created_today}</p>
         </div>
       )}
+
+      {/* Atenciones hoy (agenda entries) */}
+      {stats?.agenda_entries_today !== undefined && (
+        <div
+          className="rounded-lg shadow p-4"
+          style={{ backgroundColor: 'var(--facility-card, white)' }}
+        >
+          <p className="text-xs text-gray-500 uppercase mb-1">Atenciones hoy</p>
+          <p className="text-lg font-semibold text-gray-900">{stats.agenda_entries_today}</p>
+        </div>
+      )}
     </div>
   );
 };

@@ -6,6 +6,7 @@ import { medicationsApi } from '../api/medications';
 import { certificatesApi } from '../api/certificates';
 import { FolderSummaryHeader } from '../components/folder/FolderSummaryHeader';
 import { FolderSection } from '../components/folder/FolderSection';
+import { BackHeader } from '../components/ui/BackHeader';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
@@ -129,6 +130,19 @@ export default function MedicalFolderPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-6xl">
+      <BackHeader
+        title={`${patient.last_name}, ${patient.first_name}`}
+        fallbackPath="/medical-folder/search"
+        rightActions={
+          <Button
+            onClick={handlePrint}
+            style={{ backgroundColor: 'var(--facility-accent, #667eea)' }}
+          >
+            Imprimir
+          </Button>
+        }
+      />
+
       <FolderSummaryHeader patient={patient} />
 
       <div className="flex justify-end mb-4">

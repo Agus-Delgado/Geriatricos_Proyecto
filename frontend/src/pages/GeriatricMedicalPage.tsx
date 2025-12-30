@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { PatientList } from '../components/medical/PatientList';
 import { DoctorBanner } from '../components/dashboard/DoctorBanner';
 import { DaySummaryCards } from '../components/dashboard/DaySummaryCards';
+import { AgendaToday } from '../components/dashboard/AgendaToday';
 import { getRandomMedicalQuote } from '../data/medicalQuotes';
 import { dashboardApi } from '../api/dashboard';
 import { getPatientsViewedCount } from '../utils/patientTracking';
@@ -119,6 +120,22 @@ export default function GeriatricMedicalPage() {
             date={new Date().toISOString().split('T')[0]}
             stats={dayStats || undefined}
           />
+
+          {/* Agenda de hoy */}
+          <AgendaToday onRefreshStats={() => {
+            // Recargar stats del día cuando se actualiza la agenda
+            const today = new Date().toISOString().split('T')[0];
+            dashboardApi.getDaySummary(today).then(stats => {
+              if (stats && activeFacilityId) {
+                if (stats.patients_viewed_today === undefined) {
+                  stats.patients_viewed_today = getPatientsViewedCount(activeFacilityId, today);
+                }
+                setDayStats(stats);
+              }
+            }).catch(() => {
+              // Ignorar errores silenciosamente
+            });
+          }} />
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">

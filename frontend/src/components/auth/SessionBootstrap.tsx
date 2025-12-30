@@ -23,11 +23,10 @@ type BootstrapStatus = 'checking' | 'ready' | 'redirecting' | 'error';
 const PUBLIC_ROUTES = ['/login', '/register', '/verify-email', '/reset-password'];
 
 export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { token, user, loading: authLoading, isBootstrapping, activeFacilityId, clearActiveFacility } = useAuth();
+  const { token, user, loading: authLoading, isBootstrapping, clearActiveFacility } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [status, setStatus] = useState<BootstrapStatus>('checking');
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const inactivityIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const redirectGuardRef = useRef(false); // Prevenir loops de redirect
   const bootstrapAttemptedRef = useRef(false); // Prevenir múltiples intentos
@@ -137,15 +136,20 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
               }
             }
           } catch (err) {
-            const apiError = err as Partial<ApiError>;
+            const unknownErr = err as unknown;
+            const apiErr = unknownErr as Partial<ApiError>;
+            const msg =
+              (typeof (unknownErr as any)?.message === 'string' ? (unknownErr as any).message : '') ||
+              (typeof apiErr?.detail === 'string' ? apiErr.detail : '') ||
+              'Error inesperado';
             console.error('[SessionBootstrap] error en /me', {
-              status: apiError.status,
-              message: apiError.message || apiError.detail,
-              error: err
+              status: apiErr.status,
+              message: msg,
+              error: unknownErr
             });
             
             // Si es 401/403, limpiar y redirigir a login
-            if (apiError.status === 401 || apiError.status === 403) {
+            if (apiErr.status === 401 || apiErr.status === 403) {
               console.log('[SessionBootstrap] 401/403, limpiar sesión y redirigir');
               if (!cancelled) {
                 clearSessionStorage();

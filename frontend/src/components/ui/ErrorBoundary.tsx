@@ -9,6 +9,31 @@ interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  errorMessage: string;
+  errorStack: string | null;
+}
+
+/**
+ * Normaliza cualquier valor a un Error con mensaje y stack
+ */
+function normalizeError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+  
+  if (typeof error === 'string') {
+    return new Error(error);
+  }
+  
+  if (typeof error === 'object' && error !== null) {
+    try {
+      return new Error(JSON.stringify(error));
+    } catch {
+      return new Error(String(error));
+    }
+  }
+  
+  return new Error(String(error));
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -18,23 +43,39 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
+      errorMessage: '',
+      errorStack: null,
     };
   }
 
-  static getDerivedStateFromError(error: Error): Partial<State> {
+  static getDerivedStateFromError(error: unknown): Partial<State> {
+    const normalized = normalizeError(error);
     return {
       hasError: true,
-      error,
+      error: normalized,
+      errorMessage: normalized.message || 'Error desconocido',
+      errorStack: normalized.stack || null,
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // SIEMPRE loguear el error (también en producción para diagnóstico)
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  componentDidCatch(error: unknown, errorInfo: ErrorInfo): void {
+    const normalized = normalizeError(error);
     
-    // Guardar errorInfo en state para mostrar detalles si es necesario
-    this.setState({
+    // SIEMPRE loguear el error con mensaje y stack (también en producción)
+    console.error('ErrorBoundary caught an error:', {
+      message: normalized.message,
+      stack: normalized.stack,
+      error: normalized,
       errorInfo,
+      componentStack: errorInfo.componentStack,
+    });
+    
+    // Guardar errorInfo y error normalizado en state
+    this.setState({
+      error: normalized,
+      errorInfo,
+      errorMessage: normalized.message || 'Error desconocido',
+      errorStack: normalized.stack || null,
     });
   }
 
@@ -59,7 +100,7 @@ export class ErrorBoundary extends Component<Props, State> {
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 99999,
+            zIndex: 2147483647,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -102,8 +143,8 @@ export class ErrorBoundary extends Component<Props, State> {
                 o recargar la página.
               </p>
               
-              {/* Mostrar error en desarrollo o si hay errorInfo */}
-              {(this.state.error || this.state.errorInfo) && (
+              {/* Mostrar error siempre (también en producción) */}
+              {this.state.errorMessage && (
                 <div
                   style={{
                     marginBottom: '1rem',
@@ -113,29 +154,45 @@ export class ErrorBoundary extends Component<Props, State> {
                     textAlign: 'left',
                   }}
                 >
-                  {this.state.error && (
-                    <p
-                      style={{
-                        fontSize: '0.875rem',
-                        fontFamily: 'monospace',
-                        color: '#991b1b',
-                        wordBreak: 'break-all',
-                        marginBottom: this.state.errorInfo ? '0.5rem' : 0,
-                      }}
-                    >
-                      {this.state.error.message}
-                    </p>
-                  )}
-                  {this.state.errorInfo && import.meta.env.DEV && (
-                    <details style={{ fontSize: '0.75rem', color: '#991b1b' }}>
-                      <summary style={{ cursor: 'pointer', marginTop: '0.5rem' }}>
-                        Detalles técnicos
+                  <p
+                    style={{
+                      fontSize: '0.875rem',
+                      fontFamily: 'monospace',
+                      color: '#991b1b',
+                      wordBreak: 'break-all',
+                      marginBottom: (this.state.errorStack || this.state.errorInfo) ? '0.5rem' : 0,
+                    }}
+                  >
+                    {this.state.errorMessage || 'Error desconocido'}
+                  </p>
+                  {(this.state.errorStack || import.meta.env.VITE_DEBUG_ERRORS === '1') && this.state.errorStack && (
+                    <details style={{ fontSize: '0.75rem', color: '#991b1b', marginTop: '0.5rem' }}>
+                      <summary style={{ cursor: 'pointer' }}>
+                        Stack trace
                       </summary>
                       <pre
                         style={{
                           marginTop: '0.5rem',
                           whiteSpace: 'pre-wrap',
                           wordBreak: 'break-all',
+                          fontSize: '0.7rem',
+                        }}
+                      >
+                        {this.state.errorStack}
+                      </pre>
+                    </details>
+                  )}
+                  {this.state.errorInfo && (import.meta.env.DEV || import.meta.env.VITE_DEBUG_ERRORS === '1') && (
+                    <details style={{ fontSize: '0.75rem', color: '#991b1b', marginTop: '0.5rem' }}>
+                      <summary style={{ cursor: 'pointer' }}>
+                        Component stack
+                      </summary>
+                      <pre
+                        style={{
+                          marginTop: '0.5rem',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-all',
+                          fontSize: '0.7rem',
                         }}
                       >
                         {this.state.errorInfo.componentStack}

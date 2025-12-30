@@ -4,6 +4,63 @@ import App from './App';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 
+// Handlers globales para capturar errores no manejados
+window.addEventListener('error', (event) => {
+  const error = event.error || event.message;
+  console.error('window.error:', error, event);
+  
+  // Si el error no es una instancia de Error, normalizarlo
+  if (!(error instanceof Error)) {
+    const normalized = typeof error === 'string' 
+      ? new Error(error)
+      : new Error(JSON.stringify(error));
+    console.error('window.error (normalized):', normalized.message, normalized.stack);
+  }
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  const reason = event.reason;
+  console.error('unhandledrejection:', reason, event);
+  
+  // Normalizar el reason si no es Error
+  if (!(reason instanceof Error)) {
+    const normalized = typeof reason === 'string'
+      ? new Error(reason)
+      : typeof reason === 'object' && reason !== null
+      ? new Error(JSON.stringify(reason))
+      : new Error(String(reason));
+    console.error('unhandledrejection (normalized):', normalized.message, normalized.stack);
+  }
+});
+
+// Reset por URL: ?reset=1 limpia todo el storage y caches
+const resetParams = new URLSearchParams(window.location.search);
+if (resetParams.get('reset') === '1') {
+  try {
+    localStorage.clear();
+  } catch (e) {
+    console.warn('Error clearing localStorage:', e);
+  }
+  
+  try {
+    sessionStorage.clear();
+  } catch (e) {
+    console.warn('Error clearing sessionStorage:', e);
+  }
+  
+  // Limpiar Cache Storage (PWA/Service Worker)
+  const hasCaches = 'caches' in window;
+  if (hasCaches) {
+    caches.keys()
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .finally(() => {
+        window.location.replace('/');
+      });
+  } else {
+    window.location.replace('/');
+  }
+}
+
 // APP_BUILD_ID: Usado para limpiar cache cuando cambia el deploy
 // Si cambia entre sesiones, limpiar localStorage y recargar
 const APP_BUILD_ID = import.meta.env.VITE_APP_BUILD_ID || new Date().toISOString().split('T')[0];

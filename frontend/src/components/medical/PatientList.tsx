@@ -24,7 +24,7 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
   const [editingPatient, setEditingPatient] = useState<Resident | null>(null);
   const [showInactive, setShowInactive] = useState(false);
   const [visibleCount, setVisibleCount] = useState(20);
-  const { isOwner, getActiveRole } = useAuth();
+  const { getActiveRole } = useAuth();
   const canEdit = getActiveRole() === 'MEDICO' || getActiveRole() === 'ADMIN';
 
   useEffect(() => {

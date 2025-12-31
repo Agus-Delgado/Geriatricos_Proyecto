@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
-import { Modal } from '../ui/Modal';
 import type { Resident, ResidentCreate, ResidentUpdate, ResidentContactCreate } from '../../types/residents';
 
 interface ResidentFormProps {
@@ -46,10 +45,6 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [showStatusConfirm, setShowStatusConfirm] = useState(false);
-  const [pendingStatusAction, setPendingStatusAction] = useState<'archive' | 'deceased' | null>(null);
-  const [statusDate, setStatusDate] = useState(new Date().toISOString().split('T')[0]);
-  const [statusNote, setStatusNote] = useState('');
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};

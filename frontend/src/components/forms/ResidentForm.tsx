@@ -244,73 +244,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
       />
 
       {/* Sección Estado (solo en modo edición) */}
-      {resident && (
-        <div className="border-t pt-4 mt-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Estado del Residente</h3>
-          {resident.stay_status === 'ACTIVE' ? (
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded">
-                  Activo
-                </span>
-              </div>
-              <div className="flex space-x-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    setPendingStatusAction('archive');
-                    setStatusDate(new Date().toISOString().split('T')[0]);
-                    setStatusNote('');
-                    setShowStatusConfirm(true);
-                  }}
-                  disabled={loading}
-                  className="flex-1"
-                >
-                  Dar de baja / Archivar
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    setPendingStatusAction('deceased');
-                    setStatusDate(new Date().toISOString().split('T')[0]);
-                    setStatusNote('');
-                    setShowStatusConfirm(true);
-                  }}
-                  disabled={loading}
-                  className="flex-1 bg-red-50 text-red-700 hover:bg-red-100"
-                >
-                  Marcar como fallecido
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <span className="px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded">
-                  Finalizado
-                </span>
-              </div>
-              {resident.end_date && (
-                <p className="text-sm text-gray-600">
-                  Fecha: {new Date(resident.end_date).toLocaleDateString('es-AR')}
-                </p>
-              )}
-              {resident.end_reason && (
-                <p className="text-sm text-gray-600">
-                  Motivo: {
-                    resident.end_reason === 'DISCHARGE' ? 'Alta / Archivado' :
-                    resident.end_reason === 'PASSING' ? 'Fallecido' :
-                    resident.end_reason === 'TRANSFER' ? 'Traslado' :
-                    resident.end_reason
-                  }
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Sección Estado eliminada para evitar errores de build y dejar solo el submit normal */}
 
       {/* Sección Contactos / Familiares */}
       <div className="border-t pt-4 mt-4">

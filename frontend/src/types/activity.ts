@@ -7,5 +7,6 @@ export interface ActivityEvent {
   entity_id: string;
   summary?: string | null;
   meta?: any;
+  metadata?: Record<string, unknown> | null;
   created_at: string;
 }

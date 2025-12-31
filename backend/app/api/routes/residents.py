@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
 from app.db.session import get_db
-from app.api.deps import get_current_user, require_facility_access, require_facility_role_any
+from app.api.deps import get_current_user, require_facility_access, require_facility_role_any, require_role
 from app.schemas.residents import ResidentCreate, ResidentUpdate, ResidentResponse
 from app.services.residents_service import (
     create_resident,

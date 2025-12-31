@@ -212,48 +212,26 @@
 .no-print { display: block; }
 
 @media print {
-  /* Ocultar todo lo no necesario */
   .no-print,
-  .previewStage,
   nav,
   header,
   footer,
   .appShell {
     display: none !important;
   }
-
-  /* Forzar tamaño A4 y márgenes */
   @page {
     size: A4;
-    margin: 12mm;
+    margin: 16mm;
   }
-
   body {
     background: #fff;
   }
-
-  /* Paper sin sombra en impresión */
-  .paper {
+  .a4-page {
     box-shadow: none !important;
     margin: 0 !important;
-    padding: 20mm 15mm;
-    width: 210mm;
-    min-height: 297mm;
-  }
-
-  /* Evitar cortes feos */
-  .print-paragraph {
-    page-break-inside: avoid;
-  }
-
-  /* Asegurar que el contenido quede bien */
-  .paper-content {
-    max-width: 170mm;
-  }
-
-  /* Footer debe quedar en la página */
-  .print-footer-right {
-    position: relative;
-    margin-top: auto;
+    padding: 0 !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    border-radius: 0 !important;
   }
 }

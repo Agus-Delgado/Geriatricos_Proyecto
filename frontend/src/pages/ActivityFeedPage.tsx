@@ -11,6 +11,12 @@ const EVENT_LABELS: Record<string, string> = {
   PATIENT_STATUS_CHANGED: 'Cambio de estado',
   MEDICATION_CHANGED: 'Cambio de medicación',
 };
+const EVENT_TYPES = [
+  { type: 'PATIENT_CREATED', label: 'Alta de paciente' },
+  { type: 'PATIENT_UPDATED', label: 'Edición de paciente' },
+  { type: 'PATIENT_STATUS_CHANGED', label: 'Cambio de estado' },
+  { type: 'MEDICATION_CHANGED', label: 'Cambio de medicación' },
+];
 
 export default function ActivityFeedPage() {
   const { facility } = useFacility();
@@ -19,6 +25,7 @@ export default function ActivityFeedPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     const load = async () => {
@@ -36,6 +43,8 @@ export default function ActivityFeedPage() {
           setError('No autorizado para ver actividades');
         } else if (e?.response?.status === 404) {
           setError('No disponible');
+        } else if (e?.message) {
+          setError('No se pudo cargar actividades: ' + e.message);
         } else {
           setError('Error al cargar actividades');
         }
@@ -44,7 +53,7 @@ export default function ActivityFeedPage() {
       }
     };
     void load();
-  }, [facility?.id, selectedTypes]);
+  }, [facility?.id, selectedTypes, retry]);
 
   const toggleType = (t: string) => {
     setSelectedTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -52,7 +61,7 @@ export default function ActivityFeedPage() {
 
   const navigateToEntity = (ev: ActivityEvent) => {
     if (!ev.entity_id) return;
-    if (ev.entity_type === 'Resident') {
+    if (ev.entity_type === 'Resident' || ev.entity_type === 'Patient') {
       window.location.assign(`/residents/${ev.entity_id}`);
     } else if (ev.entity_type === 'MedicationPlan' || ev.entity_type === 'MedicationAdministration') {
       window.location.assign(`/residents/${ev.metadata?.resident_id ?? ev.entity_id}?tab=medications`);
@@ -61,38 +70,42 @@ export default function ActivityFeedPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="px-4 py-4">
-        <div className="flex items-center mb-4">
-          <button className="mr-2 text-primary-600 hover:underline text-lg" onClick={() => navigate(-1)} aria-label="Volver">←</button>
-          <h1 className="text-2xl font-bold">Noticias diarias</h1>
+    <div style={{ background: '#f9fafb', minHeight: '100vh' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 16px 80px 16px' }}>
+        <div className="flex items-center mb-8">
+          <button className="mr-3 text-primary-600 hover:underline text-lg" onClick={() => navigate(-1)} aria-label="Volver">←</button>
+          <h1 className="text-3xl font-bold" style={{ color: '#1e40af' }}>Noticias diarias</h1>
         </div>
-
-        <div className="flex gap-3 mb-4 flex-wrap">
-          {Object.keys(EVENT_LABELS).map((t) => (
-            <label key={t} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={selectedTypes.includes(t)} onChange={() => toggleType(t)} />
-              {EVENT_LABELS[t]}
+        <div className="flex gap-6 mb-8 flex-wrap">
+          {EVENT_TYPES.map(({ type, label }) => (
+            <label key={type} className="flex items-center gap-2 text-base font-medium">
+              <input type="checkbox" checked={selectedTypes.includes(type)} onChange={() => toggleType(type)} />
+              {label}
             </label>
           ))}
         </div>
-
-        {error && <div className="text-red-600 mb-4">{error}</div>}
+        {error && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded mb-6 flex items-center justify-between" style={{ maxWidth: 500 }}>
+            <span>{error}</span>
+            <button className="ml-4 px-3 py-1 bg-yellow-200 rounded text-yellow-900 hover:bg-yellow-300" onClick={() => setRetry(r => r + 1)}>Reintentar</button>
+          </div>
+        )}
         {loading ? (
-          <div>Cargando...</div>
+          <div className="text-gray-500">Cargando...</div>
         ) : events.length === 0 ? (
-          <div className="text-gray-500">Sin novedades recientes</div>
+          <div className="text-gray-500 text-lg font-medium py-12 text-center">Sin novedades recientes</div>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {events.map((ev) => (
-              <li key={ev.id} className={`card hover:shadow-md transition p-4 ${ev.entity_id ? 'cursor-pointer' : 'cursor-default'}`} onClick={() => ev.entity_id && navigateToEntity(ev)}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold">{EVENT_LABELS[ev.event_type] || ev.event_type}</div>
-                    <div className="text-sm text-gray-600">{ev.summary || `${ev.entity_type} ${ev.entity_id}`}</div>
-                  </div>
-                  <div className="text-xs text-gray-400">{new Date(ev.created_at).toLocaleString('es-AR')}</div>
-                </div>
+              <li
+                key={ev.id}
+                className={`bg-white shadow-sm rounded-lg border-l-4 transition p-4 flex flex-col gap-1 ${ev.entity_id ? 'cursor-pointer border-blue-400 hover:shadow-md' : 'border-gray-200 cursor-default'}`}
+                onClick={() => ev.entity_id && (ev.entity_type === 'Resident' || ev.entity_type === 'Patient' || ev.entity_type === 'MedicationPlan' || ev.entity_type === 'MedicationAdministration') && navigateToEntity(ev)}
+                style={{ maxWidth: 700, margin: '0 auto' }}
+              >
+                <div className="font-semibold text-base" style={{ color: '#1e40af' }}>{EVENT_LABELS[ev.event_type] || ev.event_type}</div>
+                <div className="text-sm text-gray-700">{ev.summary || `${ev.entity_type} ${ev.entity_id}`}</div>
+                <div className="text-xs text-gray-400 mt-1">{new Date(ev.created_at).toLocaleString('es-AR')}</div>
               </li>
             ))}
           </ul>

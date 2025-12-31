@@ -46,6 +46,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
   ]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [alert, setAlert] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const validate = (): boolean => {
@@ -159,12 +160,25 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
           delete (submitData as any).archive_note;
           await onSubmit(submitData);
         }
+        setAlert(null);
       } catch (error: any) {
-        if (error?.detail) {
-          setErrors({ submit: error.detail });
-        } else {
-          setErrors({ submit: 'Error al guardar el residente' });
+        let detail = 'Error al guardar el residente';
+        if (error?.response) {
+          try {
+            const data = error.response.data;
+            if (data?.detail) detail = data.detail;
+            else if (data?.message) detail = data.message;
+          } catch {}
+          detail = `(${error.response.status}) ${detail}`;
+        } else if (error?.detail) {
+          detail = error.detail;
+        } else if (error?.message) {
+          detail = error.message;
         }
+        setErrors({ submit: detail });
+        setAlert(`No se pudo guardar. Motivo: ${detail}`);
+        // eslint-disable-next-line no-console
+        console.error('Error al guardar residente:', error);
       } finally {
         setLoading(false);
       }
@@ -347,6 +361,9 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
 
       {/* Sección Dar de baja / Archivar eliminada para destrabar build */}
 
+      {alert && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-3 rounded mb-2">{alert}</div>
+      )}
       {errors.submit && (
         <div className="text-sm text-red-600">{errors.submit}</div>
       )}

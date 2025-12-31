@@ -68,5 +68,5 @@ async def update_staff_endpoint(
     staff = get_staff_by_id(db, staff_id)
     require_facility_access(staff.facility_id)(current_user, db)
     
-    updated_staff = update_staff(db, staff_id, staff_data)
+    updated_staff = update_staff(db, staff_id, staff_data, actor_user_id=current_user.id)
     return updated_staff

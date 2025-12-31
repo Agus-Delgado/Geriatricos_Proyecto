@@ -176,7 +176,6 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">DNI</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Obra Social</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Fecha Ingreso</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Estado</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Acciones</th>
               </tr>
             </thead>
@@ -193,23 +192,7 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
                     {patient.coverage_type || 'N/A'}
                   </td>
                   <td className="py-3 px-4 text-gray-600">{formatDate(patient.admission_date)}</td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`inline-block px-2 py-1 text-xs rounded ${
-                        patient.status === 'ACTIVE'
-                          ? 'bg-green-100 text-green-800'
-                          : patient.status === 'DECEASED'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {patient.status === 'ACTIVE'
-                        ? 'Activo'
-                        : patient.status === 'DECEASED'
-                        ? 'Fallecido'
-                        : 'Inactivo'}
-                    </span>
-                  </td>
+                  {/* Columna Estado eliminada */}
                   <td className="py-3 px-4">
                     <div className="flex gap-2">
                       {canEdit && (
@@ -217,21 +200,13 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
                           Editar
                         </Button>
                       )}
-                      {canEdit && patient.status !== 'DECEASED' && (
-                        <Button variant="secondary" onClick={() => changeStatus(patient, 'INACTIVE')}>
-                          Inactivar
-                        </Button>
-                      )}
-                      {canEdit && patient.status !== 'DECEASED' && (
-                        <Button variant="secondary" onClick={() => changeStatus(patient, 'DECEASED')}>
-                          Marcar fallecido
-                        </Button>
-                      )}
-                      {isOwner && (
-                        <Button variant="danger" onClick={() => deletePatient(patient)}>
-                          Eliminar
-                        </Button>
-                      )}
+                      <Button
+                        variant="secondary"
+                        onClick={() => window.open(`/residents/${patient.id}/print`, '_blank')}
+                        title="Imprimir datos del paciente"
+                      >
+                        Imprimir datos
+                      </Button>
                     </div>
                   </td>
                 </tr>

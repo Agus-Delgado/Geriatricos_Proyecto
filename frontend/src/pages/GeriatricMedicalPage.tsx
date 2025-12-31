@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { PatientList } from '../components/medical/PatientList';
 import { DoctorBanner } from '../components/dashboard/DoctorBanner';
 import { DaySummaryCards } from '../components/dashboard/DaySummaryCards';
+import { ActivityFeedWidget } from '../components/dashboard/ActivityFeedWidget';
 import { AgendaToday } from '../components/dashboard/AgendaToday';
 import { getRandomMedicalQuote } from '../data/medicalQuotes';
 import { dashboardApi } from '../api/dashboard';
@@ -113,6 +114,10 @@ export default function GeriatricMedicalPage() {
             facilityName={facilityName}
             medicalQuote={medicalQuote}
           />
+
+
+          {/* Noticias diarias widget */}
+          <ActivityFeedWidget />
 
           {/* Resumen del día */}
           <DaySummaryCards

@@ -1,5 +1,7 @@
+
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { ActivityFeedWidget } from '../components/dashboard/ActivityFeedWidget';
 
 export default function GeriatricDashboardPage() {
   const { id } = useParams();
@@ -23,7 +25,11 @@ export default function GeriatricDashboardPage() {
           Hogar activo: <strong>{facilityName}</strong>
         </p>
 
-        <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
+        {/* Noticias diarias widget */}
+        <div style={{ marginTop: 16, marginBottom: 16 }}>
+          <ActivityFeedWidget />
+        </div>
+        <div style={{ display: 'grid', gap: 12 }}>
           <div style={{ padding: 16, borderRadius: 12, background: 'rgba(255,255,255,0.6)' }}>
             KPIs y resumen (placeholder)
           </div>

@@ -159,9 +159,22 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
     setContacts(newContacts);
   };
 
+  // Estado para archivar/dar de baja
+  const [archivar, setArchivar] = useState(false);
+  const [observacion, setObservacion] = useState('');
+
   return (
     <>
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      // Si es edición y archivar está tildado, forzar status=INACTIVE, si no, ACTIVE
+      let data = { ...formData };
+      if (resident) {
+        data.status = archivar ? 'INACTIVE' : 'ACTIVE';
+        data.notes = observacion;
+      }
+      onSubmit(data as ResidentUpdate);
+    }} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <Input
           label="Nombre *"
@@ -384,6 +397,32 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
         />
       </div>
 
+      {/* Sección Dar de baja / Archivar solo en edición */}
+      {resident && (
+        <div className="border-t pt-4 mt-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Dar de baja / Archivar</h3>
+          <div className="flex items-center mb-2">
+            <input
+              type="checkbox"
+              id="archivar"
+              checked={archivar}
+              onChange={e => setArchivar(e.target.checked)}
+              className="mr-2"
+              disabled={loading}
+            />
+            <label htmlFor="archivar" className="text-gray-700">Marcar como archivado / baja</label>
+          </div>
+          <label className="label">Observación</label>
+          <textarea
+            value={observacion}
+            onChange={e => setObservacion(e.target.value)}
+            className="input-field"
+            rows={2}
+            disabled={loading}
+          />
+        </div>
+      )}
+
       {errors.submit && (
         <div className="text-sm text-red-600">{errors.submit}</div>
       )}
@@ -398,90 +437,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
       </div>
     </form>
 
-    {/* Modal de confirmación para cambios de estado */}
-    <Modal
-      isOpen={showStatusConfirm}
-      onClose={() => {
-        setShowStatusConfirm(false);
-        setPendingStatusAction(null);
-        setStatusNote('');
-      }}
-      title={pendingStatusAction === 'archive' ? 'Dar de baja / Archivar Residente' : 'Marcar como Fallecido'}
-      size="md"
-    >
-      <div className="space-y-4">
-        <p className="text-gray-700">
-          {pendingStatusAction === 'archive'
-            ? '¿Está seguro de que desea dar de baja/archivar a este residente? El residente dejará de aparecer en la lista de activos pero permanecerá en el historial.'
-            : '¿Está seguro de que desea marcar a este residente como fallecido? El residente dejará de aparecer en la lista de activos pero permanecerá en el historial.'}
-        </p>
-        <Input
-          label="Fecha"
-          type="date"
-          value={statusDate}
-          onChange={(e) => setStatusDate(e.target.value)}
-          disabled={loading}
-        />
-        <div>
-          <label className="label">Observación (opcional)</label>
-          <textarea
-            value={statusNote}
-            onChange={(e) => setStatusNote(e.target.value)}
-            className="input-field"
-            rows={3}
-            placeholder="Nota sobre el cambio de estado..."
-            disabled={loading}
-          />
-        </div>
-        <div className="flex space-x-3 pt-4">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              setShowStatusConfirm(false);
-              setPendingStatusAction(null);
-              setStatusNote('');
-            }}
-            fullWidth
-            disabled={loading}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            onClick={async () => {
-              if (!pendingStatusAction) return;
-              setLoading(true);
-              try {
-                const updateData: ResidentUpdate = {
-                  stay_status: 'ENDED',
-                  end_date: statusDate,
-                  end_reason: pendingStatusAction === 'archive' ? 'DISCHARGE' : 'PASSING',
-                  notes: statusNote.trim() || resident?.notes || undefined,
-                };
-                await onSubmit(updateData);
-                setShowStatusConfirm(false);
-                setPendingStatusAction(null);
-                setStatusNote('');
-              } catch (error: any) {
-                if (error?.detail) {
-                  setErrors({ submit: error.detail });
-                } else {
-                  setErrors({ submit: 'Error al cambiar el estado del residente' });
-                }
-              } finally {
-                setLoading(false);
-              }
-            }}
-            fullWidth
-            disabled={loading}
-            className={pendingStatusAction === 'deceased' ? 'bg-red-600 hover:bg-red-700' : ''}
-          >
-            {loading ? 'Procesando...' : 'Confirmar'}
-          </Button>
-        </div>
-      </div>
-    </Modal>
+    {/* Modal de confirmación para cambios de estado eliminado (no más acción rápida DECEASED) */}
   </>
   );
 };

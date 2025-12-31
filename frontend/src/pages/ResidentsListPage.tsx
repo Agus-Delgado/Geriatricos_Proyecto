@@ -178,18 +178,30 @@ export const ResidentsListPage: React.FC = () => {
                       {resident.stay_status === 'ACTIVE' ? 'Activo' : 'Finalizado'}
                     </span>
                   </button>
-                  {canEdit && (
+                  <div className="flex gap-2 ml-2">
+                    {canEdit && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditResident(resident);
+                        }}
+                        className="px-3 py-1 text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded transition-colors"
+                        title="Editar paciente"
+                      >
+                        Editar
+                      </button>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleEditResident(resident);
+                        window.open(`/residents/${resident.id}/print`, '_blank');
                       }}
-                      className="ml-2 px-3 py-1 text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded transition-colors"
-                      title="Editar paciente"
+                      className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                      title="Imprimir datos del paciente"
                     >
-                      Editar
+                      Imprimir datos
                     </button>
-                  )}
+                  </div>
                 </div>
               </div>
             ))}

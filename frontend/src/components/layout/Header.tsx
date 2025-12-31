@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getRoleLabel } from '../../types/auth';
 
@@ -96,6 +97,10 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
     }
   };
 
+
+  // Permiso para ver noticias diarias
+  const canViewNews = getActiveRole() === 'OWNER' || getActiveRole() === 'MEDICO';
+
   // Solo mostrar header en rutas internas
   if (!isInternalRoute) {
     return null;
@@ -130,8 +135,16 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
             </div>
           </div>
 
-          {/* Sección derecha: Cambiar Hogar + Menú Usuario */}
+          {/* Sección derecha: Noticias diarias + Cambiar Hogar + Menú Usuario */}
           <div className="flex items-center space-x-2 flex-shrink-0">
+            {canViewNews && (
+              <button
+                onClick={() => navigate('/activity')}
+                className="px-3 py-1.5 text-sm font-medium text-primary-700 hover:text-primary-900 hover:bg-primary-50 rounded-lg transition-colors"
+              >
+                Noticias diarias
+              </button>
+            )}
             {/* Botón "Cambiar Hogar" visible cuando hay múltiples memberships */}
             {user && memberships.length > 1 && (
               <button

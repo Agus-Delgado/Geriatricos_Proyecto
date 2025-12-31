@@ -34,8 +34,14 @@ export const ActivityFeedWidget: React.FC = () => {
         setError(null);
         const data = await activityApi.list(facility.id, { limit: 5 });
         setEvents(data);
-      } catch (e) {
-        setError('Error al cargar noticias');
+      } catch (e: any) {
+        if (e?.response?.status === 401 || e?.response?.status === 403) {
+          setError('No autorizado para ver actividades');
+        } else if (e?.response?.status === 404) {
+          setError('No disponible');
+        } else {
+          setError('Error al cargar noticias');
+        }
       } finally {
         setLoading(false);
       }
@@ -61,7 +67,7 @@ export const ActivityFeedWidget: React.FC = () => {
       ) : error ? (
         <div className="text-red-600">{error}</div>
       ) : events.length === 0 ? (
-        <div className="text-gray-500">Sin novedades hoy</div>
+        <div className="text-gray-500">Sin novedades recientes</div>
       ) : (
         <ul className="divide-y divide-gray-100">
           {events.map(ev => (

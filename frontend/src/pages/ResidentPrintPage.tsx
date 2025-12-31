@@ -64,7 +64,6 @@ export default function ResidentPrintPage() {
             <div><strong>Cobertura:</strong> {resident.coverage_type || 'N/A'}</div>
             <div><strong>N° Cobertura:</strong> {resident.coverage_number || 'N/A'}</div>
             <div><strong>Ingreso:</strong> {resident.admission_date}</div>
-            <div><strong>Estado:</strong> {resident.status}</div>
           </div>
         </section>
 

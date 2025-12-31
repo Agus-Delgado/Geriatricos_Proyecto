@@ -28,6 +28,8 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
     coverage_number: resident?.coverage_number || '',
     admission_date: resident?.admission_date || new Date().toISOString().split('T')[0],
     notes: resident?.notes || '',
+    archived: resident?.status === 'INACTIVE' || false,
+    archive_note: '',
   });
 
   // Estado para contactos (máximo 3)
@@ -136,13 +138,19 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
             is_primary: false,
           }));
         if (resident) {
-          await onSubmit(formData as ResidentUpdate);
+          const updateData: ResidentUpdate = {
+            ...formData,
+            status: formData.archived ? 'INACTIVE' : 'ACTIVE',
+            archive_note: formData.archive_note || undefined,
+          };
+          await onSubmit(updateData);
         } else {
           const submitData: ResidentCreate = {
             ...formData,
             facility_id: facilityId,
             coverage_other: formData.coverage_other || undefined,
             contacts: contactsToSend.length > 0 ? contactsToSend : undefined,
+            status: 'ACTIVE',
           };
           await onSubmit(submitData);
         }
@@ -243,8 +251,28 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
         disabled={loading}
       />
 
-      {/* Sección Estado (solo en modo edición) */}
-      {/* Sección Estado eliminada para evitar errores de build y dejar solo el submit normal */}
+      {/* Sección Dar de baja / Archivar (solo edición) */}
+      {resident && (
+        <div className="border-t pt-4 mt-4">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={formData.archived}
+              onChange={e => setFormData({ ...formData, archived: e.target.checked })}
+              disabled={loading}
+            />
+            Dar de baja / Archivar residente
+          </label>
+          <div className="mt-2">
+            <Input
+              label="Observación (motivo de baja, opcional)"
+              value={formData.archive_note}
+              onChange={e => setFormData({ ...formData, archive_note: e.target.value })}
+              disabled={loading}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Sección Contactos / Familiares */}
       <div className="border-t pt-4 mt-4">

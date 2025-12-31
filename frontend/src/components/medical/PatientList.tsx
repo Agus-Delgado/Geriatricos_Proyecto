@@ -22,14 +22,13 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Resident | null>(null);
-  const [showInactive, setShowInactive] = useState(false);
   const [visibleCount, setVisibleCount] = useState(20);
   const { getActiveRole } = useAuth();
   const canEdit = getActiveRole() === 'MEDICO' || getActiveRole() === 'ADMIN';
 
   useEffect(() => {
     loadPatients();
-  }, [facilityId, searchQuery, showInactive]);
+  }, [facilityId, searchQuery]);
 
   const loadPatients = async () => {
     try {
@@ -38,7 +37,6 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
       const data = await residentsApi.list(facilityId, {
         q: searchQuery || undefined,
         stay_status: 'ACTIVE',
-        status: showInactive ? undefined : 'ACTIVE',
       });
       setPatients(data);
     } catch (err) {
@@ -119,14 +117,6 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
           onChange={setSearchQuery}
           placeholder="Buscar por DNI o nombre..."
         />
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input
-            type="checkbox"
-            checked={showInactive}
-            onChange={(e) => setShowInactive(e.target.checked)}
-          />
-          Ver inactivos
-        </label>
       </div>
 
       {error && (

@@ -3,6 +3,7 @@ import { activityApi } from '../api/activity';
 import { useFacility } from '../contexts/FacilityContext';
 import type { ActivityEvent } from '../types/activity';
 import { BottomNav } from '../components/layout/BottomNav';
+import { useNavigate } from 'react-router-dom';
 
 const EVENT_LABELS: Record<string, string> = {
   PATIENT_CREATED: 'Alta de paciente',
@@ -13,6 +14,7 @@ const EVENT_LABELS: Record<string, string> = {
 
 export default function ActivityFeedPage() {
   const { facility } = useFacility();
+  const navigate = useNavigate();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +31,14 @@ export default function ActivityFeedPage() {
           event_types: selectedTypes.length > 0 ? selectedTypes : undefined,
         });
         setEvents(data);
-      } catch (e) {
-        setError('Error al cargar actividades');
+      } catch (e: any) {
+        if (e?.response?.status === 401 || e?.response?.status === 403) {
+          setError('No autorizado para ver actividades');
+        } else if (e?.response?.status === 404) {
+          setError('No disponible');
+        } else {
+          setError('Error al cargar actividades');
+        }
       } finally {
         setLoading(false);
       }
@@ -43,17 +51,20 @@ export default function ActivityFeedPage() {
   };
 
   const navigateToEntity = (ev: ActivityEvent) => {
+    if (!ev.entity_id) return;
     if (ev.entity_type === 'Resident') {
       window.location.assign(`/residents/${ev.entity_id}`);
     } else if (ev.entity_type === 'MedicationPlan' || ev.entity_type === 'MedicationAdministration') {
       window.location.assign(`/residents/${ev.metadata?.resident_id ?? ev.entity_id}?tab=medications`);
     }
+    // Si no hay ruta asociada, no navegar
   };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="px-4 py-4">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center mb-4">
+          <button className="mr-2 text-primary-600 hover:underline text-lg" onClick={() => navigate(-1)} aria-label="Volver">←</button>
           <h1 className="text-2xl font-bold">Noticias diarias</h1>
         </div>
 
@@ -70,17 +81,17 @@ export default function ActivityFeedPage() {
         {loading ? (
           <div>Cargando...</div>
         ) : events.length === 0 ? (
-          <div className="text-gray-500">Sin actividades recientes</div>
+          <div className="text-gray-500">Sin novedades recientes</div>
         ) : (
           <ul className="space-y-3">
             {events.map((ev) => (
-              <li key={ev.id} className="card hover:shadow-md transition p-4 cursor-pointer" onClick={() => navigateToEntity(ev)}>
+              <li key={ev.id} className={`card hover:shadow-md transition p-4 ${ev.entity_id ? 'cursor-pointer' : 'cursor-default'}`} onClick={() => ev.entity_id && navigateToEntity(ev)}>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-semibold">{EVENT_LABELS[ev.event_type] || ev.event_type}</div>
                     <div className="text-sm text-gray-600">{ev.summary || `${ev.entity_type} ${ev.entity_id}`}</div>
                   </div>
-                  <div className="text-xs text-gray-500">{new Date(ev.created_at).toLocaleString('es-AR')}</div>
+                  <div className="text-xs text-gray-400">{new Date(ev.created_at).toLocaleString('es-AR')}</div>
                 </div>
               </li>
             ))}

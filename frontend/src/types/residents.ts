@@ -46,7 +46,7 @@ export interface ResidentUpdate {
   coverage_other?: string;
   coverage_number?: string;
   stay_status?: string;
-  status?: string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'DECEASED';
   end_date?: string;
   end_reason?: string;
   notes?: string;

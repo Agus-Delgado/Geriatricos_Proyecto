@@ -141,8 +141,12 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
           const updateData: ResidentUpdate = {
             ...formData,
             status: formData.archived ? 'INACTIVE' : 'ACTIVE',
-            archive_note: formData.archive_note || undefined,
+            notes: formData.archive_note
+              ? (formData.notes ? formData.notes + '\n---\nMotivo de baja: ' + formData.archive_note : 'Motivo de baja: ' + formData.archive_note)
+              : formData.notes,
           };
+          delete (updateData as any).archived;
+          delete (updateData as any).archive_note;
           await onSubmit(updateData);
         } else {
           const submitData: ResidentCreate = {
@@ -150,8 +154,9 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
             facility_id: facilityId,
             coverage_other: formData.coverage_other || undefined,
             contacts: contactsToSend.length > 0 ? contactsToSend : undefined,
-            status: 'ACTIVE',
           };
+          delete (submitData as any).archived;
+          delete (submitData as any).archive_note;
           await onSubmit(submitData);
         }
       } catch (error: any) {

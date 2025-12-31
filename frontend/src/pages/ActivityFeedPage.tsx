@@ -18,8 +18,36 @@ const EVENT_TYPES = [
   { type: 'MEDICATION_CHANGED', label: 'Cambio de medicación' },
 ];
 
+const FACILITY_THEMES: Record<string, { primaryColor: string; bgLight: string; textDark: string; textMuted: string }> = {
+  'El Amanecer': {
+    primaryColor: '#f97316',
+    bgLight: '#fff7ed',
+    textDark: '#7c2d12',
+    textMuted: '#a16207',
+  },
+  'Trébol': {
+    primaryColor: '#22c55e',
+    bgLight: '#f0fdf4',
+    textDark: '#14532d',
+    textMuted: '#166534',
+  },
+  'Estaciones de Luz': {
+    primaryColor: '#3b82f6',
+    bgLight: '#eff6ff',
+    textDark: '#1e3a8a',
+    textMuted: '#2563eb',
+  },
+  'default': {
+    primaryColor: '#2563eb',
+    bgLight: '#f9fafb',
+    textDark: '#1e293b',
+    textMuted: '#64748b',
+  },
+};
+
 export default function ActivityFeedPage() {
   const { facility } = useFacility();
+  const theme = facility && FACILITY_THEMES[facility.name || facility.display_name] ? FACILITY_THEMES[facility.name || facility.display_name] : FACILITY_THEMES['default'];
   const navigate = useNavigate();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,42 +98,59 @@ export default function ActivityFeedPage() {
   };
 
   return (
-    <div style={{ background: '#f9fafb', minHeight: '100vh' }}>
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 16px 80px 16px' }}>
+    <div style={{ background: theme.bgLight, minHeight: '100vh', width: '100%', boxSizing: 'border-box' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 30px 80px 30px' }}>
         <div className="flex items-center mb-8">
-          <button className="mr-3 text-primary-600 hover:underline text-lg" onClick={() => navigate(-1)} aria-label="Volver">←</button>
-          <h1 className="text-3xl font-bold" style={{ color: '#1e40af' }}>Noticias diarias</h1>
+          <button className="mr-3 text-lg" style={{ color: theme.primaryColor }} onClick={() => navigate(-1)} aria-label="Volver">←</button>
+          <h1 className="text-3xl font-bold flex items-center" style={{ color: theme.primaryColor }}>
+            <span style={{ fontSize: 32, marginRight: 10 }}>📰</span>Noticias diarias
+          </h1>
         </div>
-        <div className="flex gap-6 mb-8 flex-wrap">
+        <div className="flex gap-3 mb-8 flex-wrap">
           {EVENT_TYPES.map(({ type, label }) => (
-            <label key={type} className="flex items-center gap-2 text-base font-medium">
-              <input type="checkbox" checked={selectedTypes.includes(type)} onChange={() => toggleType(type)} />
+            <label key={type} style={{
+              display: 'flex', alignItems: 'center', gap: 8, fontWeight: 500, fontSize: 16,
+              background: '#fff', border: `2px solid ${selectedTypes.includes(type) ? theme.primaryColor : '#e5e7eb'}`,
+              borderRadius: 8, padding: '7px 18px', cursor: 'pointer', boxShadow: selectedTypes.includes(type) ? '0 2px 8px #0001' : 'none',
+              color: selectedTypes.includes(type) ? theme.primaryColor : theme.textDark,
+              transition: 'border 0.2s, color 0.2s',
+            }}>
+              <input
+                type="checkbox"
+                checked={selectedTypes.includes(type)}
+                onChange={() => toggleType(type)}
+                style={{ accentColor: theme.primaryColor, width: 18, height: 18, marginRight: 8 }}
+              />
               {label}
             </label>
           ))}
         </div>
         {error && (
-          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded mb-6 flex items-center justify-between" style={{ maxWidth: 500 }}>
+          <div style={{ background: '#fef9c3', borderLeft: '4px solid #facc15', color: '#92400e', padding: 18, borderRadius: 8, marginBottom: 30, maxWidth: 500, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>{error}</span>
-            <button className="ml-4 px-3 py-1 bg-yellow-200 rounded text-yellow-900 hover:bg-yellow-300" onClick={() => setRetry(r => r + 1)}>Reintentar</button>
+            <button style={{ marginLeft: 18, padding: '7px 18px', background: '#fde68a', color: '#92400e', borderRadius: 6, fontWeight: 500, border: 'none', cursor: 'pointer' }} onClick={() => setRetry(r => r + 1)}>Reintentar</button>
           </div>
         )}
         {loading ? (
-          <div className="text-gray-500">Cargando...</div>
+          <div style={{ color: theme.textMuted, fontSize: 18, textAlign: 'center', margin: '40px 0' }}>Cargando...</div>
         ) : events.length === 0 ? (
-          <div className="text-gray-500 text-lg font-medium py-12 text-center">Sin novedades recientes</div>
+          <div style={{ color: theme.textMuted, fontSize: 20, textAlign: 'center', margin: '60px 0' }}>Sin novedades recientes</div>
         ) : (
-          <ul className="space-y-4">
+          <ul style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             {events.map((ev) => (
               <li
                 key={ev.id}
-                className={`bg-white shadow-sm rounded-lg border-l-4 transition p-4 flex flex-col gap-1 ${ev.entity_id ? 'cursor-pointer border-blue-400 hover:shadow-md' : 'border-gray-200 cursor-default'}`}
+                style={{
+                  background: '#fff', boxShadow: '0 2px 8px #0001', borderRadius: 6,
+                  borderLeft: `4px solid ${theme.primaryColor}`,
+                  padding: '18px 22px', maxWidth: 700, margin: '0 auto', cursor: ev.entity_id ? 'pointer' : 'default',
+                  transition: 'box-shadow 0.2s',
+                }}
                 onClick={() => ev.entity_id && (ev.entity_type === 'Resident' || ev.entity_type === 'Patient' || ev.entity_type === 'MedicationPlan' || ev.entity_type === 'MedicationAdministration') && navigateToEntity(ev)}
-                style={{ maxWidth: 700, margin: '0 auto' }}
               >
-                <div className="font-semibold text-base" style={{ color: '#1e40af' }}>{EVENT_LABELS[ev.event_type] || ev.event_type}</div>
-                <div className="text-sm text-gray-700">{ev.summary || `${ev.entity_type} ${ev.entity_id}`}</div>
-                <div className="text-xs text-gray-400 mt-1">{new Date(ev.created_at).toLocaleString('es-AR')}</div>
+                <div style={{ fontWeight: 600, fontSize: 18, color: theme.primaryColor }}>{EVENT_LABELS[ev.event_type] || ev.event_type}</div>
+                <div style={{ fontSize: 15, color: theme.textDark, marginTop: 2 }}>{ev.summary || `${ev.entity_type} ${ev.entity_id}`}</div>
+                <div style={{ fontSize: 13, color: theme.textMuted, marginTop: 6 }}>{new Date(ev.created_at).toLocaleString('es-AR')}</div>
               </li>
             ))}
           </ul>

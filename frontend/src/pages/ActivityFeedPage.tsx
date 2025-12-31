@@ -47,7 +47,9 @@ const FACILITY_THEMES: Record<string, { primaryColor: string; bgLight: string; t
 
 export default function ActivityFeedPage() {
   const { facility } = useFacility();
-  const theme = facility && FACILITY_THEMES[facility.name || facility.display_name] ? FACILITY_THEMES[facility.name || facility.display_name] : FACILITY_THEMES['default'];
+  // Derivar clave de theme: usar name, si no id, si no default
+  const facilityKey = facility?.name || facility?.id || 'default';
+  const theme = FACILITY_THEMES[facilityKey] || FACILITY_THEMES['default'];
   const navigate = useNavigate();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);

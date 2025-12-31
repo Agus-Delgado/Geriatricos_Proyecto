@@ -1,7 +1,7 @@
 """add resident.status and activity_events
 
-Revision ID: 014_add_resident_status_and_activity_events
-Revises: 013_add_password_reset_tokens
+Revision ID: 014_resident_status_activity
+Revises: 013_password_reset
 Create Date: 2025-12-31
 """
 
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
-revision = '014_add_resident_status_and_activity_events'
+revision = '014_resident_status_activity'
 down_revision = '013_password_reset'
 branch_labels = None
 depends_on = None

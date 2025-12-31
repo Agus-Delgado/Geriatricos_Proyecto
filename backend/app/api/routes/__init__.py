@@ -16,6 +16,7 @@ from . import resident_contacts
 from . import resident_external_events
 from . import residents
 from . import staff
+from . import activity
 
 __all__ = [
     "admin",
@@ -35,4 +36,5 @@ __all__ = [
     "resident_external_events",
     "residents",
     "staff",
+    "activity",
 ]

@@ -5,6 +5,7 @@ from datetime import date, datetime, time
 from app.models.medications import MedicationPlan, MedicationScheduleTime, MedicationAdministration
 from app.models.residents import Resident
 from app.models.audit import AuditLog
+from app.services.activity_service import log_event
 from app.schemas.medications import MedicationPlanCreate, MedicationPlanUpdate
 from fastapi import HTTPException, status
 
@@ -36,6 +37,17 @@ def create_medication_plan(
         metadata_json={"med_name": plan_data.med_name, "resident_id": str(resident_id)}
     )
     db.add(audit_log)
+    # Activity feed
+    log_event(
+        db,
+        facility_id=facility_id,
+        actor_user_id=user_id,
+        event_type="MEDICATION_CHANGED",
+        entity_type="MedicationPlan",
+        entity_id=plan.id,
+        summary=f"Nuevo plan: {plan_data.med_name}",
+        metadata={"resident_id": str(resident_id), "dose": plan_data.dose},
+    )
     db.commit()
     db.refresh(plan)
     
@@ -86,6 +98,17 @@ def update_medication_plan(
         metadata_json={"changes": update_data}
     )
     db.add(audit_log)
+    # Activity feed
+    log_event(
+        db,
+        facility_id=plan.facility_id,
+        actor_user_id=user_id,
+        event_type="MEDICATION_CHANGED",
+        entity_type="MedicationPlan",
+        entity_id=plan.id,
+        summary="Actualización plan de medicación",
+        metadata={"changes": update_data},
+    )
     db.commit()
     db.refresh(plan)
     
@@ -190,6 +213,21 @@ def create_medication_administration(
         }
     )
     db.add(audit_log)
+    # Activity feed
+    log_event(
+        db,
+        facility_id=facility_id,
+        actor_user_id=user_id,
+        event_type="MEDICATION_CHANGED",
+        entity_type="MedicationAdministration",
+        entity_id=admin.id,
+        summary="Administración registrada",
+        metadata={
+            "resident_id": str(resident_id),
+            "medication_plan_id": str(admin_data.medication_plan_id),
+            "status": admin_data.status,
+        },
+    )
     db.commit()
     db.refresh(admin)
     

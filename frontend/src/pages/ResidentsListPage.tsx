@@ -18,6 +18,7 @@ export const ResidentsListPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [stayStatusFilter, setStayStatusFilter] = useState<string>('ACTIVE');
+  const [statusFilter, setStatusFilter] = useState<string>('ACTIVE');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingResident, setEditingResident] = useState<Resident | null>(null);
@@ -30,7 +31,7 @@ export const ResidentsListPage: React.FC = () => {
     if (facility) {
       loadResidents();
     }
-  }, [facility, searchQuery, stayStatusFilter]);
+  }, [facility, searchQuery, stayStatusFilter, statusFilter]);
 
   const loadResidents = async () => {
     if (!facility) return;
@@ -41,6 +42,7 @@ export const ResidentsListPage: React.FC = () => {
       const data = await residentsApi.list(facility.id, {
         q: searchQuery || undefined,
         stay_status: stayStatusFilter === '' ? undefined : stayStatusFilter,
+        status: statusFilter === '' ? undefined : statusFilter,
       });
       setResidents(data);
     } catch (err) {
@@ -111,7 +113,7 @@ export const ResidentsListPage: React.FC = () => {
           )}
         </div>
 
-        <div>
+        <div className="flex items-center gap-2">
           <select
             value={stayStatusFilter}
             onChange={(e) => setStayStatusFilter(e.target.value)}
@@ -120,6 +122,14 @@ export const ResidentsListPage: React.FC = () => {
             <option value="ACTIVE">Activos</option>
             <option value="ENDED">Finalizados</option>
             <option value="">Todos los estados</option>
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="input-field"
+          >
+            <option value="ACTIVE">Pacientes activos</option>
+            <option value="">Ver todos (incluye inactivos/fallecidos)</option>
           </select>
         </div>
 

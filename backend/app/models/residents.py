@@ -20,12 +20,15 @@ class Resident(Base):
     coverage_other = Column(String(128), nullable=True)  # Especificación cuando coverage_type == 'OTRA'
     coverage_number = Column(String(64), nullable=True)
     admission_date = Column(Date, nullable=False)
-    
+
     # Campos sutiles para finalización de estadía (NO usar "death_date")
     stay_status = Column(String(24), nullable=False, default="ACTIVE")
     end_date = Column(Date, nullable=True)
     end_reason = Column(String(24), nullable=True)  # DISCHARGE / PASSING / TRANSFER
     notes = Column(Text, nullable=True)
+
+    # Estado del paciente (visible en listados por defecto): ACTIVE | INACTIVE | DECEASED
+    status = Column(String(24), nullable=False, default="ACTIVE")
     
     # Auditoría
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
@@ -48,6 +51,7 @@ class Resident(Base):
     __table_args__ = (
         Index("ix_residents_facility_id", "facility_id"),
         Index("ix_residents_stay_status", "stay_status"),
+        Index("ix_residents_status", "status"),
         Index("ix_residents_name", "last_name", "first_name"),
     )
 

@@ -36,6 +36,7 @@ class ResidentUpdate(BaseModel):
     coverage_number: Optional[str] = None
     admission_date: Optional[date] = None
     stay_status: Optional[str] = Field(None, pattern="^(ACTIVE|ENDED)$")
+    status: Optional[str] = Field(None, pattern="^(ACTIVE|INACTIVE|DECEASED)$")
     end_date: Optional[date] = None
     end_reason: Optional[str] = Field(None, pattern="^(DISCHARGE|PASSING|TRANSFER)$")
     notes: Optional[str] = None
@@ -68,6 +69,7 @@ class ResidentResponse(BaseModel):
     coverage_number: Optional[str]
     admission_date: date
     stay_status: str
+    status: str
     end_date: Optional[date]
     end_reason: Optional[str]
     notes: Optional[str]

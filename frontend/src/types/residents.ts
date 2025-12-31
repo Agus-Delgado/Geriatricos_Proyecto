@@ -11,6 +11,7 @@ export interface Resident {
   coverage_number: string | null;
   admission_date: string;
   stay_status: string;
+  status: string;
   end_date: string | null;
   end_reason: string | null;
   notes: string | null;
@@ -45,6 +46,7 @@ export interface ResidentUpdate {
   coverage_other?: string;
   coverage_number?: string;
   stay_status?: string;
+  status?: string;
   end_date?: string;
   end_reason?: string;
   notes?: string;

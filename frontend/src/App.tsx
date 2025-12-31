@@ -37,6 +37,8 @@ import MedicalFolderPrintPage from './pages/MedicalFolderPrintPage';
 import PrescriptionsHistorySearchPage from './pages/PrescriptionsHistorySearchPage';
 import PrescriptionsHistoryPage from './pages/PrescriptionsHistoryPage';
 import PrescriptionPrintPage from './pages/PrescriptionPrintPage';
+import ResidentPrintPage from './pages/ResidentPrintPage';
+import ActivityFeedPage from './pages/ActivityFeedPage';
 import MyAccountPage from './pages/MyAccountPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
@@ -148,6 +150,10 @@ function AppContent() {
               }
             />
             <Route
+              path="/residents/:id/print"
+              element={<ResidentPrintPage />}
+            />
+            <Route
               path="/medication-due"
               element={
                 <ProtectedRoute>
@@ -241,6 +247,14 @@ function AppContent() {
             <Route
               path="/prescriptions-history/:patientId/print"
               element={<PrescriptionPrintPage />}
+            />
+            <Route
+              path="/activity"
+              element={
+                <ProtectedRoute>
+                  <ActivityFeedPage />
+                </ProtectedRoute>
+              }
             />
             <Route path="/" element={<Navigate to="/residents" replace />} />
             {import.meta.env.DEV && (

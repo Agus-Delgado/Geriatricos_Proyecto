@@ -9,7 +9,8 @@ from app.services.residents_service import (
     create_resident,
     get_residents,
     get_resident_by_id,
-    update_resident
+    update_resident,
+    delete_resident,
 )
 from app.models.auth import User
 
@@ -34,7 +35,8 @@ async def create_resident_endpoint(
 async def list_residents(
     facility_id: UUID = Query(..., description="ID de la sede"),
     q: Optional[str] = Query(None, description="Búsqueda por nombre o DNI"),
-    stay_status: Optional[str] = Query(None, description="Filtrar por estado: ACTIVE o ENDED"),
+    stay_status: Optional[str] = Query(None, description="Filtrar por estadía: ACTIVE o ENDED"),
+    status: Optional[str] = Query(None, description="Filtrar por status del paciente: ACTIVE, INACTIVE, DECEASED"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -42,7 +44,7 @@ async def list_residents(
     # Validar acceso a la facility
     require_facility_access(facility_id)(current_user, db)
     
-    residents = get_residents(db, facility_id, q, stay_status)
+    residents = get_residents(db, facility_id, q, stay_status, status)
     return residents
 
 
@@ -76,3 +78,17 @@ async def update_resident_endpoint(
     
     updated_resident = update_resident(db, resident_id, resident_data, current_user.id)
     return updated_resident
+
+
+@router.delete("/{resident_id}", status_code=204)
+async def delete_resident_endpoint(
+    resident_id: UUID,
+    current_user: User = Depends(require_role('OWNER')),
+    db: Session = Depends(get_db)
+):
+    """Eliminar residente definitivamente (solo OWNER)"""
+    # Nota: Validar acceso a la facility del residente
+    resident = get_resident_by_id(db, resident_id)
+    require_facility_access(resident.facility_id)(current_user, db)
+    delete_resident(db, resident_id)
+    return

@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 export const BottomNav: React.FC = () => {
   const location = useLocation();
-  const { isOwner } = useAuth();
+  const { isOwner, isDoctor } = useAuth();
 
   const navItems = [
     {
@@ -25,10 +25,23 @@ export const BottomNav: React.FC = () => {
         </svg>
       ),
     },
-    ...(isOwner
+    ...((isOwner || isDoctor)
       ? [
           {
-            path: '/finance',
+            path: '/activity',
+            label: 'Noticias',
+            icon: (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V7a2 2 0 012-2h8l4 4v9a2 2 0 01-2 2z" />
+              </svg>
+            ),
+          },
+        ]
+      : []),
+    ...(isOwner
+      ? [
+        {
+          path: '/finance',
             label: 'Finanzas',
             icon: (
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

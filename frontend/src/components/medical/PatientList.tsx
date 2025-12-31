@@ -8,6 +8,7 @@ import { ErrorMessage } from '../ui/ErrorMessage';
 import { Modal } from '../ui/Modal';
 import { ResidentForm } from '../forms/ResidentForm';
 import type { ApiError } from '../../api/client';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface PatientListProps {
   facilityId: string;
@@ -19,10 +20,16 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPatient, setEditingPatient] = useState<Resident | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(20);
+  const { isOwner, getActiveRole } = useAuth();
+  const canEdit = getActiveRole() === 'MEDICO' || getActiveRole() === 'ADMIN';
 
   useEffect(() => {
     loadPatients();
-  }, [facilityId, searchQuery]);
+  }, [facilityId, searchQuery, showInactive]);
 
   const loadPatients = async () => {
     try {
@@ -30,7 +37,8 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
       setError(null);
       const data = await residentsApi.list(facilityId, {
         q: searchQuery || undefined,
-        stay_status: 'ACTIVE', // Solo pacientes activos por defecto
+        stay_status: 'ACTIVE',
+        status: showInactive ? undefined : 'ACTIVE',
       });
       setPatients(data);
     } catch (err) {
@@ -52,6 +60,55 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
     }
   };
 
+  const openEditPatient = async (patient: Resident) => {
+    try {
+      const fresh = await residentsApi.get(patient.id);
+      setEditingPatient(fresh);
+      setShowEditModal(true);
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.detail || 'Error al cargar paciente');
+    }
+  };
+
+  const handleUpdatePatient = async (data: any) => {
+    if (!editingPatient) return;
+    try {
+      await residentsApi.update(editingPatient.id, data);
+      setShowEditModal(false);
+      setEditingPatient(null);
+      loadPatients();
+    } catch (err) {
+      const apiError = err as ApiError;
+      throw new Error(apiError.detail || 'Error al actualizar paciente');
+    }
+  };
+
+  const changeStatus = async (patient: Resident, status: 'INACTIVE' | 'DECEASED') => {
+    try {
+      await residentsApi.update(patient.id, { status });
+      loadPatients();
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.detail || 'Error al cambiar estado');
+    }
+  };
+
+  const deletePatient = async (patient: Resident) => {
+    if (!isOwner) return;
+    const confirmed = window.confirm(
+      `Esta acción eliminará definitivamente a ${patient.last_name}, ${patient.first_name}.\n\n¿Confirmás?`
+    );
+    if (!confirmed) return;
+    try {
+      await residentsApi.delete(patient.id);
+      loadPatients();
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.detail || 'Error al eliminar paciente');
+    }
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('es-AR');
@@ -69,20 +126,30 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
             {patients.length} {patients.length === 1 ? 'paciente activo' : 'pacientes activos'}
           </p>
         </div>
-        <Button
-          onClick={() => setShowCreateModal(true)}
-          style={{ backgroundColor: 'var(--facility-accent, #667eea)' }}
-        >
-          Agregar paciente
-        </Button>
+        {canEdit && (
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            style={{ backgroundColor: 'var(--facility-accent, #667eea)' }}
+          >
+            Agregar paciente
+          </Button>
+        )}
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex items-center gap-4">
         <SearchBar
           value={searchQuery}
           onChange={setSearchQuery}
           placeholder="Buscar por DNI o nombre..."
         />
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={showInactive}
+            onChange={(e) => setShowInactive(e.target.checked)}
+          />
+          Ver inactivos
+        </label>
       </div>
 
       {error && (
@@ -100,6 +167,7 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
           {searchQuery ? 'No se encontraron pacientes' : 'No hay pacientes registrados'}
         </div>
       ) : (
+        <>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -108,10 +176,12 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">DNI</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Obra Social</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Fecha Ingreso</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Estado</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {patients.map((patient) => (
+              {patients.slice(0, visibleCount).map((patient) => (
                 <tr key={patient.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-3 px-4">
                     <div className="font-medium text-gray-900">
@@ -123,11 +193,58 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
                     {patient.coverage_type || 'N/A'}
                   </td>
                   <td className="py-3 px-4 text-gray-600">{formatDate(patient.admission_date)}</td>
+                  <td className="py-3 px-4">
+                    <span
+                      className={`inline-block px-2 py-1 text-xs rounded ${
+                        patient.status === 'ACTIVE'
+                          ? 'bg-green-100 text-green-800'
+                          : patient.status === 'DECEASED'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {patient.status === 'ACTIVE'
+                        ? 'Activo'
+                        : patient.status === 'DECEASED'
+                        ? 'Fallecido'
+                        : 'Inactivo'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex gap-2">
+                      {canEdit && (
+                        <Button variant="secondary" onClick={() => openEditPatient(patient)}>
+                          Editar
+                        </Button>
+                      )}
+                      {canEdit && patient.status !== 'DECEASED' && (
+                        <Button variant="secondary" onClick={() => changeStatus(patient, 'INACTIVE')}>
+                          Inactivar
+                        </Button>
+                      )}
+                      {canEdit && patient.status !== 'DECEASED' && (
+                        <Button variant="secondary" onClick={() => changeStatus(patient, 'DECEASED')}>
+                          Marcar fallecido
+                        </Button>
+                      )}
+                      {isOwner && (
+                        <Button variant="danger" onClick={() => deletePatient(patient)}>
+                          Eliminar
+                        </Button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        {patients.length > visibleCount && (
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => setVisibleCount((c) => c + 20)}>Ver más</Button>
+          </div>
+        )}
+        </>
       )}
 
       <Modal
@@ -141,6 +258,28 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
           onCancel={() => setShowCreateModal(false)}
           facilityId={facilityId}
         />
+      </Modal>
+
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingPatient(null);
+        }}
+        title="Editar Paciente"
+        size="lg"
+      >
+        {editingPatient && (
+          <ResidentForm
+            resident={editingPatient}
+            onSubmit={handleUpdatePatient}
+            onCancel={() => {
+              setShowEditModal(false);
+              setEditingPatient(null);
+            }}
+            facilityId={facilityId}
+          />
+        )}
       </Modal>
     </div>
   );

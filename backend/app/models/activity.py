@@ -1,0 +1,26 @@
+from sqlalchemy import Column, String, DateTime, ForeignKey, Index, Text
+from sqlalchemy.dialects.postgresql import UUID, JSONB
+from datetime import datetime
+import uuid
+from app.db.base import Base
+
+
+class ActivityEvent(Base):
+    __tablename__ = "activity_events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    facility_id = Column(UUID(as_uuid=True), ForeignKey("facilities.id"), nullable=False)
+    actor_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    event_type = Column(String(64), nullable=False)  # PATIENT_CREATED, PATIENT_UPDATED, PATIENT_STATUS_CHANGED, MEDICATION_CHANGED
+    entity_type = Column(String(64), nullable=False)  # Resident, MedicationPlan, etc.
+    entity_id = Column(UUID(as_uuid=True), nullable=False)
+    summary = Column(Text, nullable=True)
+    metadata = Column(JSONB, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index("ix_activity_events_facility_created", "facility_id", "created_at"),
+        Index("ix_activity_events_actor_created", "actor_user_id", "created_at"),
+        Index("ix_activity_events_event_type_created", "event_type", "created_at"),
+    )
+

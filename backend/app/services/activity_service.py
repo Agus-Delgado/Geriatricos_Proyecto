@@ -15,7 +15,7 @@ def log_event(
     entity_type: str,
     entity_id: UUID,
     summary: Optional[str] = None,
-    metadata: Optional[Any] = None,
+    event_metadata: Optional[Any] = None,
 ) -> ActivityEvent:
     event = ActivityEvent(
         facility_id=facility_id,
@@ -24,7 +24,7 @@ def log_event(
         entity_type=entity_type,
         entity_id=entity_id,
         summary=summary,
-        metadata=metadata,
+        event_metadata=event_metadata,
     )
     db.add(event)
     # No commit aquí; el caller debe committear junto con su transacción

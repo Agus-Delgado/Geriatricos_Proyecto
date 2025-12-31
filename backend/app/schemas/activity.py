@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from pydantic.config import ConfigDict
 from typing import Optional, Any, List
 from uuid import UUID
 from datetime import datetime
@@ -12,11 +13,10 @@ class ActivityEventResponse(BaseModel):
     entity_type: str
     entity_id: UUID
     summary: Optional[str]
-    metadata: Optional[Any]
+    metadata: Optional[Any] = Field(default=None, validation_alias='event_metadata')
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ActivityQuery(BaseModel):

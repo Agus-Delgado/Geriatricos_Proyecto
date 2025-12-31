@@ -46,7 +46,7 @@ def create_medication_plan(
         entity_type="MedicationPlan",
         entity_id=plan.id,
         summary=f"Nuevo plan: {plan_data.med_name}",
-        metadata={"resident_id": str(resident_id), "dose": plan_data.dose},
+        event_metadata={"resident_id": str(resident_id), "dose": plan_data.dose},
     )
     db.commit()
     db.refresh(plan)
@@ -107,7 +107,7 @@ def update_medication_plan(
         entity_type="MedicationPlan",
         entity_id=plan.id,
         summary="Actualización plan de medicación",
-        metadata={"changes": update_data},
+        event_metadata={"changes": update_data},
     )
     db.commit()
     db.refresh(plan)
@@ -222,7 +222,7 @@ def create_medication_administration(
         entity_type="MedicationAdministration",
         entity_id=admin.id,
         summary="Administración registrada",
-        metadata={
+        event_metadata={
             "resident_id": str(resident_id),
             "medication_plan_id": str(admin_data.medication_plan_id),
             "status": admin_data.status,

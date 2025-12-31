@@ -13,7 +13,7 @@ class ActivityEventResponse(BaseModel):
     entity_type: str
     entity_id: UUID
     summary: Optional[str]
-    metadata: Optional[Any] = Field(default=None, validation_alias='event_metadata')
+    meta: Optional[Any] = Field(default=None, validation_alias='meta')
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

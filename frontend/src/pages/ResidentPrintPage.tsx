@@ -5,6 +5,7 @@ import { contactsApi } from '../api/contacts';
 import { useFacility } from '../contexts/FacilityContext';
 import type { Resident, ResidentContact } from '../types/residents';
 import '../components/certificates/print.css';
+import './resident-print.css';
 
 export default function ResidentPrintPage() {
   const { id } = useParams();
@@ -13,6 +14,46 @@ export default function ResidentPrintPage() {
   const [contacts, setContacts] = useState<ResidentContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Theming por hogar
+  function normalizeFacilityName(name?: string): string {
+    if (!name) return 'default';
+    return name.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  }
+  function resolveThemeVars(name?: string) {
+    const n = normalizeFacilityName(name);
+    if (n.includes('amanecer')) {
+      return {
+        ['--primary-color' as any]: '#f97316',
+        ['--bg-light' as any]: '#fff7ed',
+        ['--text-dark' as any]: '#7c2d12',
+        ['--text-muted' as any]: '#a16207',
+      };
+    }
+    if (n.includes('trebol')) {
+      return {
+        ['--primary-color' as any]: '#22c55e',
+        ['--bg-light' as any]: '#f0fdf4',
+        ['--text-dark' as any]: '#14532d',
+        ['--text-muted' as any]: '#166534',
+      };
+    }
+    if (n.includes('estaciones') || n.includes('luz') || n.includes('estrella')) {
+      return {
+        ['--primary-color' as any]: '#3b82f6',
+        ['--bg-light' as any]: '#eff6ff',
+        ['--text-dark' as any]: '#1e3a8a',
+        ['--text-muted' as any]: '#2563eb',
+      };
+    }
+    return {
+      ['--primary-color' as any]: '#2563eb',
+      ['--bg-light' as any]: '#f9fafb',
+      ['--text-dark' as any]: '#1e293b',
+      ['--text-muted' as any]: '#64748b',
+    };
+  }
+  const themeVars = resolveThemeVars(facility?.name);
 
   useEffect(() => {
     const load = async () => {
@@ -39,13 +80,13 @@ export default function ResidentPrintPage() {
   if (!resident) return null;
 
   return (
-    <div className="print-bg">
+    <div className="print-bg" style={themeVars}>
       <div className="no-print" style={{ textAlign: 'right', maxWidth: 750, margin: '0 auto 16px auto' }}>
         <button onClick={print} className="btn btn-primary">Imprimir</button>
       </div>
       <div className="content">
         <header style={{ textAlign: 'center', marginBottom: 32 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1e40af', marginBottom: 8 }}>Ficha del Paciente</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--primary-color)', marginBottom: 8 }}>Ficha del Paciente</h1>
           <div style={{ fontSize: 18, fontWeight: 500 }}>{facility?.name}</div>
           {facility?.address && <div style={{ color: '#555', fontSize: 15 }}>{facility.address}</div>}
           <div style={{ color: '#888', fontSize: 14, marginTop: 4 }}>Generado: {new Date().toLocaleString('es-AR')}</div>

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { activityApi } from '../api/activity';
 import { useFacility } from '../contexts/FacilityContext';
 import type { ActivityEvent } from '../types/activity';
-import { BottomNav } from '../components/layout/BottomNav';
 import { useNavigate } from 'react-router-dom';
 
 const EVENT_LABELS: Record<string, string> = {
@@ -19,25 +18,37 @@ const EVENT_TYPES = [
 ];
 
 const FACILITY_THEMES: Record<string, { primaryColor: string; bgLight: string; textDark: string; textMuted: string }> = {
-  'El Amanecer': {
+  amanecer: {
     primaryColor: '#f97316',
     bgLight: '#fff7ed',
     textDark: '#7c2d12',
     textMuted: '#a16207',
   },
-  'Trébol': {
+  trebol: {
     primaryColor: '#22c55e',
     bgLight: '#f0fdf4',
     textDark: '#14532d',
     textMuted: '#166534',
   },
-  'Estaciones de Luz': {
+  estaciones: {
     primaryColor: '#3b82f6',
     bgLight: '#eff6ff',
     textDark: '#1e3a8a',
     textMuted: '#2563eb',
   },
-  'default': {
+  luz: {
+    primaryColor: '#3b82f6',
+    bgLight: '#eff6ff',
+    textDark: '#1e3a8a',
+    textMuted: '#2563eb',
+  },
+  estrella: {
+    primaryColor: '#3b82f6',
+    bgLight: '#eff6ff',
+    textDark: '#1e3a8a',
+    textMuted: '#2563eb',
+  },
+  default: {
     primaryColor: '#2563eb',
     bgLight: '#f9fafb',
     textDark: '#1e293b',
@@ -45,11 +56,29 @@ const FACILITY_THEMES: Record<string, { primaryColor: string; bgLight: string; t
   },
 };
 
+function normalizeFacilityName(name?: string): string {
+  if (!name) return 'default';
+  return name
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+}
+
+function resolveThemeKey(name?: string): string {
+  const n = normalizeFacilityName(name);
+  if (n.includes('amanecer')) return 'amanecer';
+  if (n.includes('trebol')) return 'trebol';
+  if (n.includes('estaciones')) return 'estaciones';
+  if (n.includes('luz')) return 'luz';
+  if (n.includes('estrella')) return 'estrella';
+  return 'default';
+}
+
 export default function ActivityFeedPage() {
   const { facility } = useFacility();
   // Derivar clave de theme: usar name, si no id, si no default
-  const facilityKey = facility?.name || facility?.id || 'default';
-  const theme = FACILITY_THEMES[facilityKey] || FACILITY_THEMES['default'];
+  const themeKey = resolveThemeKey(facility?.name);
+  const theme = FACILITY_THEMES[themeKey] || FACILITY_THEMES['default'];
   const navigate = useNavigate();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,6 +136,24 @@ export default function ActivityFeedPage() {
           <h1 className="text-3xl font-bold flex items-center" style={{ color: theme.primaryColor }}>
             <span style={{ fontSize: 32, marginRight: 10 }}>📰</span>Noticias diarias
           </h1>
+          {facility?.name && (
+            <button
+              style={{
+                marginLeft: 24,
+                color: theme.primaryColor,
+                fontWeight: 700,
+                fontSize: 20,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+              onClick={() => navigate('/medical')}
+              title="Ir al panel principal"
+            >
+              {facility.name}
+            </button>
+          )}
         </div>
         <div className="flex gap-3 mb-8 flex-wrap">
           {EVENT_TYPES.map(({ type, label }) => (
@@ -158,7 +205,7 @@ export default function ActivityFeedPage() {
           </ul>
         )}
       </div>
-      <BottomNav />
+      {/* BottomNav eliminado para esta página */}
     </div>
   );
 }

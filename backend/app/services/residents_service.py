@@ -130,28 +130,34 @@ def update_resident(
     )
     db.add(audit_log)
     # Activity feed
-    if "status" in update_data:
-        log_event(
-            db,
-            facility_id=resident.facility_id,
-            actor_user_id=user_id,
-            event_type="PATIENT_STATUS_CHANGED",
-            entity_type="Resident",
-            entity_id=resident.id,
-            summary=f"Estado paciente: {update_data['status']}",
-            event_metadata={"changes": {"status": update_data["status"]}},
-        )
-    else:
-        log_event(
-            db,
-            facility_id=resident.facility_id,
-            actor_user_id=user_id,
-            event_type="PATIENT_UPDATED",
-            entity_type="Resident",
-            entity_id=resident.id,
-            summary=f"Edición de paciente: {resident.last_name}, {resident.first_name}",
-            event_metadata={"changes": update_data},
-        )
+    from fastapi.encoders import jsonable_encoder
+    try:
+        changes = resident_data.model_dump(mode="json", exclude_unset=True)
+        if "status" in update_data:
+            log_event(
+                db,
+                facility_id=resident.facility_id,
+                actor_user_id=user_id,
+                event_type="PATIENT_STATUS_CHANGED",
+                entity_type="Resident",
+                entity_id=resident.id,
+                summary=f"Estado paciente: {update_data['status']}",
+                event_metadata=jsonable_encoder({"changes": {"status": update_data["status"]}}),
+            )
+        else:
+            log_event(
+                db,
+                facility_id=resident.facility_id,
+                actor_user_id=user_id,
+                event_type="PATIENT_UPDATED",
+                entity_type="Resident",
+                entity_id=resident.id,
+                summary=f"Edición de paciente: {resident.last_name}, {resident.first_name}",
+                event_metadata=jsonable_encoder({"changes": update_data}),
+            )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"log_event failed: {e}")
     db.commit()
     db.refresh(resident)
 

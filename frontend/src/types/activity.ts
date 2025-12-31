@@ -6,6 +6,6 @@ export interface ActivityEvent {
   entity_type: string;
   entity_id: string;
   summary?: string | null;
-  metadata?: any;
+  meta?: any;
   created_at: string;
 }

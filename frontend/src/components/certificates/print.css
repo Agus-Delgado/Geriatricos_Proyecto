@@ -74,12 +74,7 @@ body {
   .print-bg {
     background: #fff !important;
   }
-  .content {
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    max-width: 100% !important;
-  }
+  /* .content: NO global reset, se maneja en resident-print.css para la ficha */
 }
 /* Paper Frame - Estilo Rx */
 .paper {

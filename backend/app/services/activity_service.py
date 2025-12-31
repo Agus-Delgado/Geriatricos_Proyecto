@@ -17,6 +17,8 @@ def log_event(
     summary: Optional[str] = None,
     event_metadata: Optional[Any] = None,
 ) -> ActivityEvent:
+    from fastapi.encoders import jsonable_encoder
+    safe_meta = jsonable_encoder(event_metadata or {})
     event = ActivityEvent(
         facility_id=facility_id,
         actor_user_id=actor_user_id,
@@ -24,7 +26,7 @@ def log_event(
         entity_type=entity_type,
         entity_id=entity_id,
         summary=summary,
-        event_metadata=event_metadata,
+        meta=safe_meta,
     )
     db.add(event)
     # No commit aquí; el caller debe committear junto con su transacción

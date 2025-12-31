@@ -15,7 +15,7 @@ class ActivityEvent(Base):
     entity_type = Column(String(64), nullable=False)  # Resident, MedicationPlan, etc.
     entity_id = Column(UUID(as_uuid=True), nullable=False)
     summary = Column(Text, nullable=True)
-    event_metadata = Column("metadata", JSONB, nullable=True)
+    meta = Column("meta", JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
 
     __table_args__ = (

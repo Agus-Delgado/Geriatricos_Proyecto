@@ -11,11 +11,11 @@ class ActivityEvent(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     facility_id = Column(UUID(as_uuid=True), ForeignKey("facilities.id"), nullable=False)
     actor_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    event_type = Column(String(64), nullable=False)  # PATIENT_CREATED, PATIENT_UPDATED, PATIENT_STATUS_CHANGED, MEDICATION_CHANGED
-    entity_type = Column(String(64), nullable=False)  # Resident, MedicationPlan, etc.
+    event_type = Column(String(64), nullable=False)
+    entity_type = Column(String(64), nullable=False)
     entity_id = Column(UUID(as_uuid=True), nullable=False)
     summary = Column(Text, nullable=True)
-    meta = Column("meta", JSONB, nullable=True)
+    meta = Column("metadata", JSONB, nullable=True)  # Usar columna 'metadata', atributo 'meta'
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
 
     __table_args__ = (

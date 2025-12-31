@@ -39,31 +39,31 @@ export default function ResidentPrintPage() {
   if (!resident) return null;
 
   return (
-    <div className="print-root" style={{ background: '#f9fafb', minHeight: '100vh', padding: '32px 0' }}>
-      <div className="print-actions no-print" style={{ textAlign: 'right', maxWidth: 900, margin: '0 auto 16px auto' }}>
+    <div className="print-bg">
+      <div className="no-print" style={{ textAlign: 'right', maxWidth: 750, margin: '0 auto 16px auto' }}>
         <button onClick={print} className="btn btn-primary">Imprimir</button>
       </div>
-      <div className="a4-page" style={{ maxWidth: 900, margin: '0 auto', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 32 }}>
+      <div className="content">
         <header style={{ textAlign: 'center', marginBottom: 32 }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1e40af', marginBottom: 8 }}>Ficha del Paciente</h1>
           <div style={{ fontSize: 18, fontWeight: 500 }}>{facility?.name}</div>
           {facility?.address && <div style={{ color: '#555', fontSize: 15 }}>{facility.address}</div>}
           <div style={{ color: '#888', fontSize: 14, marginTop: 4 }}>Generado: {new Date().toLocaleString('es-AR')}</div>
         </header>
-        <section style={{ marginBottom: 28 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 600, borderBottom: '2px solid #3b82f6', paddingBottom: 4, marginBottom: 18, color: '#1e40af' }}>Datos personales</h2>
+        <section className="section">
+          <div className="section-title">Datos personales</div>
           <div>
-            <div style={{ display: 'flex', marginBottom: 8 }}><div style={{ width: 200, fontWeight: 600 }}>Nombre</div><div>{resident.last_name}, {resident.first_name}</div></div>
-            <div style={{ display: 'flex', marginBottom: 8 }}><div style={{ width: 200, fontWeight: 600 }}>DNI</div><div>{resident.dni || 'N/A'}</div></div>
-            <div style={{ display: 'flex', marginBottom: 8 }}><div style={{ width: 200, fontWeight: 600 }}>Fecha nacimiento</div><div>{resident.birth_date || 'N/A'}</div></div>
-            <div style={{ display: 'flex', marginBottom: 8 }}><div style={{ width: 200, fontWeight: 600 }}>Sexo</div><div>{resident.sex || 'N/A'}</div></div>
-            <div style={{ display: 'flex', marginBottom: 8 }}><div style={{ width: 200, fontWeight: 600 }}>Cobertura</div><div>{resident.coverage_type || 'N/A'}</div></div>
-            <div style={{ display: 'flex', marginBottom: 8 }}><div style={{ width: 200, fontWeight: 600 }}>N° Cobertura</div><div>{resident.coverage_number || 'N/A'}</div></div>
-            <div style={{ display: 'flex', marginBottom: 8 }}><div style={{ width: 200, fontWeight: 600 }}>Ingreso</div><div>{resident.admission_date}</div></div>
+            <div className="info-row"><div className="info-label">Nombre</div><div className="info-value">{resident.last_name}, {resident.first_name}</div></div>
+            <div className="info-row"><div className="info-label">DNI</div><div className="info-value">{resident.dni || 'N/A'}</div></div>
+            <div className="info-row"><div className="info-label">Fecha nacimiento</div><div className="info-value">{resident.birth_date || 'N/A'}</div></div>
+            <div className="info-row"><div className="info-label">Sexo</div><div className="info-value">{resident.sex || 'N/A'}</div></div>
+            <div className="info-row"><div className="info-label">Cobertura</div><div className="info-value">{resident.coverage_type || 'N/A'}</div></div>
+            <div className="info-row"><div className="info-label">N° Cobertura</div><div className="info-value">{resident.coverage_number || 'N/A'}</div></div>
+            <div className="info-row"><div className="info-label">Ingreso</div><div className="info-value">{resident.admission_date}</div></div>
           </div>
         </section>
-        <section style={{ marginBottom: 28 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 600, borderBottom: '2px solid #3b82f6', paddingBottom: 4, marginBottom: 18, color: '#1e40af' }}>Familiares y contactos</h2>
+        <section className="section">
+          <div className="section-title">Familiares y contactos</div>
           {contacts.length === 0 ? (
             <div style={{ color: '#888' }}>No hay contactos registrados</div>
           ) : (
@@ -93,15 +93,13 @@ export default function ResidentPrintPage() {
             </table>
           )}
         </section>
-        <section style={{ marginBottom: 28 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 600, borderBottom: '2px solid #3b82f6', paddingBottom: 4, marginBottom: 18, color: '#1e40af' }}>Observaciones</h2>
-          <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, minHeight: 60, padding: 12, background: '#f9fafb', fontSize: 15 }}>{resident.notes || <span style={{ color: '#bbb' }}>Sin observaciones</span>}</div>
+        <section className="section">
+          <div className="section-title">Observaciones</div>
+          <div className="textarea">{resident.notes || <span style={{ color: '#bbb' }}>Sin observaciones</span>}</div>
         </section>
-        <section style={{ marginBottom: 0 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 600, borderBottom: '2px solid #3b82f6', paddingBottom: 4, marginBottom: 18, color: '#1e40af' }}>Firma</h2>
-          <div style={{ borderTop: '1px solid #e5e7eb', marginTop: 32, height: 60, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', color: '#888', fontSize: 15 }}>
-            .....................................................
-          </div>
+        <section className="section">
+          <div className="section-title">Firma</div>
+          <div className="signature-line">&nbsp;</div>
         </section>
       </div>
     </div>

@@ -84,30 +84,7 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
     }
   };
 
-  const changeStatus = async (patient: Resident, status: 'INACTIVE' | 'DECEASED') => {
-    try {
-      await residentsApi.update(patient.id, { status });
-      loadPatients();
-    } catch (err) {
-      const apiError = err as ApiError;
-      setError(apiError.detail || 'Error al cambiar estado');
-    }
-  };
-
-  const deletePatient = async (patient: Resident) => {
-    if (!isOwner) return;
-    const confirmed = window.confirm(
-      `Esta acción eliminará definitivamente a ${patient.last_name}, ${patient.first_name}.\n\n¿Confirmás?`
-    );
-    if (!confirmed) return;
-    try {
-      await residentsApi.delete(patient.id);
-      loadPatients();
-    } catch (err) {
-      const apiError = err as ApiError;
-      setError(apiError.detail || 'Error al eliminar paciente');
-    }
-  };
+  // Funciones changeStatus y deletePatient eliminadas (no se usan)
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';

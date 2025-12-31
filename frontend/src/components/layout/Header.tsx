@@ -98,8 +98,9 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
   };
 
 
-  // Permiso para ver noticias diarias
-  const canViewNews = getActiveRole() === 'OWNER' || getActiveRole() === 'MEDICO';
+  // Permiso para ver noticias diarias (ADMIN/MEDICO/STAFF)
+  const role = getActiveRole();
+  const canViewNews = role === 'ADMIN' || role === 'MEDICO' || role === 'STAFF';
 
   // Solo mostrar header en rutas internas
   if (!isInternalRoute) {

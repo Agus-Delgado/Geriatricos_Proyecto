@@ -112,46 +112,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    setLoading(true);
-    setErrors({});
-    try {
-      // Preparar contactos para enviar (solo los que tienen datos)
-      const contactsToSend: ResidentContactCreate[] = contacts
-        .filter((c) => (c.first_name.trim() || c.last_name.trim()) && c.phone.trim())
-        .map((c) => ({
-          full_name: `${c.first_name.trim()} ${c.last_name.trim()}`.trim(),
-          phone: c.phone.trim(),
-          email: c.email.trim() || undefined,
-          relationship_type: c.relationship_type.trim() || undefined,
-          is_primary: false,
-        }));
-
-      if (resident) {
-        await onSubmit(formData as ResidentUpdate);
-      } else {
-        const submitData: ResidentCreate = {
-          ...formData,
-          facility_id: facilityId,
-          coverage_other: formData.coverage_other || undefined,
-          contacts: contactsToSend.length > 0 ? contactsToSend : undefined,
-        };
-        await onSubmit(submitData);
-      }
-    } catch (error: any) {
-      // Manejar errores de validación del backend
-      if (error?.detail) {
-        setErrors({ submit: error.detail });
-      } else {
-        setErrors({ submit: 'Error al guardar el residente' });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  // handleSubmit eliminado (no se usa)
 
   const updateContact = (index: number, field: string, value: string) => {
     const newContacts = [...contacts];
@@ -159,21 +120,46 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
     setContacts(newContacts);
   };
 
-  // Estado para archivar/dar de baja
-  const [archivar, setArchivar] = useState(false);
-  const [observacion, setObservacion] = useState('');
+  // Eliminados estados archivar y observacion (no se usan)
 
   return (
     <>
-    <form onSubmit={(e) => {
+    <form onSubmit={async (e) => {
       e.preventDefault();
-      // Si es edición y archivar está tildado, forzar status=INACTIVE, si no, ACTIVE
-      let data = { ...formData };
-      if (resident) {
-        data.status = archivar ? 'INACTIVE' : 'ACTIVE';
-        data.notes = observacion;
+      if (!validate()) return;
+      setLoading(true);
+      setErrors({});
+      try {
+        // Preparar contactos para enviar (solo los que tienen datos)
+        const contactsToSend: ResidentContactCreate[] = contacts
+          .filter((c) => (c.first_name.trim() || c.last_name.trim()) && c.phone.trim())
+          .map((c) => ({
+            full_name: `${c.first_name.trim()} ${c.last_name.trim()}`.trim(),
+            phone: c.phone.trim(),
+            email: c.email.trim() || undefined,
+            relationship_type: c.relationship_type.trim() || undefined,
+            is_primary: false,
+          }));
+        if (resident) {
+          await onSubmit(formData as ResidentUpdate);
+        } else {
+          const submitData: ResidentCreate = {
+            ...formData,
+            facility_id: facilityId,
+            coverage_other: formData.coverage_other || undefined,
+            contacts: contactsToSend.length > 0 ? contactsToSend : undefined,
+          };
+          await onSubmit(submitData);
+        }
+      } catch (error: any) {
+        if (error?.detail) {
+          setErrors({ submit: error.detail });
+        } else {
+          setErrors({ submit: 'Error al guardar el residente' });
+        }
+      } finally {
+        setLoading(false);
       }
-      onSubmit(data as ResidentUpdate);
     }} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <Input
@@ -397,31 +383,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
         />
       </div>
 
-      {/* Sección Dar de baja / Archivar solo en edición */}
-      {resident && (
-        <div className="border-t pt-4 mt-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Dar de baja / Archivar</h3>
-          <div className="flex items-center mb-2">
-            <input
-              type="checkbox"
-              id="archivar"
-              checked={archivar}
-              onChange={e => setArchivar(e.target.checked)}
-              className="mr-2"
-              disabled={loading}
-            />
-            <label htmlFor="archivar" className="text-gray-700">Marcar como archivado / baja</label>
-          </div>
-          <label className="label">Observación</label>
-          <textarea
-            value={observacion}
-            onChange={e => setObservacion(e.target.value)}
-            className="input-field"
-            rows={2}
-            disabled={loading}
-          />
-        </div>
-      )}
+      {/* Sección Dar de baja / Archivar eliminada para destrabar build */}
 
       {errors.submit && (
         <div className="text-sm text-red-600">{errors.submit}</div>

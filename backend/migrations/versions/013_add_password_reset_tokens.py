@@ -1,6 +1,6 @@
 """add_password_reset_tokens
 
-Revision ID: 013_password_reset
+Revision ID: 013_add_password_reset_tokens
 Revises: 012_agenda_entries
 Create Date: 2024-01-XX XX:XX:XX.XXXXXX
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '013_password_reset'
+revision = '013_add_password_reset_tokens'
 down_revision = '012_agenda_entries'
 branch_labels = None
 depends_on = None

@@ -6,7 +6,6 @@ export const UpdateBanner: React.FC = () => {
 
   const handleUpdate = async () => {
     if (updateServiceWorker) {
-      // Llamar a updateSW(true) para actualizar y recargar la página
       await updateServiceWorker(true);
     }
   };
@@ -23,43 +22,64 @@ export const UpdateBanner: React.FC = () => {
         left: 0,
         right: 0,
         zIndex: 9999,
-        backgroundColor: '#1d4ed8',
+        backgroundColor: '#2563eb',
         color: 'white',
         padding: '1rem',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.15)',
+        boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.2)',
+        animation: 'slideUp 0.3s ease-out',
       }}
     >
+      <style>
+        {`
+          @keyframes slideUp {
+            from {
+              transform: translateY(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+        `}
+      </style>
+      
       <div style={{ flex: 1, marginRight: '1rem' }}>
-        <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
-          Nueva versión disponible
+        <div style={{ fontWeight: 600, marginBottom: '0.25rem', fontSize: '1rem' }}>
+          🎉 Nueva versión disponible
         </div>
         <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>
-          Actualiza para obtener las últimas mejoras
+          Actualiza para obtener las últimas mejoras y correcciones
         </div>
       </div>
+      
       <button
         onClick={handleUpdate}
         style={{
           backgroundColor: 'white',
-          color: '#1d4ed8',
+          color: '#2563eb',
           fontWeight: 600,
-          padding: '0.5rem 1.5rem',
+          padding: '0.625rem 1.5rem',
           borderRadius: '0.5rem',
           border: 'none',
           cursor: 'pointer',
-          transition: 'opacity 0.2s',
+          fontSize: '0.9375rem',
+          transition: 'all 0.2s ease',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.opacity = '0.9';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.opacity = '1';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
         }}
       >
-        Actualizar
+        Actualizar ahora
       </button>
     </div>
   );

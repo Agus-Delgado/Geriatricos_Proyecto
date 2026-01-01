@@ -137,24 +137,6 @@ export default function ActivityFeedPage() {
           <h1 className="text-3xl font-bold flex items-center" style={{ color: theme.primaryColor }}>
             <span style={{ fontSize: 32, marginRight: 10 }}>📰</span>Noticias diarias
           </h1>
-          {facility?.name && (
-            <button
-              style={{
-                marginLeft: 24,
-                color: theme.primaryColor,
-                fontWeight: 700,
-                fontSize: 20,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-              }}
-              onClick={() => navigate('/medical')}
-              title="Ir al panel principal"
-            >
-              {facility.name}
-            </button>
-          )}
         </div>
         <div className="flex gap-3 mb-8 flex-wrap">
           {EVENT_TYPES.map(({ type, label }) => (

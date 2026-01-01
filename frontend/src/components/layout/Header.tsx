@@ -128,9 +128,21 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
             <div className="flex-1 min-w-0">
               {title && <h1 className="text-lg font-semibold text-gray-900 truncate">{title}</h1>}
               {activeMembership && (
-                <p className="text-sm text-gray-600 truncate" style={{ color: 'var(--facility-accent)' }}>
+                <button
+                  className="text-sm text-gray-600 truncate font-semibold hover:underline focus:underline"
+                  style={{ color: 'var(--facility-accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  onClick={() => {
+                    // Navegar al panel principal del hogar
+                    const role = getActiveRole();
+                    if (role === 'ADMIN') navigate(`/g/${activeMembership.facility_id}/dashboard`);
+                    else if (role === 'MEDICO') navigate(`/g/${activeMembership.facility_id}/medical`);
+                    else if (role === 'STAFF') navigate(`/g/${activeMembership.facility_id}/tasks`);
+                    else navigate(`/g/${activeMembership.facility_id}/dashboard`);
+                  }}
+                  title="Ir al panel principal"
+                >
                   {activeMembership.facility_name}
-                </p>
+                </button>
               )}
             </div>
           </div>

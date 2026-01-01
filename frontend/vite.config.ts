@@ -2,13 +2,16 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'robots.txt', 'icons/icon-192x192.png', 'icons/icon-512x512.png'],
+      
+      // IMPORTANTE: Cambiar el nombre del SW para forzar nueva instalación
+      filename: 'sw.js',
+      
       manifest: {
         name: 'Geriátricos App',
         short_name: 'Geriátricos',
@@ -34,29 +37,38 @@ export default defineConfig({
           }
         ]
       },
+      
       workbox: {
-        // Estrategia de caché más agresiva para evitar versiones viejas
+        // Limpieza agresiva de cachés antiguos
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
+        
+        // Cachear solo archivos específicos
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        
+        // NO cachear nada del index.html inicial
+        navigateFallback: null,
+        
+        // Estrategia Network First para todo
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/api\./i,
+            urlPattern: /^https?:\/\/.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'api-cache',
+              cacheName: 'app-cache-v2',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 5 // 5 minutos
+                maxAgeSeconds: 60 * 60 // 1 hora
               },
-              networkTimeoutSeconds: 10
+              networkTimeoutSeconds: 5
             }
           }
         ]
       },
+      
       devOptions: {
-        enabled: false // Desactivar en desarrollo para evitar confusión
+        enabled: false
       }
     })
   ],

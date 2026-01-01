@@ -24,22 +24,21 @@ interface FacilityProviderProps {
 }
 
 export const FacilityProvider: React.FC<FacilityProviderProps> = ({ children }) => {
-  const { activeFacilityId, user } = useAuth();
+  const { activeFacilityId, isBootstrapping } = useAuth();
   const [facility, setFacilityState] = useState<Facility | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const lastLoadedFacilityIdRef = useRef<string | null>(null);
 
   const loadFacility = async (facilityId: string) => {
+    console.log('[FacilityContext] loadFacility:', facilityId);
     try {
       setLoading(true);
       const facilityData = await facilitiesApi.get(facilityId);
       setFacilityState(facilityData);
       lastLoadedFacilityIdRef.current = facilityId;
-      // Sincronizar también localStorage para compatibilidad
-      localStorage.setItem('facility_id', facilityId);
+      console.log('[FacilityContext] facility cargada:', facilityData.name);
     } catch (error) {
-      // Facility no encontrada o sin acceso, limpiar
-      localStorage.removeItem('facility_id');
+      console.error('[FacilityContext] error cargando facility:', error);
       setFacilityState(null);
       lastLoadedFacilityIdRef.current = null;
     } finally {
@@ -47,35 +46,35 @@ export const FacilityProvider: React.FC<FacilityProviderProps> = ({ children }) 
     }
   };
 
-  // Sincronizar con AuthContext.activeFacilityId
+  // Sincronizar con AuthContext.activeFacilityId (ÚNICA FUENTE DE VERDAD)
   useEffect(() => {
-    // Priorizar activeFacilityId de AuthContext, luego user.active_facility_id, luego localStorage
-    const facilityIdToUse = activeFacilityId ?? user?.active_facility_id ?? localStorage.getItem('facility_id');
-    
-    if (facilityIdToUse) {
-      // Solo cargar si es diferente a la facility que ya cargamos
-      if (lastLoadedFacilityIdRef.current !== facilityIdToUse) {
-        loadFacility(facilityIdToUse);
+    // NO hacer nada hasta que AuthContext termine de bootstrapear
+    if (isBootstrapping) {
+      console.log('[FacilityContext] esperando bootstrap de AuthContext...');
+      return;
+    }
+
+    console.log('[FacilityContext] sync effect', { activeFacilityId });
+
+    if (activeFacilityId) {
+      // Solo cargar si es diferente a la que ya tenemos
+      if (lastLoadedFacilityIdRef.current !== activeFacilityId) {
+        loadFacility(activeFacilityId);
       }
     } else {
       // No hay facility activa, limpiar
       if (lastLoadedFacilityIdRef.current !== null) {
+        console.log('[FacilityContext] limpiar facility');
         setFacilityState(null);
-        localStorage.removeItem('facility_id');
         lastLoadedFacilityIdRef.current = null;
         setLoading(false);
       }
     }
-  }, [activeFacilityId, user?.active_facility_id]);
+  }, [activeFacilityId, isBootstrapping]);
 
   const setFacility = (newFacility: Facility | null) => {
-    if (newFacility) {
-      localStorage.setItem('facility_id', newFacility.id);
-      setFacilityState(newFacility);
-    } else {
-      localStorage.removeItem('facility_id');
-      setFacilityState(null);
-    }
+    console.log('[FacilityContext] setFacility manual:', newFacility?.name);
+    setFacilityState(newFacility);
   };
 
   return (

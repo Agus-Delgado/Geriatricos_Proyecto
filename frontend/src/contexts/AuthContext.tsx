@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { authApi } from '../api/auth';
-import { clearSessionStorage, syncActiveFacility } from '../utils/session';
+import { clearSessionStorage } from '../utils/session';
 import type { User, FacilityMembership, UserRole } from '../types/auth';
 import type { ApiError } from '../api/client';
 
@@ -26,7 +26,6 @@ interface AuthContextType {
   getActiveMembership: () => FacilityMembership | null;
   getActiveRole: () => 'ADMIN' | 'MEDICO' | 'STAFF' | null;
 
-  // Impersonation
   isImpersonating: boolean;
   impersonatedUser: User | null;
   startImpersonation: (userId: string, mode?: UserRole) => Promise<void>;
@@ -45,7 +44,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-/** Timeout helper para evitar “loading infinito” si /auth/me queda colgado */
 async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   let t: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
@@ -58,7 +56,6 @@ async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise
   }
 }
 
-/** Map roles (CORRECTO): owner ≠ admin */
 function mapRole(rawRole: unknown): UserRole | undefined {
   if (typeof rawRole !== 'string') return undefined;
   const normalized = rawRole.toLowerCase();
@@ -77,7 +74,6 @@ function mapRole(rawRole: unknown): UserRole | undefined {
   }
 }
 
-/** Redirección defensiva para evitar bucles silenciosos */
 function redirectToLogin(reason?: string) {
   const current = window.location.pathname;
   if (current.startsWith('/login')) return;
@@ -89,7 +85,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [activeFacilityId, setActiveFacilityId] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [isBootstrapping, setIsBootstrapping] = useState<boolean>(true);
 
   // Impersonation
@@ -97,6 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [impersonatedUser, setImpersonatedUser] = useState<User | null>(null);
 
   const clearAllAuth = (opts?: { redirect?: boolean; reason?: string }) => {
+    console.log('[AuthContext] clearAllAuth', opts);
     clearSessionStorage();
 
     setToken(null);
@@ -108,75 +105,86 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (opts?.redirect) redirectToLogin(opts.reason);
   };
 
+  // FUNCIÓN CLAVE: Sincronizar activeFacilityId desde user
   const syncActiveFacilityFromUser = (u: User) => {
-    const stored = localStorage.getItem('activeFacilityId');
-    const facilityIdToUse = u.active_facility_id ?? stored ?? null;
+    console.log('[AuthContext] syncActiveFacilityFromUser', {
+      userId: u.id,
+      userActiveFacility: u.active_facility_id,
+      memberships: u.memberships?.length
+    });
 
-    // Platform admin puede no tener facility (válido)
+    // PRIORIDAD 1: Lo que dice el backend (u.active_facility_id)
+    const backendFacilityId = u.active_facility_id;
+
+    // Platform admin puede no tener facility
     if (u.is_platform_admin) {
-      // Si es platform admin y no hay facility, está bien
-      if (!facilityIdToUse) {
+      if (!backendFacilityId) {
         setActiveFacilityId(null);
         localStorage.removeItem('activeFacilityId');
+        console.log('[AuthContext] platform admin sin facility');
         return;
       }
-      // Si tiene facility, validar que exista en memberships (puede tener acceso a cualquier facility)
-      // Para platform admin, permitimos cualquier facility si está en memberships o si no hay memberships
-      if (facilityIdToUse) {
-        const hasMembership = !u.memberships || u.memberships.length === 0 || 
-          u.memberships.some(m => m.facility_id === facilityIdToUse && m.is_active);
-        if (hasMembership) {
-          setActiveFacilityId(facilityIdToUse);
-          localStorage.setItem('activeFacilityId', facilityIdToUse);
-          return;
-        }
+      // Si tiene, validar contra memberships
+      const hasMembership = !u.memberships || u.memberships.length === 0 || 
+        u.memberships.some(m => m.facility_id === backendFacilityId && m.is_active);
+      
+      if (hasMembership) {
+        setActiveFacilityId(backendFacilityId);
+        localStorage.setItem('activeFacilityId', backendFacilityId);
+        console.log('[AuthContext] platform admin con facility válida:', backendFacilityId);
+      } else {
+        setActiveFacilityId(null);
+        localStorage.removeItem('activeFacilityId');
+        console.log('[AuthContext] platform admin con facility inválida, limpiar');
       }
+      return;
     }
 
-    // Para usuarios no platform admin: validar que facilityIdToUse esté en memberships activos
-    if (facilityIdToUse) {
+    // Para usuarios normales: validar contra memberships activos
+    if (backendFacilityId) {
       const activeMemberships = u.memberships?.filter(m => m.is_active) ?? [];
-      const hasValidMembership = activeMemberships.some(m => m.facility_id === facilityIdToUse);
+      const hasValidMembership = activeMemberships.some(m => m.facility_id === backendFacilityId);
       
       if (hasValidMembership) {
-        setActiveFacilityId(facilityIdToUse);
-        localStorage.setItem('activeFacilityId', facilityIdToUse);
-        return;
+        setActiveFacilityId(backendFacilityId);
+        localStorage.setItem('activeFacilityId', backendFacilityId);
+        console.log('[AuthContext] facility válida desde backend:', backendFacilityId);
       } else {
-        // activeFacilityId no está en memberships activos, limpiar
+        // Facility del backend no está en memberships, limpiar
         setActiveFacilityId(null);
         localStorage.removeItem('activeFacilityId');
-        return;
+        console.log('[AuthContext] facility del backend inválida, limpiar');
       }
+    } else {
+      // No hay facility en el backend, limpiar
+      setActiveFacilityId(null);
+      localStorage.removeItem('activeFacilityId');
+      console.log('[AuthContext] sin facility en backend');
     }
-
-    // No hay facility activa, limpiar
-    setActiveFacilityId(null);
-    localStorage.removeItem('activeFacilityId');
   };
 
   const loadUserWithToken = async (authToken: string) => {
+    console.log('[AuthContext] loadUserWithToken iniciando');
     try {
-      // Persistir token antes de pegarle al backend
       localStorage.setItem('token', authToken);
       setToken(authToken);
 
-      // Timeout real (evita “cargando infinito”)
       const userData = await withTimeout(authApi.getCurrentUser(), 12000, 'auth_me');
+      console.log('[AuthContext] usuario cargado:', userData.id);
       setUser(userData);
 
-      // Impersonation detect
+      // Detectar impersonation
       const storedOriginalToken = localStorage.getItem('original_token');
       setIsImpersonating(Boolean(storedOriginalToken));
 
+      // Sincronizar facility desde el backend (única fuente de verdad)
       syncActiveFacilityFromUser(userData);
-      // Sincronizar facility desde backend (fuente de verdad)
-      syncActiveFacility(userData);
     } catch (e) {
       const err = e as Partial<ApiError> & { message?: string };
       const msg = err?.message ?? '';
 
-      // Si el backend cae o devuelve inválido, cortamos y redirigimos
+      console.error('[AuthContext] error en loadUserWithToken:', err);
+
       const reason =
         msg.startsWith('timeout:') ? 'server_timeout' :
         err?.status === 401 ? 'session_expired' :
@@ -188,32 +196,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
       setIsBootstrapping(false);
+      console.log('[AuthContext] bootstrap completado');
     }
   };
 
+  // BOOTSTRAP INICIAL - Solo se ejecuta UNA VEZ al montar
   useEffect(() => {
+    console.log('[AuthContext] mount - iniciando bootstrap');
     const storedToken = localStorage.getItem('token');
     const storedOriginalToken = localStorage.getItem('original_token');
 
-    // NO setear activeFacilityId desde localStorage aquí
-    // Se validará después de recibir /me en syncActiveFacilityFromUser
     if (storedOriginalToken) setIsImpersonating(true);
 
     if (storedToken) {
-      // Rehidratar sesión - mantener isBootstrapping=true hasta que termine
       setIsBootstrapping(true);
       void loadUserWithToken(storedToken);
     } else {
       setLoading(false);
       setIsBootstrapping(false);
+      console.log('[AuthContext] sin token, bootstrap completado');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // DESACTIVADO: Auto-logout en pagehide/beforeunload causaba loops infinitos
-  // Solución alternativa: usar timeout de inactividad en SessionBootstrap (ya implementado)
+  }, []); // Solo al montar
 
   const login = async (username: string, password: string) => {
+    console.log('[AuthContext] login iniciando');
     setLoading(true);
     try {
       const normalizedUsername = username.trim();
@@ -226,7 +233,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userData = await withTimeout(authApi.getCurrentUser(), 12000, 'auth_me_after_login');
       setUser(userData);
       syncActiveFacilityFromUser(userData);
-      syncActiveFacility(userData);
+      
+      console.log('[AuthContext] login exitoso');
     } catch (e) {
       clearAllAuth();
       const err = e as Partial<ApiError> & { message?: string };
@@ -237,17 +245,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
+    console.log('[AuthContext] logout');
     clearAllAuth({ redirect: true, reason: 'logout' });
   };
 
   const loadUser = async () => {
     if (!token) return;
+    console.log('[AuthContext] loadUser manual');
     setLoading(true);
     try {
       const userData = await withTimeout(authApi.getCurrentUser(), 12000, 'auth_me_manual');
       setUser(userData);
       syncActiveFacilityFromUser(userData);
-      syncActiveFacility(userData);
     } catch {
       clearAllAuth({ redirect: true, reason: 'session_expired' });
     } finally {
@@ -256,21 +265,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const clearActiveFacility = () => {
+    console.log('[AuthContext] clearActiveFacility');
     setActiveFacilityId(null);
     localStorage.removeItem('activeFacilityId');
   };
 
   const setActiveFacility = async (facilityId: string) => {
+    console.log('[AuthContext] setActiveFacility:', facilityId);
     const prev = activeFacilityId;
-    // optimista
+    
+    // Optimistic update
     setActiveFacilityId(facilityId);
     localStorage.setItem('activeFacilityId', facilityId);
 
     try {
       await withTimeout(authApi.setActiveFacility({ facility_id: facilityId }), 12000, 'set_active_facility');
       setUser((u) => (u ? { ...u, active_facility_id: facilityId } : u));
+      console.log('[AuthContext] setActiveFacility exitoso');
     } catch (e) {
-      // revertir
+      // Revertir
+      console.error('[AuthContext] error en setActiveFacility, revertir', e);
       setActiveFacilityId(prev ?? null);
       if (prev) localStorage.setItem('activeFacilityId', prev);
       else localStorage.removeItem('activeFacilityId');
@@ -280,7 +294,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Flags de rol
   const isOwner = useMemo(() => user?.roles?.some((r) => r.code === 'OWNER') ?? false, [user]);
   const isDoctor = useMemo(() => user?.roles?.some((r) => r.code === 'DOCTOR') ?? false, [user]);
   const isPlatformAdmin = useMemo(() => user?.is_platform_admin ?? false, [user]);
@@ -322,7 +335,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setImpersonatedUser(userData);
 
       syncActiveFacilityFromUser(userData);
-      syncActiveFacility(userData);
     } catch (e) {
       const err = e as Partial<ApiError> & { message?: string };
       throw new Error(err?.detail || err?.message || 'Error al iniciar impersonación');
@@ -352,9 +364,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userData = await withTimeout(authApi.getCurrentUser(), 12000, 'auth_me_after_stop_impersonate');
       setUser(userData);
 
-      // Admin puede quedar sin facility
       syncActiveFacilityFromUser(userData);
-      syncActiveFacility(userData);
     } catch (e) {
       const err = e as Partial<ApiError> & { message?: string };
       throw new Error(err?.detail || err?.message || 'Error al detener impersonación');

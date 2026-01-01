@@ -25,7 +25,7 @@ def create_staff(db: Session, staff_data: StaffCreate, created_by_user_id: UUID)
         entity_type="Staff",
         entity_id=staff.id,
         summary=f"Alta de personal: {staff.last_name}, {staff.first_name}",
-        event_metadata={"staff_id": str(staff.id), "dni": staff.dni},
+        meta={"staff_id": str(staff.id), "dni": staff.dni},
     )
     db.commit()
     db.refresh(staff)
@@ -92,7 +92,7 @@ def update_staff(
                 entity_type="Staff",
                 entity_id=staff.id,
                 summary=f"Baja de personal: {staff.last_name}, {staff.first_name}",
-                event_metadata={"changes": update_data},
+                meta={"changes": update_data},
             )
         else:
             log_event(
@@ -103,7 +103,7 @@ def update_staff(
                 entity_type="Staff",
                 entity_id=staff.id,
                 summary=f"Edición de personal: {staff.last_name}, {staff.first_name}",
-                event_metadata={"changes": update_data},
+                meta={"changes": update_data},
             )
 
     db.commit()

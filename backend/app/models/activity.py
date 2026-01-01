@@ -15,7 +15,7 @@ class ActivityEvent(Base):
     entity_type = Column(String(64), nullable=False)
     entity_id = Column(UUID(as_uuid=True), nullable=False)
     summary = Column(Text, nullable=True)
-    meta = Column("metadata", JSONB, nullable=True)  # Usar columna 'metadata', atributo 'meta'
+    meta = Column(JSONB, nullable=True)  # Usar columna 'meta' en la DB y atributo 'meta'
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
 
     __table_args__ = (

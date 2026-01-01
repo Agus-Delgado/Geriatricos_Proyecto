@@ -34,8 +34,8 @@ async def get_activity(
 
     # Filtro por rol
     # Si es OWNER o platform admin: ver todo
-    is_owner = any(r.code == "OWNER" for r in current_user.roles)
-    if not (is_owner or current_user.is_platform_admin):
+    is_owner = current_user.is_platform_admin
+    if not is_owner:
         # Requerir rol MEDICO o ADMIN para ver feed clínico
         require_facility_role_any(["MEDICO", "ADMIN"])(current_user, db)
         # Limitar event_types si no se enviaron: solo clínicos/pacientes

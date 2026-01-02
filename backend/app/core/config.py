@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import AliasChoices, Field
 from typing import List, Optional
 
 
@@ -37,13 +38,34 @@ class Settings(BaseSettings):
     
     # Email / SMTP
     FRONTEND_URL: str = "http://localhost:5173"  # URL del frontend (Vercel en producción)
-    EMAIL_FROM: str = "Geriátricos <miconsultoriosoporte@gmail.com>"
-    SMTP_HOST: str = "smtp.gmail.com"
-    SMTP_PORT: int = 587
-    SMTP_USER: str = "miconsultoriosoporte@gmail.com"
-    SMTP_PASSWORD: str = ""  # App Password de Gmail (solo en Render, nunca en código)
-    SMTP_USE_TLS: bool = True
-    SMTP_USE_SSL: bool = False
+    EMAIL_FROM: str = Field(
+        default="Geriátricos <miconsultoriosoporte@gmail.com>",
+        validation_alias=AliasChoices("EMAIL_FROM", "DEFAULT_FROM_EMAIL"),
+    )
+    SMTP_HOST: str = Field(
+        default="smtp.gmail.com",
+        validation_alias=AliasChoices("SMTP_HOST", "EMAIL_HOST"),
+    )
+    SMTP_PORT: int = Field(
+        default=587,
+        validation_alias=AliasChoices("SMTP_PORT", "EMAIL_PORT"),
+    )
+    SMTP_USER: str = Field(
+        default="miconsultoriosoporte@gmail.com",
+        validation_alias=AliasChoices("SMTP_USER", "EMAIL_HOST_USER"),
+    )
+    SMTP_PASSWORD: str = Field(
+        default="",
+        validation_alias=AliasChoices("SMTP_PASSWORD", "EMAIL_HOST_PASSWORD"),
+    )
+    SMTP_USE_TLS: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("SMTP_USE_TLS", "EMAIL_USE_TLS"),
+    )
+    SMTP_USE_SSL: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("SMTP_USE_SSL", "EMAIL_USE_SSL"),
+    )
     EMAIL_VERIFY_TOKEN_TTL_HOURS: int = 24
     EMAIL_REPLY_TO: Optional[str] = None
     

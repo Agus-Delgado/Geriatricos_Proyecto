@@ -2,10 +2,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from uuid import UUID
 from typing import List, Optional
+from datetime import date
 
 from app.models.staff import Staff
 from app.schemas.staff import StaffCreate, StaffUpdate
 from app.services.activity_service import log_event
+from app.models.staff import ShiftAssignment
 
 
 def create_staff(db: Session, staff_data: StaffCreate, created_by_user_id: UUID) -> Staff:
@@ -27,6 +29,55 @@ def create_staff(db: Session, staff_data: StaffCreate, created_by_user_id: UUID)
         summary=f"Alta de personal: {staff.last_name}, {staff.first_name}",
         event_metadata={"staff_id": str(staff.id), "dni": staff.dni},
     )
+    db.commit()
+    db.refresh(staff)
+    return staff
+
+
+def transfer_staff(
+    db: Session,
+    staff_id: UUID,
+    to_facility_id: UUID,
+    actor_user_id: UUID,
+    effective_date: Optional[date] = None,
+) -> Staff:
+    """Trasladar personal a otra facility (sin duplicar).
+
+    Nota: como los turnos (shifts) son por facility, se eliminan asignaciones futuras
+    del staff para evitar que queden apuntando a un hogar anterior.
+    """
+    staff = get_staff_by_id(db, staff_id)
+    from_facility_id = staff.facility_id
+    if from_facility_id == to_facility_id:
+        return staff
+
+    cutoff = effective_date or date.today()
+
+    # Eliminar asignaciones futuras del hogar origen (y cualquiera) para este staff
+    db.query(ShiftAssignment).filter(
+        ShiftAssignment.staff_id == staff_id,
+        ShiftAssignment.date >= cutoff,
+    ).delete(synchronize_session=False)
+
+    staff.facility_id = to_facility_id
+    staff.updated_by_user_id = actor_user_id
+
+    log_event(
+        db,
+        facility_id=to_facility_id,
+        actor_user_id=actor_user_id,
+        event_type="STAFF_TRANSFERRED",
+        entity_type="Staff",
+        entity_id=staff.id,
+        summary=f"Traslado de personal a otra sede: {staff.last_name}, {staff.first_name}",
+        event_metadata={
+            "staff_id": str(staff.id),
+            "from_facility_id": str(from_facility_id),
+            "to_facility_id": str(to_facility_id),
+            "effective_date": str(cutoff),
+        },
+    )
+
     db.commit()
     db.refresh(staff)
     return staff

@@ -9,7 +9,8 @@ from app.services.staff_service import (
     create_staff,
     get_staff_list,
     get_staff_by_id,
-    update_staff
+    update_staff,
+    transfer_staff,
 )
 from app.models.auth import User
 
@@ -70,3 +71,20 @@ async def update_staff_endpoint(
     
     updated_staff = update_staff(db, staff_id, staff_data, actor_user_id=current_user.id)
     return updated_staff
+
+
+@router.post("/{staff_id}/transfer", response_model=StaffResponse)
+async def transfer_staff_endpoint(
+    staff_id: UUID,
+    to_facility_id: UUID = Query(..., description="ID de la sede destino"),
+    current_user: User = Depends(require_role("OWNER")),
+    db: Session = Depends(get_db),
+):
+    """Trasladar personal a otra sede (solo OWNER)."""
+    staff = get_staff_by_id(db, staff_id)
+    # Debe tener acceso a sede origen y destino
+    require_facility_access(staff.facility_id)(current_user, db)
+    require_facility_access(to_facility_id)(current_user, db)
+
+    updated = transfer_staff(db, staff_id, to_facility_id, actor_user_id=current_user.id)
+    return updated

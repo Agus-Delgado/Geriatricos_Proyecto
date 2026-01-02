@@ -25,4 +25,10 @@ export const staffApi = {
   update: async (staffId: string, data: StaffUpdate): Promise<Staff> => {
     return apiClient.patch<Staff>(`/staff/${staffId}`, data);
   },
+
+  transfer: async (staffId: string, toFacilityId: string): Promise<Staff> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('to_facility_id', toFacilityId);
+    return apiClient.post<Staff>(`/staff/${staffId}/transfer?${queryParams.toString()}`);
+  },
 };

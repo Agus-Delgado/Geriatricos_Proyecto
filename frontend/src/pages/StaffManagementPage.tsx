@@ -9,6 +9,7 @@ import { Modal } from '../components/ui/Modal';
 import type { Staff, StaffCreate, StaffUpdate } from '../types/staff';
 import type { ApiError } from '../api/client';
 import { STAFF_POSITIONS, STAFF_STATUS } from '../types/staff';
+import { useAuth } from '../contexts/AuthContext';
 
 export const StaffManagementPage: React.FC = () => {
   const [staff, setStaff] = useState<Staff[]>([]);
@@ -19,7 +20,11 @@ export const StaffManagementPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferringStaff, setTransferringStaff] = useState<Staff | null>(null);
+  const [transferFacilityId, setTransferFacilityId] = useState<string>('');
   const { facility } = useFacility();
+  const { getMemberships } = useAuth();
 
   useEffect(() => {
     if (facility) {
@@ -64,6 +69,45 @@ export const StaffManagementPage: React.FC = () => {
   const handleEditStaff = (staffMember: Staff) => {
     setEditingStaff(staffMember);
     setShowEditModal(true);
+  };
+
+  const handleTransferStaff = (staffMember: Staff) => {
+    setTransferringStaff(staffMember);
+    setTransferFacilityId('');
+    setShowTransferModal(true);
+  };
+
+  const submitTransfer = async () => {
+    if (!transferringStaff) return;
+    if (!transferFacilityId) {
+      setError('Seleccioná un hogar destino');
+      return;
+    }
+
+    try {
+      await staffApi.transfer(transferringStaff.id, transferFacilityId);
+      setShowTransferModal(false);
+      setTransferringStaff(null);
+      setTransferFacilityId('');
+      loadStaff();
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.detail || 'Error al derivar personal');
+    }
+  };
+
+  const handleDeactivateStaff = async (staffMember: Staff) => {
+    if (!confirm(`¿Dar de baja a ${staffMember.first_name} ${staffMember.last_name}?`)) return;
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      await staffApi.update(staffMember.id, { is_active: false, status: 'INACTIVE', end_date: today });
+      setShowEditModal(false);
+      setEditingStaff(null);
+      loadStaff();
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.detail || 'Error al dar de baja personal');
+    }
   };
 
   const handleUpdateStaff = async (data: StaffCreate | StaffUpdate) => {
@@ -178,12 +222,20 @@ export const StaffManagementPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleEditStaff(member)}
-                    className="px-3 py-1 text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded transition-colors"
-                  >
-                    Editar
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleTransferStaff(member)}
+                      className="px-3 py-1 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      Derivar
+                    </button>
+                    <button
+                      onClick={() => handleEditStaff(member)}
+                      className="px-3 py-1 text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded transition-colors"
+                    >
+                      Editar
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -218,16 +270,89 @@ export const StaffManagementPage: React.FC = () => {
         size="lg"
       >
         {editingStaff && (
-          <StaffForm
-            facilityId={editingStaff.facility_id}
-            staff={editingStaff}
-            onSubmit={handleUpdateStaff}
-            onCancel={() => {
-              setShowEditModal(false);
-              setEditingStaff(null);
-            }}
-          />
+          <div className="space-y-4">
+            <StaffForm
+              facilityId={editingStaff.facility_id}
+              staff={editingStaff}
+              onSubmit={handleUpdateStaff}
+              onCancel={() => {
+                setShowEditModal(false);
+                setEditingStaff(null);
+              }}
+            />
+
+            <div className="pt-2 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => handleDeactivateStaff(editingStaff)}
+                className="w-full px-4 py-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 transition-colors"
+              >
+                Dar de baja (no trabaja más)
+              </button>
+            </div>
+          </div>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={showTransferModal}
+        onClose={() => {
+          setShowTransferModal(false);
+          setTransferringStaff(null);
+          setTransferFacilityId('');
+        }}
+        title="Derivar personal"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="text-sm text-gray-700">
+            {transferringStaff ? (
+              <div>
+                Trasladar a <strong>{transferringStaff.first_name} {transferringStaff.last_name}</strong> a otro hogar.
+              </div>
+            ) : null}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Hogar destino</label>
+            <select
+              value={transferFacilityId}
+              onChange={(e) => setTransferFacilityId(e.target.value)}
+              className="input-field"
+            >
+              <option value="">Seleccionar...</option>
+              {getMemberships()
+                .filter((m) => m.is_active)
+                .filter((m) => m.facility_id !== transferringStaff?.facility_id)
+                .map((m) => (
+                  <option key={m.facility_id} value={m.facility_id}>
+                    {m.facility_name}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setShowTransferModal(false);
+                setTransferringStaff(null);
+                setTransferFacilityId('');
+              }}
+              className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={submitTransfer}
+              className="flex-1 px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700"
+            >
+              Derivar
+            </button>
+          </div>
+        </div>
       </Modal>
 
       <BottomNav />
@@ -472,6 +597,12 @@ const StaffForm: React.FC<StaffFormProps> = ({ facilityId, staff, onSubmit, onCa
           disabled={loading}
         />
       </div>
+
+      {staff && formData.status === 'LEAVE' && (
+        <div className="text-sm text-gray-600">
+          Podés usar el campo <strong>Notas</strong> para detallar la licencia (motivo/fechas).
+        </div>
+      )}
 
       {errors.submit && <div className="text-sm text-red-600">{errors.submit}</div>}
 

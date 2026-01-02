@@ -123,7 +123,7 @@ export default function ActivityFeedPage() {
     if (ev.entity_type === 'Resident' || ev.entity_type === 'Patient') {
       window.location.assign(`/residents/${ev.entity_id}`);
     } else if (ev.entity_type === 'MedicationPlan' || ev.entity_type === 'MedicationAdministration') {
-      const residentId = (ev.metadata as any)?.resident_id;
+      const residentId = ev.meta?.resident_id as string | undefined;
       window.location.assign(`/residents/${residentId ?? ev.entity_id}?tab=medications`);
     }
     // Si no hay ruta asociada, no navegar

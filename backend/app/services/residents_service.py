@@ -56,7 +56,7 @@ def create_resident(db: Session, resident_data: ResidentCreate, user_id: UUID) -
         entity_type="Resident",
         entity_id=resident.id,
         summary=f"Alta de paciente: {resident.last_name}, {resident.first_name}",
-        meta={"resident_id": str(resident.id), "dni": resident.dni},
+        event_metadata={"resident_id": str(resident.id), "dni": resident.dni},
     )
     db.commit()
     db.refresh(resident)
@@ -111,14 +111,18 @@ def update_resident(
 ) -> Resident:
     """Actualizar residente"""
     resident = get_resident_by_id(db, resident_id)
-    
+
+    # Get Python objects for setting attributes
     update_data = resident_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(resident, field, value)
-    
+
     resident.updated_by_user_id = user_id
     db.flush()
-    
+
+    # Get JSON-serializable version for audit log
+    update_data_json = resident_data.model_dump(mode="json", exclude_unset=True)
+
     # Registrar en audit log
     audit_log = AuditLog(
         facility_id=resident.facility_id,
@@ -126,14 +130,12 @@ def update_resident(
         action="UPDATE_RESIDENT",
         entity_type="Resident",
         entity_id=resident.id,
-        metadata_json={"changes": update_data}
+        metadata_json={"changes": update_data_json}
     )
     db.add(audit_log)
     # Activity feed
-    from fastapi.encoders import jsonable_encoder
     try:
-        changes = resident_data.model_dump(mode="json", exclude_unset=True)
-        if "status" in update_data:
+        if "status" in update_data_json:
             log_event(
                 db,
                 facility_id=resident.facility_id,
@@ -141,8 +143,8 @@ def update_resident(
                 event_type="PATIENT_STATUS_CHANGED",
                 entity_type="Resident",
                 entity_id=resident.id,
-                summary=f"Estado paciente: {update_data['status']}",
-                meta=jsonable_encoder({"changes": {"status": update_data["status"]}}),
+                summary=f"Estado paciente: {update_data_json['status']}",
+                event_metadata={"changes": {"status": update_data_json["status"]}},
             )
         else:
             log_event(
@@ -153,7 +155,7 @@ def update_resident(
                 entity_type="Resident",
                 entity_id=resident.id,
                 summary=f"Edición de paciente: {resident.last_name}, {resident.first_name}",
-                meta=jsonable_encoder({"changes": update_data}),
+                event_metadata={"changes": update_data_json},
             )
     except Exception as e:
         import logging

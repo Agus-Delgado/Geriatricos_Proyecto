@@ -8,7 +8,7 @@ from sqlalchemy.dialects import postgresql
 
 # IMPORTANTE: revision <= 32 chars
 revision = "015_actevt_meta"
-down_revision = "014_resident_status_activity"
+down_revision = "015"
 branch_labels = None
 depends_on = None
 

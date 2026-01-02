@@ -26,8 +26,12 @@ def create_staff(db: Session, staff_data: StaffCreate, created_by_user_id: UUID)
         event_type="STAFF_CREATED",
         entity_type="Staff",
         entity_id=staff.id,
-        summary=f"Alta de personal: {staff.last_name}, {staff.first_name}",
-        event_metadata={"staff_id": str(staff.id), "dni": staff.dni},
+        summary=f"{staff.last_name}, {staff.first_name}",
+        event_metadata={
+            "staff_id": str(staff.id),
+            "staff_name": f"{staff.last_name}, {staff.first_name}",
+            "dni": staff.dni,
+        },
     )
     db.commit()
     db.refresh(staff)

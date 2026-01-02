@@ -13,9 +13,10 @@ const EVENT_LABELS: Record<string, string> = {
   CLINICAL_SUMMARY_UPDATED: 'Resumen clínico actualizado',
   CLINICAL_NOTE_CREATED: 'Nota clínica',
   INCIDENT_REPORTED: 'Incidente',
-  STAFF_CREATED: 'Alta de personal',
+  STAFF_CREATED: 'Nuevo personal agregado',
   STAFF_UPDATED: 'Edición de personal',
   STAFF_ARCHIVED: 'Baja de personal',
+  STAFF_TRANSFERRED: 'Traslado de personal',
   SHIFT_ASSIGNED: 'Turno asignado',
   SHIFT_UNASSIGNED: 'Turno removido',
   COVERAGE_UNDERSTAFFED: 'Cobertura insuficiente',
@@ -73,6 +74,15 @@ export const ActivityFeedWidget: React.FC = () => {
     return ev.summary || `${ev.entity_type} ${ev.entity_id}`;
   };
 
+  const renderTitle = (ev: ActivityEvent): string => {
+    const meta: any = ev.meta || {};
+    if (ev.event_type === 'PATIENT_STATUS_CHANGED') {
+      const name = meta.resident_name as string | undefined;
+      if (name) return `Estado: ${name}`;
+    }
+    return EVENT_LABELS[ev.event_type] || ev.event_type;
+  };
+
   if (!canView) return null;
 
   return (
@@ -96,7 +106,7 @@ export const ActivityFeedWidget: React.FC = () => {
         <ul className="divide-y divide-gray-100">
           {events.map(ev => (
             <li key={ev.id} className="py-2">
-              <div className="font-medium text-gray-800">{EVENT_LABELS[ev.event_type] || ev.event_type}</div>
+              <div className="font-medium text-gray-800">{renderTitle(ev)}</div>
               <div className="text-sm text-gray-600">{renderSummary(ev)}</div>
               <div className="text-xs text-gray-400">{new Date(ev.created_at).toLocaleString('es-AR')}</div>
             </li>

@@ -12,6 +12,10 @@ const EVENT_LABELS: Record<string, string> = {
   CLINICAL_SUMMARY_UPDATED: 'Resumen clínico actualizado',
   CLINICAL_NOTE_CREATED: 'Nota clínica',
   INCIDENT_REPORTED: 'Incidente',
+  STAFF_CREATED: 'Nuevo personal agregado',
+  STAFF_UPDATED: 'Edición de personal',
+  STAFF_ARCHIVED: 'Baja de personal',
+  STAFF_TRANSFERRED: 'Traslado de personal',
   SHIFT_ASSIGNED: 'Turno asignado',
   SHIFT_UNASSIGNED: 'Turno removido',
   COVERAGE_UNDERSTAFFED: 'Cobertura insuficiente',
@@ -24,6 +28,10 @@ const EVENT_TYPES = [
   { type: 'CLINICAL_SUMMARY_UPDATED', label: 'Resumen clínico actualizado' },
   { type: 'CLINICAL_NOTE_CREATED', label: 'Notas clínicas' },
   { type: 'INCIDENT_REPORTED', label: 'Incidentes' },
+  { type: 'STAFF_CREATED', label: 'Nuevo personal' },
+  { type: 'STAFF_UPDATED', label: 'Edición personal' },
+  { type: 'STAFF_ARCHIVED', label: 'Baja personal' },
+  { type: 'STAFF_TRANSFERRED', label: 'Traslados' },
   { type: 'SHIFT_ASSIGNED', label: 'Turnos asignados' },
   { type: 'SHIFT_UNASSIGNED', label: 'Turnos removidos' },
   { type: 'COVERAGE_UNDERSTAFFED', label: 'Cobertura insuficiente' },
@@ -146,6 +154,15 @@ export default function ActivityFeedPage() {
     }
 
     return ev.summary || `${ev.entity_type} ${ev.entity_id}`;
+  };
+
+  const renderTitle = (ev: ActivityEvent): string => {
+    const meta: any = ev.meta || {};
+    if (ev.event_type === 'PATIENT_STATUS_CHANGED') {
+      const name = meta.resident_name as string | undefined;
+      if (name) return `Estado: ${name}`;
+    }
+    return EVENT_LABELS[ev.event_type] || ev.event_type;
   };
 
   const navigateToEntity = (ev: ActivityEvent) => {
@@ -344,7 +361,7 @@ export default function ActivityFeedPage() {
                 }}
                 onClick={() => ev.entity_id && (ev.entity_type === 'Resident' || ev.entity_type === 'Patient' || ev.entity_type === 'MedicationPlan' || ev.entity_type === 'MedicationAdministration') && navigateToEntity(ev)}
               >
-                <div style={{ fontWeight: 600, fontSize: 18, color: theme.primaryColor }}>{EVENT_LABELS[ev.event_type] || ev.event_type}</div>
+                <div style={{ fontWeight: 600, fontSize: 18, color: theme.primaryColor }}>{renderTitle(ev)}</div>
                 <div style={{ fontSize: 15, color: theme.textDark, marginTop: 6 }}>{renderSummary(ev)}</div>
                 <div style={{ fontSize: 13, color: theme.textMuted, marginTop: 6 }}>{new Date(ev.created_at).toLocaleString('es-AR')}</div>
               </li>

@@ -83,12 +83,16 @@ def update_medication_plan(
             detail="Plan de medicación no encontrado"
         )
     
+    # Get Python objects for setting attributes
     update_data = plan_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(plan, field, value)
-    
+
     db.flush()
-    
+
+    # Get JSON-serializable version for audit log
+    update_data_json = plan_data.model_dump(mode="json", exclude_unset=True)
+
     # Registrar en audit log
     audit_log = AuditLog(
         facility_id=plan.facility_id,
@@ -96,11 +100,10 @@ def update_medication_plan(
         action="UPDATE_MEDICATION_PLAN",
         entity_type="MedicationPlan",
         entity_id=plan.id,
-        metadata_json={"changes": update_data}
+        metadata_json={"changes": update_data_json}
     )
     db.add(audit_log)
     # Activity feed
-    from fastapi.encoders import jsonable_encoder
     log_event(
         db,
         facility_id=plan.facility_id,
@@ -109,7 +112,7 @@ def update_medication_plan(
         entity_type="MedicationPlan",
         entity_id=plan.id,
         summary="Actualización plan de medicación",
-        meta=jsonable_encoder({"changes": update_data}),
+        meta={"changes": update_data_json},
     )
     db.commit()
     db.refresh(plan)

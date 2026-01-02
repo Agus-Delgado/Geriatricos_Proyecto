@@ -4,7 +4,7 @@ import { staffDashboardApi } from '../api/shifts';
 import { BottomNav } from '../components/layout/BottomNav';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
-import type { CurrentlyWorkingStaff, FacilityStaffDashboard } from '../types/staff';
+import type { FacilityStaffDashboard } from '../types/staff';
 import type { ApiError } from '../api/client';
 
 export const CurrentlyWorkingPage: React.FC = () => {

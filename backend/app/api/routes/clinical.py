@@ -17,6 +17,7 @@ from app.models.auth import User
 from app.models.residents import Resident
 from app.models.clinical import ClinicalSummary, ClinicalNote, VitalSign
 from app.models.audit import AuditLog
+from app.services.activity_service import log_event
 
 router = APIRouter(prefix="/residents/{resident_id}", tags=["clinical"])
 
@@ -101,6 +102,22 @@ async def update_clinical_summary(
         metadata_json={"resident_id": str(resident_id)}
     )
     db.add(audit_log)
+
+    # Activity feed (cambio clínico importante)
+    try:
+        log_event(
+            db,
+            facility_id=resident.facility_id,
+            actor_user_id=current_user.id,
+            event_type="CLINICAL_SUMMARY_UPDATED",
+            entity_type="ClinicalSummary",
+            entity_id=summary.id,
+            summary="Resumen clínico actualizado",
+            event_metadata={"resident_id": str(resident_id)},
+        )
+    except Exception:
+        pass
+
     db.commit()
     db.refresh(summary)
     
@@ -168,6 +185,26 @@ async def create_clinical_note(
         metadata_json={"resident_id": str(resident_id), "note_type": note_data.note_type}
     )
     db.add(audit_log)
+
+    # Activity feed (incidentes y notas clínicas)
+    try:
+        ev_type = "INCIDENT_REPORTED" if (note_data.note_type or "").upper() == "INCIDENT" else "CLINICAL_NOTE_CREATED"
+        log_event(
+            db,
+            facility_id=resident.facility_id,
+            actor_user_id=current_user.id,
+            event_type=ev_type,
+            entity_type="ClinicalNote",
+            entity_id=note.id,
+            summary=f"{'Incidente' if ev_type == 'INCIDENT_REPORTED' else 'Nota clínica'}: {resident.last_name}, {resident.first_name}",
+            event_metadata={
+                "resident_id": str(resident_id),
+                "note_type": note_data.note_type,
+            },
+        )
+    except Exception:
+        pass
+
     db.commit()
     db.refresh(note)
     

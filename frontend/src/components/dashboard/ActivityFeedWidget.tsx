@@ -10,21 +10,27 @@ const EVENT_LABELS: Record<string, string> = {
   PATIENT_UPDATED: 'Edición de paciente',
   PATIENT_STATUS_CHANGED: 'Cambio de estado',
   MEDICATION_CHANGED: 'Cambio de medicación',
+  CLINICAL_SUMMARY_UPDATED: 'Resumen clínico actualizado',
+  CLINICAL_NOTE_CREATED: 'Nota clínica',
+  INCIDENT_REPORTED: 'Incidente',
   STAFF_CREATED: 'Alta de personal',
   STAFF_UPDATED: 'Edición de personal',
   STAFF_ARCHIVED: 'Baja de personal',
+  SHIFT_ASSIGNED: 'Turno asignado',
+  SHIFT_UNASSIGNED: 'Turno removido',
+  COVERAGE_UNDERSTAFFED: 'Cobertura insuficiente',
 };
 
 export const ActivityFeedWidget: React.FC = () => {
   const { facility } = useFacility();
-  const { getActiveRole } = useAuth();
+  const { getActiveRole, isOwner } = useAuth();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const role = getActiveRole();
-  const canView = role === 'ADMIN' || role === 'MEDICO';
+  const canView = isOwner || role === 'ADMIN' || role === 'MEDICO';
 
   useEffect(() => {
     const load = async () => {

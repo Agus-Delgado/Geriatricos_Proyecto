@@ -7,13 +7,19 @@ import { getRoleLabel } from '../types/auth';
 import { getFacilityTheme } from '../theme/facilityTheme';
 
 export const SelectFacilityPage: React.FC = () => {
-  const { user, setActiveFacility, getMemberships, loading: authLoading, activeFacilityId } = useAuth();
+  const { user, setActiveFacility, getMemberships, loading: authLoading, activeFacilityId, isOwner } = useAuth();
   const navigate = useNavigate();
   const [loadingFacilityId, setLoadingFacilityId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
   const redirectByRole = (role: 'ADMIN' | 'MEDICO' | 'STAFF', facilityId: string) => {
+    // Si el usuario es OWNER global, su panel principal por sede es /g/:id/owner
+    if (isOwner) {
+      navigate(`/g/${facilityId}/owner`);
+      return;
+    }
+
     switch (role) {
       case 'ADMIN':
         navigate(`/g/${facilityId}/dashboard`);

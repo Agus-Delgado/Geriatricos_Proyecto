@@ -32,6 +32,9 @@ import { DebugPage } from './pages/DebugPage';
 import ClinicalHistorySearchPage from './pages/ClinicalHistorySearchPage';
 import ClinicalHistoryPage from './pages/ClinicalHistoryPage';
 import ClinicalHistoryPrintPage from './pages/ClinicalHistoryPrintPage';
+import { CurrentlyWorkingPage } from './pages/CurrentlyWorkingPage';
+import { ShiftsManagementPage } from './pages/ShiftsManagementPage';
+import { ShiftAssignmentsPage } from './pages/ShiftAssignmentsPage';
 import MedicalFolderSearchPage from './pages/MedicalFolderSearchPage';
 import MedicalFolderPage from './pages/MedicalFolderPage';
 import MedicalFolderPrintPage from './pages/MedicalFolderPrintPage';
@@ -42,6 +45,7 @@ import ResidentPrintPage from './pages/ResidentPrintPage';
 import ActivityFeedPage from './pages/ActivityFeedPage';
 import MyAccountPage from './pages/MyAccountPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import { OwnerDashboardPage } from './pages/OwnerDashboardPage';
 
 function AppContent() {
   useFacilityTheme();
@@ -106,6 +110,14 @@ function AppContent() {
           element={
             <ProtectedRoute requireRole="ADMIN">
               <GeriatricDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/g/:id/owner"
+          element={
+            <ProtectedRoute requireOwner={true}>
+              <OwnerDashboardPage />
             </ProtectedRoute>
           }
         />
@@ -192,6 +204,33 @@ function AppContent() {
           element={
             <ProtectedRoute requireOwner={true}>
               <AttendancePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/currently-working"
+          element={
+            <ProtectedRoute requireOwner={true}>
+              <CurrentlyWorkingPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/shifts-management"
+          element={
+            <ProtectedRoute requireOwner={true}>
+              <ShiftsManagementPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/shift-assignments"
+          element={
+            <ProtectedRoute requireOwner={true}>
+              <ShiftAssignmentsPage />
             </ProtectedRoute>
           }
         />

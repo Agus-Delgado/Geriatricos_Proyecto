@@ -9,12 +9,24 @@ const EVENT_LABELS: Record<string, string> = {
   PATIENT_UPDATED: 'Edición de paciente',
   PATIENT_STATUS_CHANGED: 'Cambio de estado',
   MEDICATION_CHANGED: 'Cambio de medicación',
+  CLINICAL_SUMMARY_UPDATED: 'Resumen clínico actualizado',
+  CLINICAL_NOTE_CREATED: 'Nota clínica',
+  INCIDENT_REPORTED: 'Incidente',
+  SHIFT_ASSIGNED: 'Turno asignado',
+  SHIFT_UNASSIGNED: 'Turno removido',
+  COVERAGE_UNDERSTAFFED: 'Cobertura insuficiente',
 };
 const EVENT_TYPES = [
   { type: 'PATIENT_CREATED', label: 'Alta de paciente' },
   { type: 'PATIENT_UPDATED', label: 'Edición de paciente' },
   { type: 'PATIENT_STATUS_CHANGED', label: 'Cambio de estado' },
   { type: 'MEDICATION_CHANGED', label: 'Cambio de medicación' },
+  { type: 'CLINICAL_SUMMARY_UPDATED', label: 'Resumen clínico actualizado' },
+  { type: 'CLINICAL_NOTE_CREATED', label: 'Notas clínicas' },
+  { type: 'INCIDENT_REPORTED', label: 'Incidentes' },
+  { type: 'SHIFT_ASSIGNED', label: 'Turnos asignados' },
+  { type: 'SHIFT_UNASSIGNED', label: 'Turnos removidos' },
+  { type: 'COVERAGE_UNDERSTAFFED', label: 'Cobertura insuficiente' },
 ];
 
 const FACILITY_THEMES: Record<string, { primaryColor: string; bgLight: string; textDark: string; textMuted: string }> = {

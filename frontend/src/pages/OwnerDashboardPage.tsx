@@ -173,7 +173,7 @@ export const OwnerDashboardPage: React.FC = () => {
           </button>
 
           <button
-            onClick={() => navigate('/staff-management')}
+            onClick={() => navigate('/staff')}
             className="w-full bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow"
           >
             <div className="flex items-center gap-3">
@@ -229,7 +229,7 @@ export const OwnerDashboardPage: React.FC = () => {
           </button>
 
           <button
-            onClick={() => navigate(`/g/${facility?.id}/finance`)}
+            onClick={() => navigate('/finance')}
             className="w-full bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow"
           >
             <div className="flex items-center gap-3">
@@ -237,6 +237,34 @@ export const OwnerDashboardPage: React.FC = () => {
               <div className="text-left">
                 <div className="font-medium text-gray-900">Finanzas</div>
                 <div className="text-sm text-gray-500">Gestión económica</div>
+              </div>
+            </div>
+            <span className="text-gray-400">→</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/attendance')}
+            className="w-full bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🧾</span>
+              <div className="text-left">
+                <div className="font-medium text-gray-900">Asistencia</div>
+                <div className="text-sm text-gray-500">Check-ins y reportes</div>
+              </div>
+            </div>
+            <span className="text-gray-400">→</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/activity')}
+            className="w-full bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">📰</span>
+              <div className="text-left">
+                <div className="font-medium text-gray-900">Avisos</div>
+                <div className="text-sm text-gray-500">Cambios clínicos, incidentes y cobertura</div>
               </div>
             </div>
             <span className="text-gray-400">→</span>

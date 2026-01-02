@@ -8,6 +8,7 @@ from app.api.deps import get_current_user, require_facility_access, require_faci
 from app.schemas.activity import ActivityEventResponse
 from app.services.activity_service import list_events
 from app.models.auth import User
+from app.models.auth import UserRoleAssignment, UserRole
 
 
 router = APIRouter(prefix="/activity", tags=["activity"])
@@ -33,8 +34,18 @@ async def get_activity(
     require_facility_access(facility_id)(current_user, db)
 
     # Filtro por rol
-    # Si es OWNER o platform admin: ver todo
-    is_owner = current_user.is_platform_admin
+    # Si es OWNER (rol global) o platform admin: ver todo
+    is_global_owner = (
+        db.query(UserRoleAssignment)
+        .join(UserRole)
+        .filter(
+            UserRoleAssignment.user_id == current_user.id,
+            UserRole.code == "OWNER",
+        )
+        .first()
+        is not None
+    )
+    is_owner = current_user.is_platform_admin or is_global_owner
     if not is_owner:
         # Requerir rol MEDICO o ADMIN para ver feed clínico
         require_facility_role_any(["MEDICO", "ADMIN"])(current_user, db)

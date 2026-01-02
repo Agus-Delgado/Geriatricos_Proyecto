@@ -5,7 +5,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 const HomeRedirect: React.FC = () => {
   const navigate = useNavigate();
-  const { user, activeFacilityId, isBootstrapping, getMemberships } = useAuth();
+  const { user, activeFacilityId, isBootstrapping, getMemberships, isOwner } = useAuth();
 
   useEffect(() => {
     console.log('[HomeRedirect] bootstrapping:', isBootstrapping);
@@ -42,11 +42,17 @@ const HomeRedirect: React.FC = () => {
 
     // Tiene activeFacilityId
     if (activeFacilityId) {
+      if (isOwner) {
+        console.log(`[HomeRedirect] OWNER has activeFacilityId (${activeFacilityId}), redirecting to /g/${activeFacilityId}/owner`);
+        navigate(`/g/${activeFacilityId}/owner`, { replace: true });
+        return;
+      }
+
       console.log(`[HomeRedirect] Has activeFacilityId (${activeFacilityId}), redirecting to /g/${activeFacilityId}/dashboard`);
       navigate(`/g/${activeFacilityId}/dashboard`, { replace: true });
       return;
     }
-  }, [user, activeFacilityId, isBootstrapping, getMemberships, navigate]);
+  }, [user, activeFacilityId, isBootstrapping, getMemberships, isOwner, navigate]);
 
   // Mientras decide, mostrar spinner
   return <LoadingSpinner fullScreen />;

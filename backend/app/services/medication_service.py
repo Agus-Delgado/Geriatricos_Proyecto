@@ -226,7 +226,7 @@ def create_medication_administration(
         entity_type="MedicationAdministration",
         entity_id=admin.id,
         summary="Administración registrada",
-        meta={
+        event_metadata={
             "resident_id": str(resident_id),
             "medication_plan_id": str(admin_data.medication_plan_id),
             "status": admin_data.status,

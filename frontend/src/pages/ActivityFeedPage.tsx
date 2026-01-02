@@ -339,7 +339,7 @@ export default function ActivityFeedPage() {
                 style={{
                   background: '#fff', boxShadow: '0 2px 12px #00000012', borderRadius: 10,
                   borderLeft: `4px solid ${theme.primaryColor}`,
-                  padding: '18px 22px', maxWidth: 700, margin: '0 auto', cursor: ev.entity_id ? 'pointer' : 'default',
+                  padding: '18px 22px', width: '100%', cursor: ev.entity_id ? 'pointer' : 'default',
                   transition: 'box-shadow 0.2s',
                 }}
                 onClick={() => ev.entity_id && (ev.entity_type === 'Resident' || ev.entity_type === 'Patient' || ev.entity_type === 'MedicationPlan' || ev.entity_type === 'MedicationAdministration') && navigateToEntity(ev)}

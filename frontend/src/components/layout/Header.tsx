@@ -9,7 +9,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
-  const { user, logout, getMemberships, getActiveMembership, getActiveRole } = useAuth();
+  const { user, logout, getMemberships, getActiveMembership, getActiveRole, isOwner } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -81,7 +81,8 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
       const facilityId = location.pathname.match(/\/g\/([^/]+)/)?.[1];
       if (facilityId) {
         const role = getActiveRole();
-        if (role === 'ADMIN') fallbackPath = `/g/${facilityId}/dashboard`;
+        if (isOwner) fallbackPath = `/g/${facilityId}/owner`;
+        else if (role === 'ADMIN') fallbackPath = `/g/${facilityId}/dashboard`;
         else if (role === 'MEDICO') fallbackPath = `/g/${facilityId}/medical`;
         else if (role === 'STAFF') fallbackPath = `/g/${facilityId}/tasks`;
         else fallbackPath = `/g/${facilityId}/dashboard`;
@@ -99,7 +100,7 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
 
   // Permiso para ver noticias diarias (ADMIN/MEDICO/STAFF)
   const role = getActiveRole();
-  const canViewNews = role === 'ADMIN' || role === 'MEDICO' || role === 'STAFF';
+  const canViewNews = isOwner || role === 'ADMIN' || role === 'MEDICO' || role === 'STAFF';
 
   // Solo mostrar header en rutas internas
   if (!isInternalRoute) {
@@ -134,7 +135,8 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
                   onClick={() => {
                     // Navegar al panel principal del hogar
                     const role = getActiveRole();
-                    if (role === 'ADMIN') navigate(`/g/${activeMembership.facility_id}/dashboard`);
+                    if (isOwner) navigate(`/g/${activeMembership.facility_id}/owner`);
+                    else if (role === 'ADMIN') navigate(`/g/${activeMembership.facility_id}/dashboard`);
                     else if (role === 'MEDICO') navigate(`/g/${activeMembership.facility_id}/medical`);
                     else if (role === 'STAFF') navigate(`/g/${activeMembership.facility_id}/tasks`);
                     else navigate(`/g/${activeMembership.facility_id}/dashboard`);

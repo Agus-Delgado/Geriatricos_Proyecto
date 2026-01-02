@@ -55,6 +55,24 @@ export const ActivityFeedWidget: React.FC = () => {
     load();
   }, [facility?.id, canView]);
 
+  const renderSummary = (ev: ActivityEvent): string => {
+    const meta: any = ev.meta || {};
+    if (ev.event_type === 'PATIENT_STATUS_CHANGED') {
+      const name = meta.resident_name as string | undefined;
+      const status = meta?.changes?.status as string | undefined;
+      if (name && status) return `Estado: ${name} → ${status}`;
+      if (name) return `Estado: ${name}`;
+      if (status) return `Estado: ${status}`;
+    }
+
+    if (ev.event_type === 'PATIENT_CREATED' || ev.event_type === 'PATIENT_UPDATED') {
+      const name = meta.resident_name as string | undefined;
+      if (name) return name;
+    }
+
+    return ev.summary || `${ev.entity_type} ${ev.entity_id}`;
+  };
+
   if (!canView) return null;
 
   return (
@@ -79,7 +97,7 @@ export const ActivityFeedWidget: React.FC = () => {
           {events.map(ev => (
             <li key={ev.id} className="py-2">
               <div className="font-medium text-gray-800">{EVENT_LABELS[ev.event_type] || ev.event_type}</div>
-              <div className="text-sm text-gray-600">{ev.summary || `${ev.entity_type} ${ev.entity_id}`}</div>
+              <div className="text-sm text-gray-600">{renderSummary(ev)}</div>
               <div className="text-xs text-gray-400">{new Date(ev.created_at).toLocaleString('es-AR')}</div>
             </li>
           ))}

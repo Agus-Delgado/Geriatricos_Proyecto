@@ -40,7 +40,11 @@ export const ShiftsManagementPage: React.FC = () => {
     }
   };
 
-  const handleCreateShift = async (data: ShiftCreate) => {
+  const handleCreateShift = async (data: ShiftCreate | ShiftUpdate) => {
+    if (!('facility_id' in data)) {
+      throw new Error('Falta facility_id para crear turno');
+    }
+
     try {
       await shiftsApi.create(data);
       setShowCreateModal(false);
@@ -56,10 +60,17 @@ export const ShiftsManagementPage: React.FC = () => {
     setShowEditModal(true);
   };
 
-  const handleUpdateShift = async (data: ShiftUpdate) => {
+  const handleUpdateShift = async (data: ShiftCreate | ShiftUpdate) => {
     if (!editingShift) return;
+
     try {
-      await shiftsApi.update(editingShift.id, data);
+      if ('facility_id' in data) {
+        const { facility_id: _ignored, ...updateData } = data;
+        await shiftsApi.update(editingShift.id, updateData);
+      } else {
+        await shiftsApi.update(editingShift.id, data);
+      }
+
       setShowEditModal(false);
       setEditingShift(null);
       loadShifts();
@@ -269,11 +280,11 @@ const ShiftForm: React.FC<ShiftFormProps> = ({ facilityId, shift, onSubmit, onCa
     setErrors({});
 
     try {
-      const submitData = shift
+      const submitData: ShiftCreate | ShiftUpdate = shift
         ? { ...formData, start_time: `${formData.start_time}:00`, end_time: `${formData.end_time}:00` }
         : { ...formData, facility_id: facilityId, start_time: `${formData.start_time}:00`, end_time: `${formData.end_time}:00` };
 
-      await onSubmit(submitData as any);
+      await onSubmit(submitData);
     } catch (error: any) {
       setErrors({ submit: error.message });
     } finally {

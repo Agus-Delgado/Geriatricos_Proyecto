@@ -1,7 +1,7 @@
 """add shifts and extend staff
 
 Revision ID: 015
-Revises: 014
+Revises: 014_resident_status_activity
 Create Date: 2026-01-02
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '015'
-down_revision = '014'
+down_revision = '014_resident_status_activity'
 branch_labels = None
 depends_on = None
 

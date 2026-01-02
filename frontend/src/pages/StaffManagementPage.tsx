@@ -46,7 +46,11 @@ export const StaffManagementPage: React.FC = () => {
     }
   };
 
-  const handleCreateStaff = async (data: StaffCreate) => {
+  const handleCreateStaff = async (data: StaffCreate | StaffUpdate) => {
+    if (!('facility_id' in data)) {
+      throw new Error('Falta facility_id para crear personal');
+    }
+
     try {
       await staffApi.create(data);
       setShowCreateModal(false);
@@ -62,10 +66,17 @@ export const StaffManagementPage: React.FC = () => {
     setShowEditModal(true);
   };
 
-  const handleUpdateStaff = async (data: StaffUpdate) => {
+  const handleUpdateStaff = async (data: StaffCreate | StaffUpdate) => {
     if (!editingStaff) return;
+
     try {
-      await staffApi.update(editingStaff.id, data);
+      if ('facility_id' in data) {
+        const { facility_id: _ignored, ...updateData } = data;
+        await staffApi.update(editingStaff.id, updateData);
+      } else {
+        await staffApi.update(editingStaff.id, data);
+      }
+
       setShowEditModal(false);
       setEditingStaff(null);
       loadStaff();
@@ -274,11 +285,11 @@ const StaffForm: React.FC<StaffFormProps> = ({ facilityId, staff, onSubmit, onCa
     setErrors({});
 
     try {
-      const submitData = staff
+      const submitData: StaffCreate | StaffUpdate = staff
         ? { ...formData }
         : { ...formData, facility_id: facilityId };
 
-      await onSubmit(submitData as any);
+      await onSubmit(submitData);
     } catch (error: any) {
       setErrors({ submit: error.message });
     } finally {

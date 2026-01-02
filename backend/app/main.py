@@ -150,6 +150,10 @@ async def startup_event():
             db.execute(text("ALTER TABLE staff ADD COLUMN IF NOT EXISTS specialty VARCHAR(128)"))
             db.execute(text("ALTER TABLE staff ADD COLUMN IF NOT EXISTS license_number VARCHAR(64)"))
             db.execute(text("ALTER TABLE staff ADD COLUMN IF NOT EXISTS end_date DATE"))
+            db.execute(text("ALTER TABLE staff ADD COLUMN IF NOT EXISTS status VARCHAR(24)"))
+            db.execute(text("UPDATE staff SET status = 'ACTIVE' WHERE status IS NULL"))
+            db.execute(text("ALTER TABLE staff ALTER COLUMN status SET DEFAULT 'ACTIVE'"))
+            db.execute(text("ALTER TABLE staff ALTER COLUMN status SET NOT NULL"))
             db.commit()
         finally:
             db.close()

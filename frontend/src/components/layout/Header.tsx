@@ -110,17 +110,17 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
       <div className="px-4 py-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           {/* Sección izquierda: Botón Volver (si aplica) + Título + Facility */}
           <div className="flex items-center space-x-3 flex-1 min-w-0">
             {/* Botón Volver para rutas /g/*, rutas médicas o si showBack está activo */}
             {shouldShowBack && (
               <button
                 onClick={handleBack}
-                className="flex-shrink-0 text-gray-600 hover:text-gray-800 transition-colors"
+                className="flex-shrink-0 text-gray-600 hover:text-gray-800 transition-colors p-2 -ml-2"
                 aria-label="Volver"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-7 h-7 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
@@ -130,7 +130,7 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
               {title && <h1 className="text-lg font-semibold text-gray-900 truncate">{title}</h1>}
               {activeMembership && (
                 <button
-                  className="text-sm text-gray-600 truncate font-semibold hover:underline focus:underline"
+                  className="text-sm text-gray-600 truncate font-semibold hover:underline focus:underline max-w-full"
                   style={{ color: 'var(--facility-accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                   onClick={() => {
                     // Navegar al panel principal del hogar
@@ -150,22 +150,24 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
           </div>
 
           {/* Sección derecha: Noticias diarias + Cambiar Hogar + Menú Usuario */}
-          <div className="flex items-center space-x-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 max-w-full">
             {canViewNews && (
               <button
                 onClick={() => navigate('/activity')}
-                className="px-3 py-1.5 text-sm font-medium text-primary-700 hover:text-primary-900 hover:bg-primary-50 rounded-lg transition-colors"
+                className="px-2 sm:px-3 py-1.5 text-sm font-medium text-primary-700 hover:text-primary-900 hover:bg-primary-50 rounded-lg transition-colors whitespace-nowrap"
               >
-                Noticias diarias
+                <span className="sm:hidden">Noticias</span>
+                <span className="hidden sm:inline">Noticias diarias</span>
               </button>
             )}
             {/* Botón "Cambiar Hogar" visible cuando hay múltiples memberships */}
             {user && memberships.length > 1 && (
               <button
                 onClick={handleChangeFacility}
-                className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-2 sm:px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap"
               >
-                Cambiar Hogar
+                <span className="sm:hidden">Hogar</span>
+                <span className="hidden sm:inline">Cambiar Hogar</span>
               </button>
             )}
             

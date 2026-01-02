@@ -4,6 +4,7 @@ import { useFacility } from '../contexts/FacilityContext';
 import type { ActivityEvent } from '../types/activity';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../components/ui/Modal';
+import { BottomNav } from '../components/layout/BottomNav';
 
 const EVENT_LABELS: Record<string, string> = {
   PATIENT_CREATED: 'Alta de paciente',
@@ -289,7 +290,21 @@ export default function ActivityFeedPage() {
     <div style={{ background: theme.bgLight, minHeight: '100vh', width: '100%', boxSizing: 'border-box' }}>
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 30px 80px 30px' }}>
         <div className="flex items-center mb-8">
-          <button className="mr-3 text-lg" style={{ color: theme.primaryColor }} onClick={() => navigate(-1)} aria-label="Volver">←</button>
+          <button
+            type="button"
+            className="mr-2"
+            style={{
+              color: theme.primaryColor,
+              fontSize: 28,
+              lineHeight: 1,
+              padding: '8px 10px',
+              borderRadius: 10,
+            }}
+            onClick={() => navigate(-1)}
+            aria-label="Volver"
+          >
+            ←
+          </button>
           <div>
             <h1 className="text-3xl font-bold flex items-center" style={{ color: theme.primaryColor }}>
               <span style={{ fontSize: 32, marginRight: 10 }}>📰</span>Noticias diarias
@@ -299,132 +314,6 @@ export default function ActivityFeedPage() {
                 {facility.name}
               </div>
             )}
-          </div>
-        </div>
-
-        <div
-          style={{
-            background: '#fff',
-            borderRadius: 10,
-            padding: '14px 16px',
-            boxShadow: '0 2px 10px #0000000d',
-            marginBottom: 18,
-          }}
-        >
-          <div style={{ fontWeight: 700, color: theme.textDark, marginBottom: 10 }}>Navegación rápida</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-            <button
-              type="button"
-              onClick={() => navigate(`/g/${facility?.id}/owner`)}
-              style={{
-                background: theme.bgLight,
-                color: theme.textDark,
-                border: '1px solid #e5e7eb',
-                borderRadius: 999,
-                padding: '8px 12px',
-                fontWeight: 600,
-              }}
-            >
-              Dashboard
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/residents')}
-              style={{
-                background: theme.bgLight,
-                color: theme.textDark,
-                border: '1px solid #e5e7eb',
-                borderRadius: 999,
-                padding: '8px 12px',
-                fontWeight: 600,
-              }}
-            >
-              Pacientes
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/staff')}
-              style={{
-                background: theme.bgLight,
-                color: theme.textDark,
-                border: '1px solid #e5e7eb',
-                borderRadius: 999,
-                padding: '8px 12px',
-                fontWeight: 600,
-              }}
-            >
-              Personal
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/currently-working')}
-              style={{
-                background: theme.bgLight,
-                color: theme.textDark,
-                border: '1px solid #e5e7eb',
-                borderRadius: 999,
-                padding: '8px 12px',
-                fontWeight: 600,
-              }}
-            >
-              Trabajando ahora
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/shifts-management')}
-              style={{
-                background: theme.bgLight,
-                color: theme.textDark,
-                border: '1px solid #e5e7eb',
-                borderRadius: 999,
-                padding: '8px 12px',
-                fontWeight: 600,
-              }}
-            >
-              Turnos
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/shift-assignments')}
-              style={{
-                background: theme.bgLight,
-                color: theme.textDark,
-                border: '1px solid #e5e7eb',
-                borderRadius: 999,
-                padding: '8px 12px',
-                fontWeight: 600,
-              }}
-            >
-              Asignaciones
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/attendance')}
-              style={{
-                background: theme.bgLight,
-                color: theme.textDark,
-                border: '1px solid #e5e7eb',
-                borderRadius: 999,
-                padding: '8px 12px',
-                fontWeight: 600,
-              }}
-            >
-              Asistencia
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/finance')}
-              style={{
-                background: theme.bgLight,
-                color: theme.textDark,
-                border: '1px solid #e5e7eb',
-                borderRadius: 999,
-                padding: '8px 12px',
-                fontWeight: 600,
-              }}
-            >
-              Finanzas
-            </button>
           </div>
         </div>
 
@@ -550,6 +439,8 @@ export default function ActivityFeedPage() {
         )}
       </div>
       {/* BottomNav eliminado para esta página */}
+
+      <BottomNav />
 
       <Modal
         isOpen={saveModalOpen}

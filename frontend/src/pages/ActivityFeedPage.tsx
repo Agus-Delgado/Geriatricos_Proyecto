@@ -130,6 +130,24 @@ export default function ActivityFeedPage() {
     setSelectedTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
   };
 
+  const renderSummary = (ev: ActivityEvent): string => {
+    const meta: any = ev.meta || {};
+    if (ev.event_type === 'PATIENT_STATUS_CHANGED') {
+      const name = meta.resident_name as string | undefined;
+      const status = meta?.changes?.status as string | undefined;
+      if (name && status) return `Estado: ${name} → ${status}`;
+      if (name) return `Estado: ${name}`;
+      if (status) return `Estado: ${status}`;
+    }
+
+    if (ev.event_type === 'PATIENT_CREATED' || ev.event_type === 'PATIENT_UPDATED') {
+      const name = meta.resident_name as string | undefined;
+      if (name) return name;
+    }
+
+    return ev.summary || `${ev.entity_type} ${ev.entity_id}`;
+  };
+
   const navigateToEntity = (ev: ActivityEvent) => {
     if (!ev.entity_id) return;
     if (ev.entity_type === 'Resident' || ev.entity_type === 'Patient') {
@@ -146,10 +164,144 @@ export default function ActivityFeedPage() {
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 30px 80px 30px' }}>
         <div className="flex items-center mb-8">
           <button className="mr-3 text-lg" style={{ color: theme.primaryColor }} onClick={() => navigate(-1)} aria-label="Volver">←</button>
-          <h1 className="text-3xl font-bold flex items-center" style={{ color: theme.primaryColor }}>
-            <span style={{ fontSize: 32, marginRight: 10 }}>📰</span>Noticias diarias
-          </h1>
+          <div>
+            <h1 className="text-3xl font-bold flex items-center" style={{ color: theme.primaryColor }}>
+              <span style={{ fontSize: 32, marginRight: 10 }}>📰</span>Noticias diarias
+            </h1>
+            {facility?.name && (
+              <div style={{ color: theme.textMuted, marginTop: 4, fontSize: 14 }}>
+                {facility.name}
+              </div>
+            )}
+          </div>
         </div>
+
+        <div
+          style={{
+            background: '#fff',
+            borderRadius: 10,
+            padding: '14px 16px',
+            boxShadow: '0 2px 10px #0000000d',
+            marginBottom: 18,
+          }}
+        >
+          <div style={{ fontWeight: 700, color: theme.textDark, marginBottom: 10 }}>Navegación rápida</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            <button
+              type="button"
+              onClick={() => navigate(`/g/${facility?.id}/owner`)}
+              style={{
+                background: theme.bgLight,
+                color: theme.textDark,
+                border: '1px solid #e5e7eb',
+                borderRadius: 999,
+                padding: '8px 12px',
+                fontWeight: 600,
+              }}
+            >
+              Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/residents')}
+              style={{
+                background: theme.bgLight,
+                color: theme.textDark,
+                border: '1px solid #e5e7eb',
+                borderRadius: 999,
+                padding: '8px 12px',
+                fontWeight: 600,
+              }}
+            >
+              Pacientes
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/staff')}
+              style={{
+                background: theme.bgLight,
+                color: theme.textDark,
+                border: '1px solid #e5e7eb',
+                borderRadius: 999,
+                padding: '8px 12px',
+                fontWeight: 600,
+              }}
+            >
+              Personal
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/currently-working')}
+              style={{
+                background: theme.bgLight,
+                color: theme.textDark,
+                border: '1px solid #e5e7eb',
+                borderRadius: 999,
+                padding: '8px 12px',
+                fontWeight: 600,
+              }}
+            >
+              Trabajando ahora
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/shifts-management')}
+              style={{
+                background: theme.bgLight,
+                color: theme.textDark,
+                border: '1px solid #e5e7eb',
+                borderRadius: 999,
+                padding: '8px 12px',
+                fontWeight: 600,
+              }}
+            >
+              Turnos
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/shift-assignments')}
+              style={{
+                background: theme.bgLight,
+                color: theme.textDark,
+                border: '1px solid #e5e7eb',
+                borderRadius: 999,
+                padding: '8px 12px',
+                fontWeight: 600,
+              }}
+            >
+              Asignaciones
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/attendance')}
+              style={{
+                background: theme.bgLight,
+                color: theme.textDark,
+                border: '1px solid #e5e7eb',
+                borderRadius: 999,
+                padding: '8px 12px',
+                fontWeight: 600,
+              }}
+            >
+              Asistencia
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/finance')}
+              style={{
+                background: theme.bgLight,
+                color: theme.textDark,
+                border: '1px solid #e5e7eb',
+                borderRadius: 999,
+                padding: '8px 12px',
+                fontWeight: 600,
+              }}
+            >
+              Finanzas
+            </button>
+          </div>
+        </div>
+
         <div className="flex gap-3 mb-8 flex-wrap">
           {EVENT_TYPES.map(({ type, label }) => (
             <label key={type} style={{
@@ -185,7 +337,7 @@ export default function ActivityFeedPage() {
               <li
                 key={ev.id}
                 style={{
-                  background: '#fff', boxShadow: '0 2px 8px #0001', borderRadius: 6,
+                  background: '#fff', boxShadow: '0 2px 12px #00000012', borderRadius: 10,
                   borderLeft: `4px solid ${theme.primaryColor}`,
                   padding: '18px 22px', maxWidth: 700, margin: '0 auto', cursor: ev.entity_id ? 'pointer' : 'default',
                   transition: 'box-shadow 0.2s',
@@ -193,7 +345,7 @@ export default function ActivityFeedPage() {
                 onClick={() => ev.entity_id && (ev.entity_type === 'Resident' || ev.entity_type === 'Patient' || ev.entity_type === 'MedicationPlan' || ev.entity_type === 'MedicationAdministration') && navigateToEntity(ev)}
               >
                 <div style={{ fontWeight: 600, fontSize: 18, color: theme.primaryColor }}>{EVENT_LABELS[ev.event_type] || ev.event_type}</div>
-                <div style={{ fontSize: 15, color: theme.textDark, marginTop: 2 }}>{ev.summary || `${ev.entity_type} ${ev.entity_id}`}</div>
+                <div style={{ fontSize: 15, color: theme.textDark, marginTop: 6 }}>{renderSummary(ev)}</div>
                 <div style={{ fontSize: 13, color: theme.textMuted, marginTop: 6 }}>{new Date(ev.created_at).toLocaleString('es-AR')}</div>
               </li>
             ))}

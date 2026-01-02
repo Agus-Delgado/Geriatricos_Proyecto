@@ -143,8 +143,12 @@ def update_resident(
                 event_type="PATIENT_STATUS_CHANGED",
                 entity_type="Resident",
                 entity_id=resident.id,
-                summary=f"Estado paciente: {update_data_json['status']}",
-                event_metadata={"changes": {"status": update_data_json["status"]}},
+                summary=f"Estado: {resident.last_name}, {resident.first_name} → {update_data_json['status']}",
+                event_metadata={
+                    "resident_id": str(resident.id),
+                    "resident_name": f"{resident.last_name}, {resident.first_name}",
+                    "changes": {"status": update_data_json["status"]},
+                },
             )
         else:
             log_event(

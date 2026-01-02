@@ -14,6 +14,7 @@ from app.api.routes import (
 from app.db.session import SessionLocal
 from app.db.bootstrap import bootstrap_production_users
 import logging
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +142,17 @@ async def startup_event():
         else:
             logger.info("Bootstrap: No hay variables de entorno de bootstrap. Saltando creación automática de usuarios.")
             logger.info("Bootstrap: Para crear usuarios, definir ADMIN_DNI/ADMIN_PASSWORD o MEDICO_DNI/MEDICO_PASSWORD")
+
+        # Guard de schema para DBs desactualizadas (ej: Render sin correr migraciones)
+        db = SessionLocal()
+        try:
+            db.execute(text("ALTER TABLE staff ADD COLUMN IF NOT EXISTS cuil VARCHAR(16)"))
+            db.execute(text("ALTER TABLE staff ADD COLUMN IF NOT EXISTS specialty VARCHAR(128)"))
+            db.execute(text("ALTER TABLE staff ADD COLUMN IF NOT EXISTS license_number VARCHAR(64)"))
+            db.execute(text("ALTER TABLE staff ADD COLUMN IF NOT EXISTS end_date DATE"))
+            db.commit()
+        finally:
+            db.close()
     except Exception as e:
         logger.error(f"Bootstrap: Error en startup event: {e}", exc_info=True)
         # No fallar el startup si hay error

@@ -154,6 +154,10 @@ async def startup_event():
             db.execute(text("UPDATE staff SET status = 'ACTIVE' WHERE status IS NULL"))
             db.execute(text("ALTER TABLE staff ALTER COLUMN status SET DEFAULT 'ACTIVE'"))
             db.execute(text("ALTER TABLE staff ALTER COLUMN status SET NOT NULL"))
+
+            # Columnas de auditoría (pueden faltar en DBs sin migraciones)
+            db.execute(text("ALTER TABLE staff ADD COLUMN IF NOT EXISTS created_by_user_id UUID"))
+            db.execute(text("ALTER TABLE staff ADD COLUMN IF NOT EXISTS updated_by_user_id UUID"))
             db.commit()
         finally:
             db.close()

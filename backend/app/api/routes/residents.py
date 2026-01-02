@@ -83,10 +83,10 @@ async def update_resident_endpoint(
 @router.delete("/{resident_id}", status_code=204)
 async def delete_resident_endpoint(
     resident_id: UUID,
-    current_user: User = Depends(require_role('OWNER')),
+    current_user: User = Depends(require_facility_role_any(['MEDICO', 'ADMIN'])),
     db: Session = Depends(get_db)
 ):
-    """Eliminar residente definitivamente (solo OWNER)"""
+    """Eliminar residente definitivamente (requiere rol MEDICO o ADMIN en la facility activa)"""
     # Nota: Validar acceso a la facility del residente
     resident = get_resident_by_id(db, resident_id)
     require_facility_access(resident.facility_id)(current_user, db)

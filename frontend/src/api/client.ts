@@ -32,7 +32,22 @@ class ApiClient {
 
       try {
         const data = await response.json();
-        error.detail = data.detail || data.message || error.detail;
+        const detail = data?.detail ?? data?.message;
+        if (typeof detail === 'string') {
+          error.detail = detail;
+        } else if (Array.isArray(detail)) {
+          // FastAPI validation errors (422)
+          const msgs = detail
+            .map((d: any) => {
+              if (typeof d === 'string') return d;
+              if (d?.msg) return d.msg as string;
+              return JSON.stringify(d);
+            })
+            .filter(Boolean);
+          error.detail = msgs.length > 0 ? msgs.join(' | ') : JSON.stringify(detail);
+        } else if (detail !== undefined) {
+          error.detail = JSON.stringify(detail);
+        }
       } catch {
         error.detail = response.statusText || error.detail;
       }

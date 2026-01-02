@@ -26,7 +26,7 @@ import { ResidentsListPage } from './pages/ResidentsListPage';
 import { ResidentDetailPage } from './pages/ResidentDetailPage';
 import { MedicationDuePage } from './pages/MedicationDuePage';
 import { FinancePage } from './pages/FinancePage';
-import { StaffPage } from './pages/StaffPage';
+import { StaffManagementPage } from './pages/StaffManagementPage';
 import { AttendancePage } from './pages/AttendancePage';
 import { DebugPage } from './pages/DebugPage';
 import ClinicalHistorySearchPage from './pages/ClinicalHistorySearchPage';
@@ -193,7 +193,7 @@ function AppContent() {
           path="/staff"
           element={
             <ProtectedRoute requireOwner={true}>
-              <StaffPage />
+              <StaffManagementPage />
             </ProtectedRoute>
           }
         />

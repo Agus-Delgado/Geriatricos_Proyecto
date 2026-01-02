@@ -80,7 +80,7 @@ async def list_shifts(
     return shifts
 
 
-@router.get("/{shift_id}", response_model=ShiftResponse)
+@router.get("/{shift_id:uuid}", response_model=ShiftResponse)
 async def get_shift(
     shift_id: UUID,
     current_user: User = Depends(get_current_user),
@@ -92,7 +92,7 @@ async def get_shift(
     return shift
 
 
-@router.patch("/{shift_id}", response_model=ShiftResponse)
+@router.patch("/{shift_id:uuid}", response_model=ShiftResponse)
 async def update_shift_endpoint(
     shift_id: UUID,
     shift_data: ShiftUpdate,
@@ -107,7 +107,7 @@ async def update_shift_endpoint(
     return updated_shift
 
 
-@router.delete("/{shift_id}", status_code=204)
+@router.delete("/{shift_id:uuid}", status_code=204)
 async def delete_shift_endpoint(
     shift_id: UUID,
     current_user: User = Depends(get_current_user),

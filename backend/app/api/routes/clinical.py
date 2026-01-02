@@ -4,7 +4,7 @@ from typing import List
 from uuid import UUID
 from datetime import datetime
 from app.db.session import get_db
-from app.api.deps import get_current_user, require_facility_access
+from app.api.deps import get_current_user, require_facility_access, require_facility_role_any
 from app.schemas.clinical import (
     ClinicalSummaryUpdate,
     ClinicalSummaryResponse,
@@ -44,14 +44,10 @@ async def get_clinical_summary(
     ).first()
     
     if not summary:
-        # Crear resumen vacío si no existe
-        summary = ClinicalSummary(
-            resident_id=resident_id,
-            updated_by_user_id=current_user.id
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resumen clínico no encontrado"
         )
-        db.add(summary)
-        db.commit()
-        db.refresh(summary)
     
     return summary
 
@@ -60,7 +56,7 @@ async def get_clinical_summary(
 async def update_clinical_summary(
     resident_id: UUID,
     summary_data: ClinicalSummaryUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_facility_role_any(['MEDICO', 'ADMIN'])),
     db: Session = Depends(get_db)
 ):
     """Actualizar resumen clínico"""
@@ -128,7 +124,7 @@ async def update_clinical_summary(
 @router.get("/clinical-notes", response_model=List[ClinicalNoteResponse])
 async def list_clinical_notes(
     resident_id: UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_facility_role_any(['MEDICO', 'ADMIN'])),
     db: Session = Depends(get_db)
 ):
     """Listar notas clínicas (evoluciones) del residente"""
@@ -152,7 +148,7 @@ async def list_clinical_notes(
 async def create_clinical_note(
     resident_id: UUID,
     note_data: ClinicalNoteCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_facility_role_any(['MEDICO', 'ADMIN'])),
     db: Session = Depends(get_db)
 ):
     """Crear nota clínica (evolución/incidente)"""
@@ -215,7 +211,7 @@ async def create_clinical_note(
 @router.get("/vital-signs", response_model=List[VitalSignResponse])
 async def list_vital_signs(
     resident_id: UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_facility_role_any(['MEDICO', 'ADMIN'])),
     db: Session = Depends(get_db)
 ):
     """Listar signos vitales del residente"""
@@ -239,7 +235,7 @@ async def list_vital_signs(
 async def create_vital_sign(
     resident_id: UUID,
     vital_data: VitalSignCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_facility_role_any(['MEDICO', 'ADMIN'])),
     db: Session = Depends(get_db)
 ):
     """Registrar signos vitales"""

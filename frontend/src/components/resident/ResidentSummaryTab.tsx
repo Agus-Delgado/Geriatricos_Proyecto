@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { ErrorMessage } from '../ui/ErrorMessage';
 import { Modal } from '../ui/Modal';
+import { useAuth } from '../../contexts/AuthContext';
 import type { Resident } from '../../types/residents';
 import type { ClinicalSummary } from '../../types/clinical';
 import type { ApiError } from '../../api/client';
@@ -17,6 +18,7 @@ export const ResidentSummaryTab: React.FC<ResidentSummaryTabProps> = ({
   resident,
   onUpdate,
 }) => {
+  const { isOwner } = useAuth();
   const [summary, setSummary] = useState<ClinicalSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -137,15 +139,17 @@ export const ResidentSummaryTab: React.FC<ResidentSummaryTabProps> = ({
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-900">Resumen Clínico</h3>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setEditingSummary(summary || {});
-              setShowEditModal(true);
-            }}
-          >
-            {summary ? 'Editar' : 'Crear'}
-          </Button>
+          {!isOwner && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setEditingSummary(summary || {});
+                setShowEditModal(true);
+              }}
+            >
+              {summary ? 'Editar' : 'Crear'}
+            </Button>
+          )}
         </div>
 
         {summary ? (

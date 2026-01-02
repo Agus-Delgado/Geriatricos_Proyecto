@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { authApi } from '../api/auth';
 import { Input } from '../components/ui/Input';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
+import { Modal } from '../components/ui/Modal';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,9 +15,12 @@ export const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [errorDetail, setErrorDetail] = useState<string | null>(null);
-  const [showResendForm, setShowResendForm] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
 
   // Leer mensaje del state de navegación (cuando viene de sesión expirada)
   useEffect(() => {
@@ -96,8 +100,6 @@ export const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setErrorDetail(null);
-    setShowResendForm(false);
     setLoading(true);
 
     try {
@@ -106,13 +108,6 @@ export const LoginPage: React.FC = () => {
     } catch (err: any) {
       const errorMessage = err instanceof Error ? err.message : 'Error al iniciar sesión';
       setError(errorMessage);
-      
-      // Verificar si es error 403 de email no verificado
-      if (err?.response?.status === 403 && err?.response?.data?.detail === 'Email no verificado') {
-        setErrorDetail('Email no verificado');
-        setShowResendForm(true);
-      }
-      
       setLoading(false);
     }
   };
@@ -165,25 +160,7 @@ export const LoginPage: React.FC = () => {
             <div className="mb-6">
               <ErrorMessage message={error} onDismiss={() => {
                 setError(null);
-                setErrorDetail(null);
-                setShowResendForm(false);
               }} />
-              {errorDetail === 'Email no verificado' && (
-                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800 mb-3">
-                    Tu email no ha sido verificado. Necesitás verificar tu cuenta antes de poder iniciar sesión.
-                  </p>
-                  {showResendForm && (
-                    <ResendVerificationForm 
-                      onSuccess={() => {
-                        setShowResendForm(false);
-                        setError(null);
-                        setErrorDetail(null);
-                      }}
-                    />
-                  )}
-                </div>
-              )}
             </div>
           )}
 
@@ -259,18 +236,74 @@ export const LoginPage: React.FC = () => {
           </form>
 
           <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-center text-sm text-gray-600">
-              ¿No tenés cuenta?{' '}
-              <Link
-                to="/register"
+            <div className="text-center text-sm text-gray-600">
+              <button
+                type="button"
+                onClick={() => {
+                  setResetMessage(null);
+                  setResetEmail('');
+                  setShowResetModal(true);
+                }}
                 className="text-blue-600 hover:text-blue-800 font-medium"
               >
-                Crear cuenta
-              </Link>
-            </p>
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={showResetModal}
+        onClose={() => {
+          setShowResetModal(false);
+          setResetMessage(null);
+        }}
+        title="Restablecer contraseña"
+        size="md"
+      >
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setResetLoading(true);
+            setResetMessage(null);
+            try {
+              await authApi.requestPasswordReset(resetEmail.trim().toLowerCase());
+              setResetMessage('Si el email es válido, te enviaremos un enlace para restablecer tu contraseña.');
+            } catch {
+              setResetMessage('Si el email es válido, te enviaremos un enlace para restablecer tu contraseña.');
+            } finally {
+              setResetLoading(false);
+            }
+          }}
+          className="space-y-4"
+        >
+          <Input
+            label="Email"
+            type="email"
+            value={resetEmail}
+            onChange={(e) => setResetEmail(e.target.value)}
+            required
+            disabled={resetLoading}
+            placeholder="Ingresá tu email"
+          />
+
+          {resetMessage && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-800">{resetMessage}</p>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={resetLoading}
+            className="w-full py-3 px-6 rounded-lg text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
+          >
+            {resetLoading ? 'Enviando...' : 'Enviar enlace'}
+          </button>
+        </form>
+      </Modal>
     </div>
   );
 };

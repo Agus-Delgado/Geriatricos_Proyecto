@@ -10,8 +10,6 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import HomeRedirect from './components/navigation/HomeRedirect';
 import { useFacilityTheme } from './hooks/useFacilityTheme';
 import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { GeriatricLoginPage } from './pages/GeriatricLoginPage';
 import { SelectFacilityPage } from './pages/SelectFacilityPage';
 import { PlatformPage } from './pages/PlatformPage';
@@ -51,9 +49,7 @@ function AppContent() {
   useFacilityTheme();
   const location = useLocation();
   
-  const isPublic = location.pathname.startsWith('/login') || 
-                   location.pathname.startsWith('/register') || 
-                   location.pathname.startsWith('/verify-email') || 
+  const isPublic = location.pathname.startsWith('/login') ||
                    location.pathname.startsWith('/reset-password');
 
   return (
@@ -65,8 +61,8 @@ function AppContent() {
       <Routes>
         {/* Rutas públicas */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/register" element={<Navigate to="/login" replace />} />
+        <Route path="/verify-email" element={<Navigate to="/login" replace />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/login/:geriatricSlug" element={<GeriatricLoginPage />} />
 

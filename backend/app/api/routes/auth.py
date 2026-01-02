@@ -338,6 +338,10 @@ async def register(
     db: Session = Depends(get_db)
 ):
     """Registrar nuevo usuario. Se envía email de verificación."""
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Registro deshabilitado. El acceso es gestionado por administradores."
+    )
     # Normalizar datos antes de validar
     dni_normalized = register_data.dni.strip() if register_data.dni else None
     email_normalized = register_data.email.strip().lower() if register_data.email else None

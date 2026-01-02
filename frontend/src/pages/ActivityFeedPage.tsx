@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { activityApi } from '../api/activity';
 import { useFacility } from '../contexts/FacilityContext';
 import type { ActivityEvent } from '../types/activity';
 import { useNavigate } from 'react-router-dom';
+import { Modal } from '../components/ui/Modal';
 
 const EVENT_LABELS: Record<string, string> = {
   PATIENT_CREATED: 'Alta de paciente',
@@ -101,10 +102,23 @@ export default function ActivityFeedPage() {
   const theme = FACILITY_THEMES[themeKey] || FACILITY_THEMES['default'];
   const navigate = useNavigate();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
+  const [savedEvents, setSavedEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [retry, setRetry] = useState(0);
+
+  const [tab, setTab] = useState<'all' | 'saved'>('all');
+
+  const latestSinceRef = useRef<string | null>(null);
+  const pollingRef = useRef<number | null>(null);
+
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [saveNote, setSaveNote] = useState('');
+  const [saveTarget, setSaveTarget] = useState<ActivityEvent | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const selectedTypesKey = useMemo(() => selectedTypes.slice().sort().join(','), [selectedTypes]);
 
   useEffect(() => {
     const load = async () => {
@@ -112,11 +126,20 @@ export default function ActivityFeedPage() {
       try {
         setLoading(true);
         setError(null);
+
+        if (tab === 'saved') {
+          const data = await activityApi.saved(facility.id, { limit: 200 });
+          setSavedEvents(data);
+          setLoading(false);
+          return;
+        }
+
         const data = await activityApi.list(facility.id, {
-          limit: 100,
+          limit: 120,
           event_types: selectedTypes.length > 0 ? selectedTypes : undefined,
         });
         setEvents(data);
+        latestSinceRef.current = data?.[0]?.created_at ?? null;
       } catch (e: any) {
         if (e?.response?.status === 401 || e?.response?.status === 403) {
           setError('No autorizado para ver actividades');
@@ -132,10 +155,94 @@ export default function ActivityFeedPage() {
       }
     };
     void load();
-  }, [facility?.id, selectedTypes, retry]);
+  }, [facility?.id, selectedTypesKey, retry, tab]);
+
+  useEffect(() => {
+    if (!facility) return;
+    if (tab !== 'all') return;
+
+    if (pollingRef.current) {
+      window.clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+
+    const intervalMs = 30000;
+    pollingRef.current = window.setInterval(async () => {
+      try {
+        const since = latestSinceRef.current;
+        if (!since) return;
+        const data = await activityApi.list(facility.id, {
+          since,
+          limit: 200,
+          event_types: selectedTypes.length > 0 ? selectedTypes : undefined,
+        });
+        if (!data || data.length === 0) return;
+
+        setEvents((prev) => {
+          const byId = new Map<string, ActivityEvent>();
+          for (const ev of prev) byId.set(ev.id, ev);
+          for (const ev of data) byId.set(ev.id, ev);
+          const merged = Array.from(byId.values()).sort(
+            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+          latestSinceRef.current = merged?.[0]?.created_at ?? latestSinceRef.current;
+          return merged;
+        });
+      } catch {
+        // Silencioso: si falla el polling, no rompemos la UI
+      }
+    }, intervalMs);
+
+    return () => {
+      if (pollingRef.current) {
+        window.clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [facility?.id, selectedTypesKey, tab]);
 
   const toggleType = (t: string) => {
     setSelectedTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  };
+
+  const openSaveModal = (ev: ActivityEvent) => {
+    setSaveTarget(ev);
+    setSaveNote(ev.saved_note ? String(ev.saved_note) : '');
+    setSaveModalOpen(true);
+  };
+
+  const doUnsave = async (ev: ActivityEvent) => {
+    if (!facility) return;
+    await activityApi.unsave(facility.id, ev.id);
+    setEvents((prev) => prev.map((x) => (x.id === ev.id ? { ...x, is_saved: false, saved_note: null, saved_expires_at: null } : x)));
+    setSavedEvents((prev) => prev.filter((x) => x.id !== ev.id));
+  };
+
+  const doSave = async () => {
+    if (!facility || !saveTarget) return;
+    setSaving(true);
+    try {
+      const res = await activityApi.save(facility.id, saveTarget.id, { note: saveNote.trim() || undefined });
+
+      setEvents((prev) =>
+        prev.map((x) =>
+          x.id === saveTarget.id
+            ? { ...x, is_saved: true, saved_note: saveNote.trim() || null, saved_expires_at: res.expires_at }
+            : x
+        )
+      );
+
+      if (tab === 'saved') {
+        const data = await activityApi.saved(facility.id, { limit: 200 });
+        setSavedEvents(data);
+      }
+
+      setSaveModalOpen(false);
+      setSaveTarget(null);
+      setSaveNote('');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const renderSummary = (ev: ActivityEvent): string => {
@@ -175,6 +282,8 @@ export default function ActivityFeedPage() {
     }
     // Si no hay ruta asociada, no navegar
   };
+
+  const listToRender = tab === 'saved' ? savedEvents : events;
 
   return (
     <div style={{ background: theme.bgLight, minHeight: '100vh', width: '100%', boxSizing: 'border-box' }}>
@@ -320,6 +429,36 @@ export default function ActivityFeedPage() {
         </div>
 
         <div className="flex gap-3 mb-8 flex-wrap">
+          <div className="w-full flex gap-3 mb-2">
+            <button
+              type="button"
+              onClick={() => setTab('all')}
+              style={{
+                background: tab === 'all' ? theme.primaryColor : '#fff',
+                color: tab === 'all' ? '#fff' : theme.textDark,
+                border: '1px solid #e5e7eb',
+                borderRadius: 999,
+                padding: '8px 14px',
+                fontWeight: 700,
+              }}
+            >
+              Todas
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('saved')}
+              style={{
+                background: tab === 'saved' ? theme.primaryColor : '#fff',
+                color: tab === 'saved' ? '#fff' : theme.textDark,
+                border: '1px solid #e5e7eb',
+                borderRadius: 999,
+                padding: '8px 14px',
+                fontWeight: 700,
+              }}
+            >
+              Guardadas
+            </button>
+          </div>
           {EVENT_TYPES.map(({ type, label }) => (
             <label key={type} style={{
               display: 'flex', alignItems: 'center', gap: 8, fontWeight: 500, fontSize: 16,
@@ -346,11 +485,11 @@ export default function ActivityFeedPage() {
         )}
         {loading ? (
           <div style={{ color: theme.textMuted, fontSize: 18, textAlign: 'center', margin: '40px 0' }}>Cargando...</div>
-        ) : events.length === 0 ? (
+        ) : listToRender.length === 0 ? (
           <div style={{ color: theme.textMuted, fontSize: 20, textAlign: 'center', margin: '60px 0' }}>Sin novedades recientes</div>
         ) : (
           <ul style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            {events.map((ev) => (
+            {listToRender.map((ev) => (
               <li
                 key={ev.id}
                 style={{
@@ -361,8 +500,49 @@ export default function ActivityFeedPage() {
                 }}
                 onClick={() => ev.entity_id && (ev.entity_type === 'Resident' || ev.entity_type === 'Patient' || ev.entity_type === 'MedicationPlan' || ev.entity_type === 'MedicationAdministration') && navigateToEntity(ev)}
               >
-                <div style={{ fontWeight: 600, fontSize: 18, color: theme.primaryColor }}>{renderTitle(ev)}</div>
+                <div className="flex items-start justify-between gap-3">
+                  <div style={{ fontWeight: 600, fontSize: 18, color: theme.primaryColor }}>{renderTitle(ev)}</div>
+                  <button
+                    type="button"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (!facility) return;
+                      const isSaved = !!ev.is_saved;
+                      if (isSaved) {
+                        await doUnsave(ev);
+                      } else {
+                        openSaveModal(ev);
+                      }
+                    }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 20,
+                      color: ev.is_saved ? theme.primaryColor : theme.textMuted,
+                      lineHeight: 1,
+                    }}
+                    aria-label={ev.is_saved ? 'Desguardar' : 'Guardar'}
+                    title={ev.is_saved ? 'Desguardar' : 'Guardar'}
+                  >
+                    {ev.is_saved ? '★' : '☆'}
+                  </button>
+                </div>
                 <div style={{ fontSize: 15, color: theme.textDark, marginTop: 6 }}>{renderSummary(ev)}</div>
+                {ev.is_saved && (ev.saved_note || ev.saved_expires_at) ? (
+                  <div style={{ marginTop: 8 }}>
+                    {ev.saved_note ? (
+                      <div style={{ fontSize: 13, color: theme.textDark, opacity: 0.9 }}>
+                        Nota: {String(ev.saved_note)}
+                      </div>
+                    ) : null}
+                    {ev.saved_expires_at ? (
+                      <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                        Guardada hasta: {new Date(String(ev.saved_expires_at)).toLocaleString('es-AR')}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
                 <div style={{ fontSize: 13, color: theme.textMuted, marginTop: 6 }}>{new Date(ev.created_at).toLocaleString('es-AR')}</div>
               </li>
             ))}
@@ -370,6 +550,78 @@ export default function ActivityFeedPage() {
         )}
       </div>
       {/* BottomNav eliminado para esta página */}
+
+      <Modal
+        isOpen={saveModalOpen}
+        onClose={() => {
+          setSaveModalOpen(false);
+          setSaveTarget(null);
+          setSaveNote('');
+        }}
+        title={saveTarget?.is_saved ? 'Editar nota' : 'Guardar noticia'}
+        size="md"
+      >
+        <div className="space-y-3">
+          <div className="text-sm text-gray-600">
+            Podés agregar una nota. La noticia quedará guardada por 7 días.
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Nota</label>
+            <textarea
+              value={saveNote}
+              onChange={(e) => setSaveNote(e.target.value)}
+              rows={4}
+              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ej: revisar con enfermería / llamar a familiar / etc."
+              disabled={saving}
+            />
+          </div>
+          <div className="flex gap-2 justify-end">
+            {saveTarget?.is_saved ? (
+              <button
+                type="button"
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700"
+                disabled={saving}
+                onClick={async () => {
+                  if (!saveTarget) return;
+                  setSaving(true);
+                  try {
+                    await doUnsave(saveTarget);
+                    setSaveModalOpen(false);
+                    setSaveTarget(null);
+                    setSaveNote('');
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+              >
+                Desguardar
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700"
+              disabled={saving}
+              onClick={() => {
+                setSaveModalOpen(false);
+                setSaveTarget(null);
+                setSaveNote('');
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="px-4 py-2 rounded-lg text-white font-medium"
+              style={{ background: theme.primaryColor }}
+              disabled={saving}
+              onClick={doSave}
+            >
+              {saving ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

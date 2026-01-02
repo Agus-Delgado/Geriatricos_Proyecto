@@ -8,4 +8,7 @@ export interface ActivityEvent {
   summary?: string | null;
   meta?: Record<string, unknown> | null;
   created_at: string;
+  is_saved?: boolean;
+  saved_note?: string | null;
+  saved_expires_at?: string | null;
 }

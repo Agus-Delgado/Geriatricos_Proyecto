@@ -24,3 +24,21 @@ class ActivityEvent(Base):
         Index("ix_activity_events_event_type_created", "event_type", "created_at"),
     )
 
+
+class ActivityEventSave(Base):
+    __tablename__ = "activity_event_saves"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    facility_id = Column(UUID(as_uuid=True), ForeignKey("facilities.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    activity_event_id = Column(UUID(as_uuid=True), ForeignKey("activity_events.id"), nullable=False)
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_activity_event_saves_facility_created", "facility_id", "created_at"),
+        Index("ix_activity_event_saves_user_expires", "user_id", "expires_at"),
+        Index("uix_activity_event_saves_user_event", "user_id", "activity_event_id", unique=True),
+    )
+

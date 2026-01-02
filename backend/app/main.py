@@ -205,6 +205,37 @@ async def startup_event():
                     "CREATE UNIQUE INDEX IF NOT EXISTS uix_shift_assignment_unique ON shift_assignments (staff_id, shift_id, date)"
                 )
             )
+
+            db.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS activity_event_saves (
+                        id UUID PRIMARY KEY,
+                        facility_id UUID NOT NULL,
+                        user_id UUID NOT NULL,
+                        activity_event_id UUID NOT NULL,
+                        note TEXT,
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+                    )
+                    """
+                )
+            )
+            db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_activity_event_saves_facility_created ON activity_event_saves (facility_id, created_at)"
+                )
+            )
+            db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_activity_event_saves_user_expires ON activity_event_saves (user_id, expires_at)"
+                )
+            )
+            db.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uix_activity_event_saves_user_event ON activity_event_saves (user_id, activity_event_id)"
+                )
+            )
             db.commit()
         finally:
             db.close()

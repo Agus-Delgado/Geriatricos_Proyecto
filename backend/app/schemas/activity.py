@@ -15,6 +15,9 @@ class ActivityEventResponse(BaseModel):
     summary: Optional[str]
     meta: Optional[Any] = Field(default=None, validation_alias='meta')
     created_at: datetime
+    is_saved: bool = False
+    saved_note: Optional[str] = None
+    saved_expires_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -24,4 +27,17 @@ class ActivityQuery(BaseModel):
     since: Optional[datetime] = None
     limit: Optional[int] = 50
     event_types: Optional[List[str]] = None
+
+
+class SaveActivityEventRequest(BaseModel):
+    note: Optional[str] = None
+
+
+class SaveActivityEventResponse(BaseModel):
+    message: str
+    expires_at: datetime
+
+
+class UnsaveActivityEventResponse(BaseModel):
+    message: str
 

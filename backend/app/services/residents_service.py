@@ -56,7 +56,7 @@ def create_resident(db: Session, resident_data: ResidentCreate, user_id: UUID) -
         entity_type="Resident",
         entity_id=resident.id,
         summary=f"Alta de paciente: {resident.last_name}, {resident.first_name}",
-        meta={"resident_id": str(resident.id), "dni": resident.dni},
+        event_metadata={"resident_id": str(resident.id), "dni": resident.dni},
     )
     db.commit()
     db.refresh(resident)
@@ -134,7 +134,6 @@ def update_resident(
     )
     db.add(audit_log)
     # Activity feed
-    from fastapi.encoders import jsonable_encoder
     try:
         if "status" in update_data_json:
             log_event(
@@ -145,7 +144,7 @@ def update_resident(
                 entity_type="Resident",
                 entity_id=resident.id,
                 summary=f"Estado paciente: {update_data_json['status']}",
-                meta={"changes": {"status": update_data_json["status"]}},
+                event_metadata={"changes": {"status": update_data_json["status"]}},
             )
         else:
             log_event(
@@ -156,7 +155,7 @@ def update_resident(
                 entity_type="Resident",
                 entity_id=resident.id,
                 summary=f"Edición de paciente: {resident.last_name}, {resident.first_name}",
-                meta={"changes": update_data_json},
+                event_metadata={"changes": update_data_json},
             )
     except Exception as e:
         import logging

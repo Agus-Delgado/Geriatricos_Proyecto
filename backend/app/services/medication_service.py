@@ -38,7 +38,6 @@ def create_medication_plan(
     )
     db.add(audit_log)
     # Activity feed
-    from fastapi.encoders import jsonable_encoder
     log_event(
         db,
         facility_id=facility_id,
@@ -47,7 +46,7 @@ def create_medication_plan(
         entity_type="MedicationPlan",
         entity_id=plan.id,
         summary=f"Nuevo plan: {plan_data.med_name}",
-        meta=jsonable_encoder({"resident_id": str(resident_id), "dose": plan_data.dose}),
+        event_metadata={"resident_id": str(resident_id), "dose": plan_data.dose},
     )
     db.commit()
     db.refresh(plan)
@@ -112,7 +111,7 @@ def update_medication_plan(
         entity_type="MedicationPlan",
         entity_id=plan.id,
         summary="Actualización plan de medicación",
-        meta={"changes": update_data_json},
+        event_metadata={"changes": update_data_json},
     )
     db.commit()
     db.refresh(plan)

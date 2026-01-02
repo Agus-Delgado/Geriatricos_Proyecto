@@ -25,7 +25,7 @@ def create_staff(db: Session, staff_data: StaffCreate, created_by_user_id: UUID)
         entity_type="Staff",
         entity_id=staff.id,
         summary=f"Alta de personal: {staff.last_name}, {staff.first_name}",
-        meta={"staff_id": str(staff.id), "dni": staff.dni},
+        event_metadata={"staff_id": str(staff.id), "dni": staff.dni},
     )
     db.commit()
     db.refresh(staff)
@@ -77,13 +77,18 @@ def update_staff(
 ) -> Staff:
     """Actualizar personal"""
     staff = get_staff_by_id(db, staff_id)
+
+    # Get Python objects for setting attributes
     update_data = staff_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(staff, field, value)
 
+    # Get JSON-serializable version for activity log
+    update_data_json = staff_data.model_dump(mode="json", exclude_unset=True)
+
     # Log activity event
     if actor_user_id:
-        if "is_active" in update_data and update_data["is_active"] is False:
+        if "is_active" in update_data_json and update_data_json["is_active"] is False:
             log_event(
                 db,
                 facility_id=staff.facility_id,
@@ -92,7 +97,7 @@ def update_staff(
                 entity_type="Staff",
                 entity_id=staff.id,
                 summary=f"Baja de personal: {staff.last_name}, {staff.first_name}",
-                meta={"changes": update_data},
+                event_metadata={"changes": update_data_json},
             )
         else:
             log_event(
@@ -103,7 +108,7 @@ def update_staff(
                 entity_type="Staff",
                 entity_id=staff.id,
                 summary=f"Edición de personal: {staff.last_name}, {staff.first_name}",
-                meta={"changes": update_data},
+                event_metadata={"changes": update_data_json},
             )
 
     db.commit()

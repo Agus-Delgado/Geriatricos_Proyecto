@@ -158,6 +158,53 @@ async def startup_event():
             # Columnas de auditoría (pueden faltar en DBs sin migraciones)
             db.execute(text("ALTER TABLE staff ADD COLUMN IF NOT EXISTS created_by_user_id UUID"))
             db.execute(text("ALTER TABLE staff ADD COLUMN IF NOT EXISTS updated_by_user_id UUID"))
+
+            db.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS shifts (
+                        id UUID PRIMARY KEY,
+                        facility_id UUID NOT NULL,
+                        name VARCHAR(64) NOT NULL,
+                        start_time TIME NOT NULL,
+                        end_time TIME NOT NULL,
+                        color VARCHAR(16),
+                        is_active BOOLEAN NOT NULL DEFAULT true,
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+                    )
+                    """
+                )
+            )
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_shifts_facility_id ON shifts (facility_id)"))
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_shifts_active ON shifts (is_active)"))
+
+            db.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS shift_assignments (
+                        id UUID PRIMARY KEY,
+                        staff_id UUID NOT NULL,
+                        shift_id UUID NOT NULL,
+                        facility_id UUID NOT NULL,
+                        date DATE NOT NULL,
+                        notes VARCHAR(256),
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        created_by_user_id UUID
+                    )
+                    """
+                )
+            )
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_shift_assignments_staff_id ON shift_assignments (staff_id)"))
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_shift_assignments_shift_id ON shift_assignments (shift_id)"))
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_shift_assignments_facility_id ON shift_assignments (facility_id)"))
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_shift_assignments_date ON shift_assignments (date)"))
+            db.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uix_shift_assignment_unique ON shift_assignments (staff_id, shift_id, date)"
+                )
+            )
             db.commit()
         finally:
             db.close()

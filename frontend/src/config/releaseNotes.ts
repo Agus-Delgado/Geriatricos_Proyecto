@@ -10,9 +10,9 @@ export interface ReleaseNotes {
 }
 
 export const CURRENT_RELEASE_NOTES: ReleaseNotes = {
-  version: '2026.01.03',
+  version: __APP_BUILD_ID__,
   title: 'Novedades y mejoras recientes',
-  date: '03/01/2026',
+  date: __APP_BUILD_TIME__,
   roles: ['OWNER', 'DOCTOR', 'ADMIN', 'MEDICO'],
   highlights: [
     'Nuevo informe imprimible de personal (turnos + asistencias).',

@@ -15,13 +15,22 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({
   notes,
 }) => {
   const accent = 'var(--facility-accent, #2563eb)';
+  const prettyDate = (() => {
+    try {
+      const d = new Date(notes.date);
+      if (Number.isNaN(d.getTime())) return notes.date;
+      return d.toLocaleString('es-AR');
+    } catch {
+      return notes.date;
+    }
+  })();
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={notes.title} size="lg">
       <div className="space-y-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-sm text-gray-600">
-            Versión <span className="font-semibold text-gray-900">{notes.version}</span> · {notes.date}
+            Versión <span className="font-semibold text-gray-900">{notes.version}</span> · {prettyDate}
           </div>
           <div
             className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"

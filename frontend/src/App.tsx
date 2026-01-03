@@ -19,6 +19,7 @@ import { AdminUsersPage } from './pages/AdminUsersPage';
 import { ImpersonationBanner } from './components/admin/ImpersonationBanner';
 import { ReleaseNotesModal } from './components/pwa/ReleaseNotesModal';
 import { CURRENT_RELEASE_NOTES } from './config/releaseNotes';
+import { BugReportFab } from './components/support/BugReportFab';
 import GeriatricDashboardPage from './pages/GeriatricDashboardPage';
 import GeriatricTasksPage from './pages/GeriatricTasksPage';
 import GeriatricMedicalPage from './pages/GeriatricMedicalPage';
@@ -96,6 +97,7 @@ function AppContent() {
       <UnauthorizedHandler />
       <SessionExpiredHandler />
       <ImpersonationBanner />
+      <BugReportFab />
       <ReleaseNotesModal
         isOpen={isReleaseNotesOpen}
         onClose={handleCloseReleaseNotes}

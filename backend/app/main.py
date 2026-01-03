@@ -9,7 +9,7 @@ from app.api.routes import (
     auth, facilities, residents, resident_contacts, clinical, medications, prescriptions,
     agenda,
     documents, certificates, external_platforms, resident_external_events, finance,
-    staff, attendance, admin, dashboard, activity, shifts, push
+    staff, attendance, admin, dashboard, activity, shifts, push, support
 )
 from app.db.session import SessionLocal
 from app.db.bootstrap import bootstrap_production_users
@@ -120,6 +120,7 @@ app.include_router(attendance.router)
 app.include_router(dashboard.router)
 app.include_router(activity.router)
 app.include_router(push.router)
+app.include_router(support.router)
 
 
 @app.on_event("startup")

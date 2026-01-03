@@ -2,6 +2,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const buildId =
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  process.env.GITHUB_SHA ||
+  process.env.BUILD_ID ||
+  new Date().toISOString();
+const buildTime = new Date().toISOString();
+
 export default defineConfig({
   plugins: [
     react(),
@@ -34,5 +41,9 @@ export default defineConfig({
         }
       }
     }
-  }
+  },
+  define: {
+    __APP_BUILD_ID__: JSON.stringify(buildId),
+    __APP_BUILD_TIME__: JSON.stringify(buildTime),
+  },
 })

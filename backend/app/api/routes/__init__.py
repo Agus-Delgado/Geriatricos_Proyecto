@@ -18,6 +18,7 @@ from . import residents
 from . import staff
 from . import activity
 from . import push
+from . import support
 
 __all__ = [
     "admin",
@@ -39,4 +40,5 @@ __all__ = [
     "staff",
     "activity",
     "push",
+    "support",
 ]

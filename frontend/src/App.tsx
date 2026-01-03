@@ -43,6 +43,7 @@ import PrescriptionsHistorySearchPage from './pages/PrescriptionsHistorySearchPa
 import PrescriptionsHistoryPage from './pages/PrescriptionsHistoryPage';
 import PrescriptionPrintPage from './pages/PrescriptionPrintPage';
 import ResidentPrintPage from './pages/ResidentPrintPage';
+import StaffPrintPage from './pages/StaffPrintPage';
 import ActivityFeedPage from './pages/ActivityFeedPage';
 import MyAccountPage from './pages/MyAccountPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -205,6 +206,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route path="/staff/:id/print" element={<StaffPrintPage />} />
 
         {/* Asistencia (solo OWNER) */}
         <Route

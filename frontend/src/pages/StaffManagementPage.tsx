@@ -10,6 +10,7 @@ import type { Staff, StaffCreate, StaffUpdate } from '../types/staff';
 import type { ApiError } from '../api/client';
 import { STAFF_POSITIONS, STAFF_STATUS } from '../types/staff';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export const StaffManagementPage: React.FC = () => {
   const [staff, setStaff] = useState<Staff[]>([]);
@@ -25,6 +26,7 @@ export const StaffManagementPage: React.FC = () => {
   const [transferFacilityId, setTransferFacilityId] = useState<string>('');
   const { facility } = useFacility();
   const { getMemberships } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (facility) {
@@ -223,6 +225,12 @@ export const StaffManagementPage: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => navigate(`/staff/${member.id}/print`)}
+                      className="px-3 py-1 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      Imprimir informe
+                    </button>
                     <button
                       onClick={() => handleTransferStaff(member)}
                       className="px-3 py-1 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"

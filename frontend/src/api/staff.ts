@@ -1,5 +1,6 @@
 import { apiClient } from './client';
 import type { Staff, StaffCreate, StaffUpdate } from '../types/staff';
+import type { StaffReportResponse } from '../types/staffReport';
 
 export const staffApi = {
   list: async (facilityId: string, params?: { active_only?: boolean; q?: string }): Promise<Staff[]> => {
@@ -30,5 +31,10 @@ export const staffApi = {
     const queryParams = new URLSearchParams();
     queryParams.append('to_facility_id', toFacilityId);
     return apiClient.post<Staff>(`/staff/${staffId}/transfer?${queryParams.toString()}`);
+  },
+
+  getReport: async (staffId: string, params: { from_date: string; to_date: string }): Promise<StaffReportResponse> => {
+    const sp = new URLSearchParams({ from_date: params.from_date, to_date: params.to_date });
+    return apiClient.get<StaffReportResponse>(`/staff/${staffId}/report?${sp.toString()}`);
   },
 };

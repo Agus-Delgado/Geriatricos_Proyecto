@@ -90,6 +90,10 @@ export default function GeriatricMedicalPage() {
       navigate('/clinical-history/search');
     } else if (action === 'historial-recetas') {
       navigate('/prescriptions-history/search');
+    } else if (action === 'residents') {
+      navigate('/residents');
+    } else if (action === 'medication-due') {
+      navigate('/medication-due');
     }
   };
 
@@ -143,7 +147,7 @@ export default function GeriatricMedicalPage() {
           }} />
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
             {/* Carpeta Médica */}
             <button
               onClick={() => handleQuickAction('carpeta-medica')}
@@ -157,6 +161,19 @@ export default function GeriatricMedicalPage() {
               </p>
             </button>
 
+            {/* Residentes */}
+            <button
+              onClick={() => handleQuickAction('residents')}
+              className="group relative rounded-xl shadow-lg p-6 text-left hover:shadow-xl transition-all duration-300 transform hover:scale-105 border border-gray-200"
+              style={{ backgroundColor: 'var(--facility-card, white)' }}
+            >
+              <div className="text-4xl mb-3">👥</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Residentes</h3>
+              <p className="text-sm text-gray-600">
+                Ver, editar y gestionar residentes
+              </p>
+            </button>
+
             {/* Historia Clínica */}
             <button
               onClick={() => handleQuickAction('historia-clinica')}
@@ -167,6 +184,19 @@ export default function GeriatricMedicalPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Historia Clínica</h3>
               <p className="text-sm text-gray-600">
                 Ver y gestionar historias clínicas
+              </p>
+            </button>
+
+            {/* Medicaciones */}
+            <button
+              onClick={() => handleQuickAction('medication-due')}
+              className="group relative rounded-xl shadow-lg p-6 text-left hover:shadow-xl transition-all duration-300 transform hover:scale-105 border border-gray-200"
+              style={{ backgroundColor: 'var(--facility-card, white)' }}
+            >
+              <div className="text-4xl mb-3">⏰💊</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Medicaciones</h3>
+              <p className="text-sm text-gray-600">
+                Ver medicaciones a administrar hoy
               </p>
             </button>
 

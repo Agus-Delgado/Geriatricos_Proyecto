@@ -51,13 +51,11 @@ import MyAccountPage from './pages/MyAccountPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import { OwnerDashboardPage } from './pages/OwnerDashboardPage';
 import { useAuth } from './contexts/AuthContext';
-import { useFacility } from './contexts/FacilityContext';
 
 function AppContent() {
   useFacilityTheme();
   const location = useLocation();
-  const { user, isOwner, isDoctor, isPlatformAdmin, getActiveRole } = useAuth();
-  const { facility } = useFacility();
+  const { user, isOwner, isDoctor, isPlatformAdmin, getActiveRole, activeFacilityId } = useAuth();
   const [isReleaseNotesOpen, setIsReleaseNotesOpen] = useState(false);
   
   const isPublic = location.pathname.startsWith('/login') ||
@@ -66,7 +64,7 @@ function AppContent() {
   useEffect(() => {
     if (isPublic) return;
     if (!user) return;
-    if (!facility) return;
+    if (!activeFacilityId) return;
     const activeRole = getActiveRole();
     const canSee =
       isOwner ||
@@ -83,7 +81,7 @@ function AppContent() {
     if (lastSeen !== CURRENT_RELEASE_NOTES.version) {
       setIsReleaseNotesOpen(true);
     }
-  }, [facility, getActiveRole, isDoctor, isOwner, isPlatformAdmin, isPublic, location.pathname, user]);
+  }, [activeFacilityId, getActiveRole, isDoctor, isOwner, isPlatformAdmin, isPublic, location.pathname, user]);
 
   const handleCloseReleaseNotes = () => {
     if (user) {

@@ -126,63 +126,54 @@ export default function ClinicalHistoryPrintPage() {
           {/* Título */}
           <div className="print-title">HISTORIA CLÍNICA</div>
 
+          <div className="print-meta">
+            <div>
+              <strong>Paciente:</strong> {patient.last_name}, {patient.first_name}
+            </div>
+            <div>
+              <strong>Generado:</strong> {new Date().toLocaleString('es-AR')}
+            </div>
+          </div>
+
           {/* Datos del paciente */}
           <div className="print-body">
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '14pt', fontWeight: 600, marginBottom: '10px' }}>
-                Datos del Paciente
-              </h3>
-              <p style={{ marginBottom: '5px' }}>
-                <strong>Nombre:</strong> {patient.last_name}, {patient.first_name}
-              </p>
-              <p style={{ marginBottom: '5px' }}>
-                <strong>DNI:</strong> {patient.dni || 'N/A'}
-              </p>
-              {age !== null && (
-                <p style={{ marginBottom: '5px' }}>
-                  <strong>Edad:</strong> {age} años
-                </p>
-              )}
-              {patient.coverage_type && (
-                <p style={{ marginBottom: '5px' }}>
-                  <strong>Obra Social:</strong> {patient.coverage_type}
-                </p>
-              )}
+            <div className="print-card" style={{ marginBottom: 16 }}>
+              <div className="print-section-title">Datos del Paciente</div>
+              <div className="print-kv-grid">
+                <div className="print-kv">
+                  <div className="print-kv-label">Nombre</div>
+                  <div className="print-kv-value">{patient.last_name}, {patient.first_name}</div>
+                </div>
+                <div className="print-kv">
+                  <div className="print-kv-label">DNI</div>
+                  <div className="print-kv-value">{patient.dni || 'N/A'}</div>
+                </div>
+                <div className="print-kv">
+                  <div className="print-kv-label">Edad</div>
+                  <div className="print-kv-value">{age !== null ? `${age} años` : 'N/A'}</div>
+                </div>
+                <div className="print-kv">
+                  <div className="print-kv-label">Obra social</div>
+                  <div className="print-kv-value">{patient.coverage_type || 'N/A'}</div>
+                </div>
+              </div>
             </div>
 
             {/* Evoluciones */}
-            <div style={{ marginTop: '30px' }}>
-              <h3 style={{ fontSize: '14pt', fontWeight: 600, marginBottom: '15px' }}>
-                Evoluciones Clínicas
-              </h3>
+            <div style={{ marginTop: 18 }}>
+              <div className="print-section-title">Evoluciones clínicas</div>
               {notes.length === 0 ? (
                 <p style={{ fontStyle: 'italic', color: '#666' }}>
                   No hay evoluciones registradas.
                 </p>
               ) : (
-                <div>
-                  {notes.map((note, index) => (
-                    <div
-                      key={note.id}
-                      style={{
-                        marginBottom: '20px',
-                        paddingBottom: '15px',
-                        borderBottom: index < notes.length - 1 ? '1px solid #ddd' : 'none',
-                      }}
-                    >
-                      <p style={{ fontSize: '11pt', fontWeight: 600, marginBottom: '8px' }}>
-                        {formatDateTime(note.recorded_at)}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: '11pt',
-                          lineHeight: '1.6',
-                          whiteSpace: 'pre-wrap',
-                          marginTop: '5px',
-                        }}
-                      >
-                        {note.content}
-                      </p>
+                <div className="print-card">
+                  {notes.map((note) => (
+                    <div key={note.id} className="print-entry">
+                      <div className="print-entry-header">
+                        <div>{formatDateTime(note.recorded_at)}</div>
+                      </div>
+                      <div className="print-entry-body">{note.content}</div>
                     </div>
                   ))}
                 </div>

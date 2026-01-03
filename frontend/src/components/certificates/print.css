@@ -1,8 +1,8 @@
 @page {
-  margin: 2.5cm;
+  margin: 16mm;
 }
 body {
-  font-family: 'Segoe UI', sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   background: white;
   color: #111827;
   margin: 0;
@@ -26,8 +26,8 @@ body {
 }
 .section-title {
   font-size: 18px;
-  border-bottom: 2px solid #2563eb;
-  color: #1e40af;
+  border-bottom: 2px solid var(--primary-color, #2563eb);
+  color: var(--text-dark, #1e40af);
   margin-bottom: 15px;
   padding-bottom: 4px;
 }
@@ -47,7 +47,7 @@ body {
   padding: 10px;
   min-height: 60px;
   border-radius: 6px;
-  background: #f9fafb;
+  background: var(--bg-light, #f9fafb);
 }
 .signature-line {
   margin-top: 50px;
@@ -181,6 +181,28 @@ body {
   min-height: 150mm;
 }
 
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  font-weight: 700;
+  font-size: 10.5pt;
+  color: #111827;
+  padding: 8px 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+td {
+  font-size: 10.5pt;
+  color: #111827;
+  padding: 8px 8px;
+  vertical-align: top;
+  border-bottom: 1px solid #f1f5f9;
+}
+
 /* Base - Print Root */
 .print-root {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
@@ -200,6 +222,89 @@ body {
   margin: 12mm 0 8mm 0;
   letter-spacing: 1px;
   text-transform: uppercase;
+}
+
+.print-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 10.5pt;
+  color: #374151;
+  margin: -2mm 0 6mm 0;
+}
+
+.print-meta strong {
+  color: #111827;
+}
+
+.print-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 6mm 0;
+}
+
+.print-section-title {
+  font-size: 12pt;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--primary-color, #2563eb);
+  color: var(--text-dark, #111827);
+}
+
+.print-kv-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 18px;
+}
+
+.print-kv {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.print-kv-label {
+  font-weight: 700;
+  color: #111827;
+}
+
+.print-kv-value {
+  color: #111827;
+}
+
+.print-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.print-entry {
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.print-entry:last-child {
+  border-bottom: none;
+}
+
+.print-entry-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 10.5pt;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.print-entry-body {
+  font-size: 10.5pt;
+  line-height: 1.6;
+  color: #111827;
+  white-space: pre-wrap;
 }
 
 /* Cuerpo del documento */

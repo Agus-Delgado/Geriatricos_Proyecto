@@ -154,76 +154,62 @@ export default function MedicalFolderPrintPage() {
           {/* Título */}
           <div className="print-title">CARPETA MÉDICA</div>
 
+          <div className="print-meta">
+            <div>
+              <strong>Paciente:</strong> {patient.last_name}, {patient.first_name}
+            </div>
+            <div>
+              <strong>Generado:</strong> {new Date().toLocaleString('es-AR')}
+            </div>
+          </div>
+
           {/* Datos del paciente */}
           <div className="print-body">
-            <div style={{ marginBottom: '25px' }}>
-              <h3 style={{ fontSize: '14pt', fontWeight: 600, marginBottom: '12px' }}>
-                Datos del Paciente
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div>
-                  <p style={{ marginBottom: '5px' }}>
-                    <strong>Nombre:</strong> {patient.last_name}, {patient.first_name}
-                  </p>
-                  <p style={{ marginBottom: '5px' }}>
-                    <strong>DNI:</strong> {patient.dni || 'N/A'}
-                  </p>
-                  {age !== null && (
-                    <p style={{ marginBottom: '5px' }}>
-                      <strong>Edad:</strong> {age} años
-                    </p>
-                  )}
+            <div className="print-card" style={{ marginBottom: 16 }}>
+              <div className="print-section-title">Datos del Paciente</div>
+              <div className="print-kv-grid">
+                <div className="print-kv">
+                  <div className="print-kv-label">Nombre</div>
+                  <div className="print-kv-value">{patient.last_name}, {patient.first_name}</div>
                 </div>
-                <div>
-                  {patient.coverage_type && (
-                    <p style={{ marginBottom: '5px' }}>
-                      <strong>Obra Social:</strong> {patient.coverage_type}
-                    </p>
-                  )}
-                  {patient.coverage_number && (
-                    <p style={{ marginBottom: '5px' }}>
-                      <strong>Número:</strong> {patient.coverage_number}
-                    </p>
-                  )}
-                  <p style={{ marginBottom: '5px' }}>
-                    <strong>Fecha Ingreso:</strong> {formatDate(patient.admission_date)}
-                  </p>
+                <div className="print-kv">
+                  <div className="print-kv-label">DNI</div>
+                  <div className="print-kv-value">{patient.dni || 'N/A'}</div>
+                </div>
+                <div className="print-kv">
+                  <div className="print-kv-label">Edad</div>
+                  <div className="print-kv-value">{age !== null ? `${age} años` : 'N/A'}</div>
+                </div>
+                <div className="print-kv">
+                  <div className="print-kv-label">Ingreso</div>
+                  <div className="print-kv-value">{formatDate(patient.admission_date)}</div>
+                </div>
+                <div className="print-kv">
+                  <div className="print-kv-label">Obra social</div>
+                  <div className="print-kv-value">{patient.coverage_type || 'N/A'}</div>
+                </div>
+                <div className="print-kv">
+                  <div className="print-kv-label">N°</div>
+                  <div className="print-kv-value">{patient.coverage_number || 'N/A'}</div>
                 </div>
               </div>
             </div>
 
             {/* Evoluciones */}
             <div style={{ marginTop: '30px', marginBottom: '30px' }}>
-              <h3 style={{ fontSize: '14pt', fontWeight: 600, marginBottom: '15px' }}>
-                Evoluciones Clínicas ({evolutions.length})
-              </h3>
+              <div className="print-section-title">Evoluciones clínicas ({evolutions.length})</div>
               {evolutions.length === 0 ? (
                 <p style={{ fontStyle: 'italic', color: '#666' }}>
                   No hay evoluciones registradas.
                 </p>
               ) : (
-                <div>
-                  {evolutions.slice(0, 10).map((note, index) => (
-                    <div
-                      key={note.id}
-                      style={{
-                        marginBottom: '15px',
-                        paddingBottom: '12px',
-                        borderBottom: index < Math.min(evolutions.length, 10) - 1 ? '1px solid #ddd' : 'none',
-                      }}
-                    >
-                      <p style={{ fontSize: '11pt', fontWeight: 600, marginBottom: '6px' }}>
-                        {formatDateTime(note.recorded_at)}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: '11pt',
-                          lineHeight: '1.6',
-                          whiteSpace: 'pre-wrap',
-                        }}
-                      >
-                        {note.content}
-                      </p>
+                <div className="print-card">
+                  {evolutions.slice(0, 10).map((note) => (
+                    <div key={note.id} className="print-entry">
+                      <div className="print-entry-header">
+                        <div>{formatDateTime(note.recorded_at)}</div>
+                      </div>
+                      <div className="print-entry-body">{note.content}</div>
                     </div>
                   ))}
                 </div>
@@ -232,37 +218,26 @@ export default function MedicalFolderPrintPage() {
 
             {/* Recetas */}
             <div style={{ marginTop: '30px', marginBottom: '30px' }}>
-              <h3 style={{ fontSize: '14pt', fontWeight: 600, marginBottom: '15px' }}>
-                Recetas ({prescriptions.length})
-              </h3>
+              <div className="print-section-title">Recetas ({prescriptions.length})</div>
               {prescriptions.length === 0 ? (
                 <p style={{ fontStyle: 'italic', color: '#666' }}>
                   No hay recetas registradas.
                 </p>
               ) : (
-                <div>
-                  {prescriptions.slice(0, 10).map((prescription, index) => (
-                    <div
-                      key={prescription.id}
-                      style={{
-                        marginBottom: '15px',
-                        paddingBottom: '12px',
-                        borderBottom: index < Math.min(prescriptions.length, 10) - 1 ? '1px solid #ddd' : 'none',
-                      }}
-                    >
-                      <p style={{ fontSize: '11pt', fontWeight: 600, marginBottom: '6px' }}>
-                        {prescription.med_name} - {prescription.dose}
-                        {prescription.route && ` (${prescription.route})`}
-                        {prescription.is_active ? ' - Activa' : ' - Inactiva'}
-                      </p>
-                      <p style={{ fontSize: '10pt', color: '#666', marginBottom: '4px' }}>
-                        Fecha: {formatDate(prescription.created_at)}
-                      </p>
-                      {prescription.instructions && (
-                        <p style={{ fontSize: '10pt', color: '#666' }}>
-                          {prescription.instructions}
-                        </p>
-                      )}
+                <div className="print-card">
+                  {prescriptions.slice(0, 10).map((prescription) => (
+                    <div key={prescription.id} className="print-entry">
+                      <div className="print-entry-header">
+                        <div>
+                          {prescription.med_name} - {prescription.dose}
+                          {prescription.route && ` (${prescription.route})`}
+                          {prescription.is_active ? ' - Activa' : ' - Inactiva'}
+                        </div>
+                        <div>{formatDate(prescription.created_at)}</div>
+                      </div>
+                      <div className="print-entry-body">
+                        {prescription.instructions || '—'}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -270,37 +245,21 @@ export default function MedicalFolderPrintPage() {
             </div>
 
             {/* Constancias */}
-            <div style={{ marginTop: '30px', marginBottom: '30px' }}>
-              <h3 style={{ fontSize: '14pt', fontWeight: 600, marginBottom: '15px' }}>
-                Constancias ({certificates.length})
-              </h3>
+            <div style={{ marginTop: '30px' }}>
+              <div className="print-section-title">Constancias ({certificates.length})</div>
               {certificates.length === 0 ? (
                 <p style={{ fontStyle: 'italic', color: '#666' }}>
-                  No hay constancias registradas.
+                  No hay certificados registrados.
                 </p>
               ) : (
-                <div>
-                  {certificates.slice(0, 10).map((certificate, index) => (
-                    <div
-                      key={certificate.id}
-                      style={{
-                        marginBottom: '15px',
-                        paddingBottom: '12px',
-                        borderBottom: index < Math.min(certificates.length, 10) - 1 ? '1px solid #ddd' : 'none',
-                      }}
-                    >
-                      <p style={{ fontSize: '11pt', fontWeight: 600, marginBottom: '6px' }}>
-                        {getCertificateTypeLabel(certificate.certificate_type)} - {formatDate(certificate.issued_at)}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: '10pt',
-                          lineHeight: '1.6',
-                          whiteSpace: 'pre-wrap',
-                        }}
-                      >
-                        {certificate.body_text}
-                      </p>
+                <div className="print-card">
+                  {certificates.slice(0, 10).map((cert) => (
+                    <div key={cert.id} className="print-entry">
+                      <div className="print-entry-header">
+                        <div>{getCertificateTypeLabel(cert.certificate_type)}</div>
+                        <div>{formatDate(cert.issued_at)}</div>
+                      </div>
+                      <div className="print-entry-body">Emitido</div>
                     </div>
                   ))}
                 </div>

@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePWA } from '../../contexts/PWAContext';
 
 export const UpdateBanner: React.FC = () => {
   const { needRefresh, updateServiceWorker } = usePWA();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    if (needRefresh) setHidden(false);
+  }, [needRefresh]);
 
   const handleUpdate = async () => {
     if (!updateServiceWorker) return;
 
+    setHidden(true);
     setIsUpdating(true);
     try {
       await updateServiceWorker(true);
@@ -29,7 +35,7 @@ export const UpdateBanner: React.FC = () => {
     }, 600);
   };
 
-  if (!needRefresh || !updateServiceWorker) {
+  if (!needRefresh || !updateServiceWorker || hidden) {
     return null;
   }
 

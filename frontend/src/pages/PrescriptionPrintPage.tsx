@@ -117,80 +117,91 @@ export default function PrescriptionPrintPage() {
           {/* Título */}
           <div className="print-title">HISTORIAL DE RECETAS</div>
 
+          <div className="print-meta">
+            <div>
+              <strong>Paciente:</strong> {patient.last_name}, {patient.first_name}
+            </div>
+            <div>
+              <strong>Generado:</strong> {new Date().toLocaleString('es-AR')}
+            </div>
+          </div>
+
           {/* Datos del paciente */}
           <div className="print-body">
-            <div style={{ marginBottom: '25px' }}>
-              <h3 style={{ fontSize: '14pt', fontWeight: 600, marginBottom: '12px' }}>
-                Datos del Paciente
-              </h3>
-              <p style={{ marginBottom: '5px' }}>
-                <strong>Nombre:</strong> {patient.last_name}, {patient.first_name}
-              </p>
-              <p style={{ marginBottom: '5px' }}>
-                <strong>DNI:</strong> {patient.dni || 'N/A'}
-              </p>
-              {age !== null && (
-                <p style={{ marginBottom: '5px' }}>
-                  <strong>Edad:</strong> {age} años
-                </p>
-              )}
-              {patient.coverage_type && (
-                <p style={{ marginBottom: '5px' }}>
-                  <strong>Obra Social:</strong> {patient.coverage_type}
-                </p>
-              )}
+            <div className="print-card" style={{ marginBottom: 16 }}>
+              <div className="print-section-title">Datos del Paciente</div>
+              <div className="print-kv-grid">
+                <div className="print-kv">
+                  <div className="print-kv-label">Nombre</div>
+                  <div className="print-kv-value">{patient.last_name}, {patient.first_name}</div>
+                </div>
+                <div className="print-kv">
+                  <div className="print-kv-label">DNI</div>
+                  <div className="print-kv-value">{patient.dni || 'N/A'}</div>
+                </div>
+                <div className="print-kv">
+                  <div className="print-kv-label">Edad</div>
+                  <div className="print-kv-value">{age !== null ? `${age} años` : 'N/A'}</div>
+                </div>
+                <div className="print-kv">
+                  <div className="print-kv-label">Obra social</div>
+                  <div className="print-kv-value">{patient.coverage_type || 'N/A'}</div>
+                </div>
+              </div>
             </div>
 
             {/* Recetas */}
-            <div style={{ marginTop: '30px' }}>
-              <h3 style={{ fontSize: '14pt', fontWeight: 600, marginBottom: '15px' }}>
-                Recetas ({prescriptions.length})
-              </h3>
+            <div style={{ marginTop: 18 }}>
+              <div className="print-section-title">Recetas ({prescriptions.length})</div>
               {prescriptions.length === 0 ? (
                 <p style={{ fontStyle: 'italic', color: '#666' }}>
                   No hay recetas registradas.
                 </p>
               ) : (
-                <div>
+                <div className="print-card">
                   {prescriptions.map((prescription, index) => (
                     <div
                       key={prescription.id}
-                      style={{
-                        marginBottom: '20px',
-                        paddingBottom: '15px',
-                        borderBottom: index < prescriptions.length - 1 ? '1px solid #ddd' : 'none',
-                      }}
+                      className="print-entry"
                     >
-                      <p style={{ fontSize: '12pt', fontWeight: 600, marginBottom: '8px' }}>
-                        {prescription.med_name}
-                      </p>
-                      <div style={{ fontSize: '11pt', lineHeight: '1.6', marginBottom: '5px' }}>
-                        <p>
-                          <strong>Dosis:</strong> {prescription.dose}
-                        </p>
-                        {prescription.route && (
-                          <p>
-                            <strong>Vía:</strong> {prescription.route}
-                          </p>
-                        )}
-                        {prescription.instructions && (
-                          <p>
+                      <div className="print-entry-header">
+                        <div>{prescription.med_name}</div>
+                        <div>{formatDate(prescription.created_at)}</div>
+                      </div>
+                      <div className="print-entry-body">
+                        <div className="print-kv-grid">
+                          <div className="print-kv">
+                            <div className="print-kv-label">Dosis</div>
+                            <div className="print-kv-value">{prescription.dose}</div>
+                          </div>
+                          <div className="print-kv">
+                            <div className="print-kv-label">Estado</div>
+                            <div className="print-kv-value">{prescription.is_active ? 'Activa' : 'Inactiva'}</div>
+                          </div>
+                          <div className="print-kv">
+                            <div className="print-kv-label">Vía</div>
+                            <div className="print-kv-value">{prescription.route || 'N/A'}</div>
+                          </div>
+                          <div className="print-kv">
+                            <div className="print-kv-label">Período</div>
+                            <div className="print-kv-value">
+                              {prescription.start_date ? (
+                                <>
+                                  {formatDate(prescription.start_date)}
+                                  {prescription.end_date && ` - ${formatDate(prescription.end_date)}`}
+                                  {!prescription.end_date && ' (sin fecha de fin)'}
+                                </>
+                              ) : (
+                                'N/A'
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {prescription.instructions ? (
+                          <div style={{ marginTop: 8 }}>
                             <strong>Instrucciones:</strong> {prescription.instructions}
-                          </p>
-                        )}
-                        <p>
-                          <strong>Estado:</strong> {prescription.is_active ? 'Activa' : 'Inactiva'}
-                        </p>
-                        <p>
-                          <strong>Fecha:</strong> {formatDate(prescription.created_at)}
-                        </p>
-                        {prescription.start_date && (
-                          <p>
-                            <strong>Período:</strong> {formatDate(prescription.start_date)}
-                            {prescription.end_date && ` - ${formatDate(prescription.end_date)}`}
-                            {!prescription.end_date && ' (sin fecha de fin)'}
-                          </p>
-                        )}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   ))}

@@ -56,7 +56,7 @@ import { useFacility } from './contexts/FacilityContext';
 function AppContent() {
   useFacilityTheme();
   const location = useLocation();
-  const { user, isOwner, isDoctor } = useAuth();
+  const { user, isOwner, isDoctor, isPlatformAdmin, getActiveRole } = useAuth();
   const { facility } = useFacility();
   const [isReleaseNotesOpen, setIsReleaseNotesOpen] = useState(false);
   
@@ -67,7 +67,9 @@ function AppContent() {
     if (isPublic) return;
     if (!user) return;
     if (!facility) return;
-    if (!isOwner && !isDoctor) return;
+    const activeRole = getActiveRole();
+    const canSee = isOwner || isDoctor || isPlatformAdmin || activeRole === 'ADMIN';
+    if (!canSee) return;
     if (!location.pathname.startsWith('/g/')) return;
     if (location.pathname.includes('/print')) return;
 
@@ -76,7 +78,7 @@ function AppContent() {
     if (lastSeen !== CURRENT_RELEASE_NOTES.version) {
       setIsReleaseNotesOpen(true);
     }
-  }, [facility, isDoctor, isOwner, isPublic, location.pathname, user]);
+  }, [facility, getActiveRole, isDoctor, isOwner, isPlatformAdmin, isPublic, location.pathname, user]);
 
   const handleCloseReleaseNotes = () => {
     if (user) {

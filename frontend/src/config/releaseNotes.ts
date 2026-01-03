@@ -1,4 +1,4 @@
-export type ReleaseNotesRole = 'OWNER' | 'DOCTOR';
+export type ReleaseNotesRole = 'OWNER' | 'DOCTOR' | 'ADMIN';
 
 export interface ReleaseNotes {
   version: string;
@@ -13,7 +13,7 @@ export const CURRENT_RELEASE_NOTES: ReleaseNotes = {
   version: '2026.01.03',
   title: 'Novedades y mejoras recientes',
   date: '03/01/2026',
-  roles: ['OWNER', 'DOCTOR'],
+  roles: ['OWNER', 'DOCTOR', 'ADMIN'],
   highlights: [
     'Nuevo informe imprimible de personal (turnos + asistencias).',
     'Mejoras en impresión: layouts más prolijos y consistentes (carpeta médica, historia clínica, recetas y ficha del paciente).',

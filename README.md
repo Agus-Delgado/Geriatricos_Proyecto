@@ -2,6 +2,15 @@
 
 Sistema completo de gestión para hogares geriátricos desarrollado con arquitectura moderna, incluyendo backend API REST y frontend Progressive Web App (PWA) mobile-first.
 
+## Índice
+
+- [Características principales](#-características-principales)
+- [Arquitectura](#️-arquitectura-del-proyecto)
+- [Base de datos](#️-base-de-datos)
+- [Inicio rápido](#-inicio-rápido)
+- [Notificaciones Web Push (Noticias diarias)](#-notificaciones-web-push-noticias-diarias)
+- [Deploy](#-deploy)
+
 ## 📋 Descripción del Proyecto
 
 Esta plataforma está diseñada para facilitar la gestión integral de uno o múltiples hogares geriátricos, permitiendo a propietarios y profesionales de la salud administrar residentes, historiales clínicos, medicaciones, contactos de emergencia, documentos y finanzas desde una aplicación móvil moderna y fácil de usar.
@@ -55,6 +64,14 @@ El sistema está destinado a:
 - Funcionamiento offline
 - Actualizaciones automáticas con notificación al usuario
 - Optimizada para dispositivos móviles
+
+### Notificaciones Web Push (Noticias diarias)
+- Notificaciones push vía navegador (Chrome/Edge/Android) cuando hay novedades
+- **Solo para roles**: ADMIN (Owner) y MEDICO
+- Configuración desde **Mi cuenta**:
+  - Activar/Desactivar notificaciones
+  - Preferencias por tipo (ej: ediciones de pacientes, medicación, incidentes, etc.)
+  - Botón de **Notificación de prueba** (diagnóstico)
 
 ## 🏗️ Arquitectura del Proyecto
 
@@ -121,7 +138,7 @@ Geriatricos_proyecto/
 
 ## 🗄️ Base de Datos
 
-El sistema utiliza PostgreSQL con 21 tablas organizadas en los siguientes módulos:
+El sistema utiliza PostgreSQL con 23 tablas organizadas en los siguientes módulos:
 
 - **Autenticación**: users, user_roles, user_role_assignments
 - **Organización**: owner_groups, facilities, facility_user_access
@@ -133,6 +150,7 @@ El sistema utiliza PostgreSQL con 21 tablas organizadas en los siguientes módul
 - **Plataformas Externas**: external_platforms, resident_external_events
 - **Finanzas**: finance_categories, finance_transactions
 - **Auditoría**: audit_log
+- **Push**: push_subscriptions, push_preferences
 
 ## 🚀 Inicio Rápido
 
@@ -261,6 +279,14 @@ Después de ejecutar los seeds, se crean los siguientes usuarios de desarrollo:
 
 El backend puede ser desplegado en cualquier plataforma que soporte Python y PostgreSQL (Heroku, Railway, DigitalOcean, AWS, etc.).
 
+**Variables de entorno adicionales (Web Push / VAPID):**
+
+- `VAPID_PUBLIC_KEY`: clave pública VAPID
+- `VAPID_PRIVATE_KEY`: clave privada VAPID
+- `VAPID_SUBJECT`: subject VAPID (default: `mailto:soporte@geriatricos.com`)
+
+**Importante:** el backend usa `FRONTEND_URL` para construir links en payloads y algunos flujos (recomendado configurarlo en producción).
+
 ### Frontend
 
 El frontend está configurado para deploy en Vercel. Ver `frontend/README.md` para instrucciones detalladas.
@@ -276,6 +302,10 @@ El frontend está configurado para deploy en Vercel. Ver `frontend/README.md` pa
 - `VITE_MISRX_URL`: URL de MisRX para recetas (ej: `https://misrx.com.ar`)
 - `VITE_RECETO_URL`: URL de Receto para recetas (ej: `https://receto.com.ar`)
 - `VITE_PAMI_URL`: URL de PAMI (ej: `https://www.pami.org.ar`)
+
+**Requisitos para Push/PWA en producción:**
+- Servir el frontend bajo **HTTPS** (Vercel lo cumple)
+- El navegador debe permitir Service Worker y Push API
 
 **Nota:** Si las variables de entorno de links médicos no están configuradas o son inválidas, los botones correspondientes se mostrarán deshabilitados con un mensaje indicando que deben configurarse en Vercel.
 
@@ -320,15 +350,54 @@ Este es un proyecto MVP (Minimum Viable Product) desarrollado para gestionar 3 g
 - ✅ Documentos y certificados (estructura base)
 - ✅ PWA con funcionalidad offline
 - ✅ Sistema de actualizaciones PWA
+- ✅ Notificaciones Web Push (Noticias diarias)
+- ✅ Preferencias por tipo de notificación (por usuario y sede)
+- ✅ Endpoint/flujo de diagnóstico de push
 
 ### Próximas Mejoras 🔜
 - [ ] Funcionalidad completa de Documentos
 - [ ] Funcionalidad completa de Certificados
-- [ ] Notificaciones push
 - [ ] Modo offline mejorado
 - [ ] Tests unitarios e integración
 - [ ] Reportes y estadísticas
 - [ ] Exportación de datos
+
+## 🔔 Notificaciones Web Push (Noticias diarias)
+
+### ¿Qué dispara una notificación?
+
+Se generan eventos del feed de actividad y se envía push (si corresponde) cuando ocurren acciones relevantes, por ejemplo:
+
+- `PATIENT_UPDATED`: edición de paciente (ej: cambio de nombre)
+- `PATIENT_STATUS_CHANGED`: cambio de estado
+- `MEDICATION_CHANGED`: alta/edición de planes de medicación y administraciones
+- `INCIDENT_REPORTED`: incidentes
+- `CLINICAL_NOTE_CREATED`, `CLINICAL_SUMMARY_UPDATED`
+- `SHIFT_ASSIGNED`, `SHIFT_UNASSIGNED`
+- `STAFF_CREATED`, `STAFF_UPDATED`, `STAFF_ARCHIVED`, `STAFF_TRANSFERRED`
+
+### ¿Quién recibe push?
+
+- Se notifica a usuarios con rol **ADMIN** o **MEDICO** dentro de la sede (`facility_id`).
+- Las suscripciones se guardan por usuario+sede en `push_subscriptions`.
+
+### Preferencias por tipo
+
+Cada usuario puede desactivar tipos de eventos por sede (`push_preferences.disabled_event_types`).
+
+UI: **Mi cuenta → Notificaciones (Noticias diarias)**.
+
+### Notificación de prueba (diagnóstico)
+
+Desde la UI se puede disparar una prueba. Backend expone:
+
+- `POST /push/test` → retorna `{attempted, delivered, deleted}`
+
+Interpretación:
+
+- `attempted=0`: no hay suscripciones guardadas para ese usuario+sede
+- `delivered>0`: el backend intentó enviar correctamente
+- `deleted>0`: se borraron suscripciones inválidas (endpoint expirado)
 
 ## 👨‍💻 Desarrollo
 
@@ -365,5 +434,5 @@ Para preguntas o soporte, contactar con el equipo de desarrollo.
 
 ---
 
-**Versión**: 1.0.0  
-**Última actualización**: 2024
+**Versión**: 1.1.0  
+**Última actualización**: 2026

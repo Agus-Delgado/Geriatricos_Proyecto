@@ -159,7 +159,7 @@ export default function PrescriptionPrintPage() {
                 </p>
               ) : (
                 <div className="print-card">
-                  {prescriptions.map((prescription, index) => (
+                  {prescriptions.map((prescription) => (
                     <div
                       key={prescription.id}
                       className="print-entry"

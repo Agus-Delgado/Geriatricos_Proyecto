@@ -4,42 +4,34 @@ import { usePWA } from '../../contexts/PWAContext';
 export const UpdateBanner: React.FC = () => {
   const { needRefresh, updateServiceWorker } = usePWA();
   const [isUpdating, setIsUpdating] = useState(false);
+  const DISMISS_UNTIL_KEY = 'pwa_update_banner_dismissed_until';
+  const DISMISS_TTL_MS = 2 * 60 * 60 * 1000;
   const [hidden, setHidden] = useState(() => {
     try {
-      return sessionStorage.getItem('pwa_update_banner_dismissed') === '1';
+      const untilRaw = sessionStorage.getItem(DISMISS_UNTIL_KEY);
+      const until = untilRaw ? Number(untilRaw) : 0;
+      return Number.isFinite(until) && until > Date.now();
     } catch {
       return false;
     }
   });
 
   useEffect(() => {
-    if (!needRefresh) {
-      try {
-        sessionStorage.removeItem('pwa_update_banner_dismissed');
-      } catch {
-        // ignore
-      }
-      setHidden(false);
-      return;
-    }
-
+    if (!needRefresh) return;
     try {
-      if (sessionStorage.getItem('pwa_update_banner_dismissed') === '1') {
-        setHidden(true);
-        return;
-      }
+      const untilRaw = sessionStorage.getItem(DISMISS_UNTIL_KEY);
+      const until = untilRaw ? Number(untilRaw) : 0;
+      setHidden(Number.isFinite(until) && until > Date.now());
     } catch {
-      // ignore
+      setHidden(false);
     }
-
-    setHidden(false);
   }, [needRefresh]);
 
   const handleUpdate = async () => {
     if (!updateServiceWorker) return;
 
     try {
-      sessionStorage.setItem('pwa_update_banner_dismissed', '1');
+      sessionStorage.setItem(DISMISS_UNTIL_KEY, String(Date.now() + DISMISS_TTL_MS));
     } catch {
       // ignore
     }

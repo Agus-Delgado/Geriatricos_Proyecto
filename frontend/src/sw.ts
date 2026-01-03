@@ -32,7 +32,6 @@ self.addEventListener('push', (event: PushEvent) => {
       data: { url },
       badge: '/pwa-192.png',
       icon: '/pwa-192.png',
-      renotify: true,
     })
   );
 });

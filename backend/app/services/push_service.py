@@ -300,6 +300,52 @@ def notify_activity_event(
                 db.rollback()
 
 
+def send_test_push(db: Session, *, user_id: UUID, facility_id: UUID) -> Dict[str, int]:
+    """Enviar una notificación de prueba al usuario.
+
+    Retorna contadores para diagnóstico.
+    """
+    if not is_push_configured():
+        return {"attempted": 0, "delivered": 0, "deleted": 0}
+
+    subs = (
+        db.query(PushSubscription)
+        .filter(PushSubscription.user_id == user_id, PushSubscription.facility_id == facility_id)
+        .all()
+    )
+    if not subs:
+        return {"attempted": 0, "delivered": 0, "deleted": 0}
+
+    facility = db.query(Facility).filter(Facility.id == facility_id).first()
+    facility_name = facility.name if facility else "Hogar"
+    payload = _build_activity_push_payload(
+        facility_name=facility_name,
+        title="Notificación de prueba",
+        body="Si ves esto, el push funciona en este dispositivo.",
+        url=settings.FRONTEND_URL.rstrip("/") + "/activity",
+        tag="PUSH_TEST",
+    )
+
+    attempted = 0
+    delivered = 0
+    deleted = 0
+
+    for sub in subs:
+        attempted += 1
+        should_keep = _send_web_push(sub, payload)
+        if should_keep:
+            delivered += 1
+            continue
+        try:
+            db.delete(sub)
+            db.commit()
+            deleted += 1
+        except Exception:
+            db.rollback()
+
+    return {"attempted": attempted, "delivered": delivered, "deleted": deleted}
+
+
 def notify_activity_from_event(
     db: Session,
     *,

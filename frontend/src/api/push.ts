@@ -29,6 +29,16 @@ export interface PushPreferencesUpdateRequest {
   disabled_event_types: string[];
 }
 
+export interface PushTestRequest {
+  facility_id: string;
+}
+
+export interface PushTestResponse {
+  attempted: number;
+  delivered: number;
+  deleted: number;
+}
+
 export const pushApi = {
   getVapidPublicKey: async (): Promise<string> => {
     const res = await apiClient.get<PushPublicKeyResponse>('/push/vapid-public-key');
@@ -50,6 +60,10 @@ export const pushApi = {
 
   updatePreferences: async (payload: PushPreferencesUpdateRequest): Promise<PushPreferencesResponse> => {
     return apiClient.post<PushPreferencesResponse>('/push/preferences', payload);
+  },
+
+  testPush: async (payload: PushTestRequest): Promise<PushTestResponse> => {
+    return apiClient.post<PushTestResponse>('/push/test', payload);
   },
 };
 

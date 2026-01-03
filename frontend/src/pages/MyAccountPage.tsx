@@ -21,6 +21,8 @@ export default function MyAccountPage() {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [prefsLoading, setPrefsLoading] = useState(false);
   const [disabledEventTypes, setDisabledEventTypes] = useState<Set<string>>(new Set());
+  const [pushTestLoading, setPushTestLoading] = useState(false);
+  const [pushTestResult, setPushTestResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   
@@ -81,6 +83,42 @@ export default function MyAccountPage() {
 
   const getEligibleMemberships = () =>
     (user?.memberships || []).filter((m) => m.is_active && (m.role === 'ADMIN' || m.role === 'MEDICO'));
+
+  const getPreferredFacilityIdForPush = (): string | null => {
+    const memberships = getEligibleMemberships();
+    if (memberships.length === 0) return null;
+    if (activeFacilityId && memberships.some((m) => m.facility_id === activeFacilityId)) {
+      return activeFacilityId;
+    }
+    return memberships[0].facility_id;
+  };
+
+  const handleTestPush = async () => {
+    setError(null);
+    setSuccess(null);
+    setPushTestResult(null);
+    setPushTestLoading(true);
+    try {
+      if (!canUsePush()) {
+        setError('Solo ADMIN y MÉDICO pueden probar notificaciones.');
+        return;
+      }
+      const facilityId = getPreferredFacilityIdForPush();
+      if (!facilityId) {
+        setError('No tenés una sede activa con rol ADMIN/MÉDICO.');
+        return;
+      }
+
+      const res = await pushApi.testPush({ facility_id: facilityId });
+      setPushTestResult(`attempted=${res.attempted}, delivered=${res.delivered}, deleted=${res.deleted}`);
+      setSuccess('Se envió la notificación de prueba.');
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.detail || 'Error al enviar notificación de prueba');
+    } finally {
+      setPushTestLoading(false);
+    }
+  };
 
   useEffect(() => {
     const loadPrefs = async () => {
@@ -490,6 +528,24 @@ export default function MyAccountPage() {
             </Button>
           )}
         </div>
+
+        {canUsePush() ? (
+          <div className="pt-3">
+            <Button onClick={handleTestPush} fullWidth disabled={pushTestLoading || pushLoading || !pushEnabled}>
+              {pushTestLoading ? 'Enviando prueba...' : 'Enviar notificación de prueba'}
+            </Button>
+            {pushTestResult ? (
+              <div className="mt-2 text-xs text-gray-600" style={{ color: 'var(--facility-text, #4b5563)' }}>
+                {pushTestResult}
+              </div>
+            ) : null}
+            {!pushEnabled ? (
+              <div className="mt-2 text-xs text-gray-600" style={{ color: 'var(--facility-text, #4b5563)' }}>
+                Activá notificaciones para habilitar la prueba.
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {canUsePush() ? (
           <div className="mt-5">

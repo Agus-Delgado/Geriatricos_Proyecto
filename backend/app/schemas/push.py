@@ -36,3 +36,13 @@ class PushPreferencesResponse(BaseModel):
 class PushPreferencesUpdateRequest(BaseModel):
     facility_id: UUID
     disabled_event_types: List[str]
+
+
+class PushTestRequest(BaseModel):
+    facility_id: UUID
+
+
+class PushTestResponse(BaseModel):
+    attempted: int
+    delivered: int
+    deleted: int

@@ -13,6 +13,8 @@ from app.schemas.push import (
     PushGenericResponse,
     PushPreferencesResponse,
     PushPreferencesUpdateRequest,
+    PushTestRequest,
+    PushTestResponse,
 )
 from app.services.push_service import (
     get_vapid_public_key,
@@ -20,6 +22,7 @@ from app.services.push_service import (
     delete_subscription,
     get_push_preferences,
     upsert_push_preferences,
+    send_test_push,
 )
 
 router = APIRouter(prefix="/push", tags=["push"])
@@ -129,3 +132,20 @@ async def update_preferences(
     )
     disabled = pref.disabled_event_types if isinstance(pref.disabled_event_types, list) else []
     return PushPreferencesResponse(facility_id=payload.facility_id, disabled_event_types=disabled)
+
+
+@router.post("/test", response_model=PushTestResponse)
+async def test_push(
+    payload: PushTestRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    require_facility_access(payload.facility_id)(current_user, db)
+    _require_admin_or_medico(db, user=current_user, facility_id=payload.facility_id)
+
+    result = send_test_push(db, user_id=current_user.id, facility_id=payload.facility_id)
+    return PushTestResponse(
+        attempted=int(result.get("attempted", 0)),
+        delivered=int(result.get("delivered", 0)),
+        deleted=int(result.get("deleted", 0)),
+    )

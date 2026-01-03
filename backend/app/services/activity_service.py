@@ -6,6 +6,38 @@ from typing import Optional, List, Any, Tuple
 from app.models.activity import ActivityEvent, ActivityEventSave
 
 
+def cleanup_old_activity(
+    db: Session,
+    *,
+    facility_id: UUID,
+    keep_days: int = 30,
+    now: Optional[datetime] = None,
+) -> None:
+    now_dt = now or datetime.utcnow()
+
+    # 1) Borrar guardados vencidos
+    db.query(ActivityEventSave).filter(
+        ActivityEventSave.facility_id == facility_id,
+        ActivityEventSave.expires_at <= now_dt,
+    ).delete(synchronize_session=False)
+
+    # 2) Borrar eventos viejos (pero solo si nadie los tiene guardados)
+    cutoff = now_dt - timedelta(days=keep_days)
+    has_any_save = (
+        db.query(ActivityEventSave.id)
+        .filter(ActivityEventSave.activity_event_id == ActivityEvent.id)
+        .exists()
+    )
+
+    db.query(ActivityEvent).filter(
+        ActivityEvent.facility_id == facility_id,
+        ActivityEvent.created_at < cutoff,
+        ~has_any_save,
+    ).delete(synchronize_session=False)
+
+    db.commit()
+
+
 def log_event(
     db: Session,
     *,
@@ -18,12 +50,25 @@ def log_event(
     event_metadata: Optional[Any] = None,
 ) -> ActivityEvent:
     from fastapi.encoders import jsonable_encoder
+
+    et = str(event_type or "").strip()
+    if et:
+        et = et.upper()
+    else:
+        et = event_type
+
+    ent = str(entity_type or "").strip()
+    if ent:
+        ent = ent
+    else:
+        ent = entity_type
+
     safe_meta = jsonable_encoder(event_metadata or {})
     event = ActivityEvent(
         facility_id=facility_id,
         actor_user_id=actor_user_id,
-        event_type=event_type,
-        entity_type=entity_type,
+        event_type=et,
+        entity_type=ent,
         entity_id=entity_id,
         summary=summary,
         meta=safe_meta,

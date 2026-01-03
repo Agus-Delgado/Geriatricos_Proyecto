@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 const EVENT_LABELS: Record<string, string> = {
   PATIENT_CREATED: 'Alta de paciente',
   PATIENT_UPDATED: 'Edición de paciente',
+  PATIENT_DELETED: 'Paciente Eliminado',
   PATIENT_STATUS_CHANGED: 'Cambio de estado',
   MEDICATION_CHANGED: 'Cambio de medicación',
   CLINICAL_SUMMARY_UPDATED: 'Resumen clínico actualizado',
@@ -21,6 +22,10 @@ const EVENT_LABELS: Record<string, string> = {
   SHIFT_UNASSIGNED: 'Turno removido',
   COVERAGE_UNDERSTAFFED: 'Cobertura insuficiente',
 };
+
+function normalizeEventType(v: string): string {
+  return String(v || '').trim().toUpperCase();
+}
 
 export const ActivityFeedWidget: React.FC = () => {
   const { facility } = useFacility();
@@ -58,7 +63,8 @@ export const ActivityFeedWidget: React.FC = () => {
 
   const renderSummary = (ev: ActivityEvent): string => {
     const meta: any = ev.meta || {};
-    if (ev.event_type === 'PATIENT_STATUS_CHANGED') {
+    const eventType = normalizeEventType(ev.event_type);
+    if (eventType === 'PATIENT_STATUS_CHANGED') {
       const name = meta.resident_name as string | undefined;
       const status = meta?.changes?.status as string | undefined;
       if (name && status) return `Estado: ${name} → ${status}`;
@@ -66,7 +72,7 @@ export const ActivityFeedWidget: React.FC = () => {
       if (status) return `Estado: ${status}`;
     }
 
-    if (ev.event_type === 'PATIENT_CREATED' || ev.event_type === 'PATIENT_UPDATED') {
+    if (eventType === 'PATIENT_CREATED' || eventType === 'PATIENT_UPDATED') {
       const name = meta.resident_name as string | undefined;
       if (name) return name;
     }
@@ -76,11 +82,12 @@ export const ActivityFeedWidget: React.FC = () => {
 
   const renderTitle = (ev: ActivityEvent): string => {
     const meta: any = ev.meta || {};
-    if (ev.event_type === 'PATIENT_STATUS_CHANGED') {
+    const eventType = normalizeEventType(ev.event_type);
+    if (eventType === 'PATIENT_STATUS_CHANGED') {
       const name = meta.resident_name as string | undefined;
       if (name) return `Estado: ${name}`;
     }
-    return EVENT_LABELS[ev.event_type] || ev.event_type;
+    return EVENT_LABELS[eventType] || ev.event_type;
   };
 
   if (!canView) return null;

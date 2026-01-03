@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 _EVENT_LABELS: Dict[str, str] = {
     "PATIENT_CREATED": "Alta de paciente",
     "PATIENT_UPDATED": "Edición de paciente",
+    "PATIENT_DELETED": "Paciente eliminado",
     "PATIENT_STATUS_CHANGED": "Cambio de estado",
     "MEDICATION_CHANGED": "Cambio de medicación",
     "CLINICAL_SUMMARY_UPDATED": "Resumen clínico actualizado",
@@ -35,6 +36,7 @@ _EVENT_LABELS: Dict[str, str] = {
 _NOTICIAS_DIARIAS_EVENT_TYPES = {
     "PATIENT_CREATED",
     "PATIENT_UPDATED",
+    "PATIENT_DELETED",
     "PATIENT_STATUS_CHANGED",
     "MEDICATION_CHANGED",
     "CLINICAL_SUMMARY_UPDATED",

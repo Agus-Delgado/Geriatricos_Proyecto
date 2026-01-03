@@ -9,6 +9,7 @@ import { BottomNav } from '../components/layout/BottomNav';
 const EVENT_LABELS: Record<string, string> = {
   PATIENT_CREATED: 'Alta de paciente',
   PATIENT_UPDATED: 'Edición de paciente',
+  PATIENT_DELETED: 'Paciente Eliminado',
   PATIENT_STATUS_CHANGED: 'Cambio de estado',
   MEDICATION_CHANGED: 'Cambio de medicación',
   CLINICAL_SUMMARY_UPDATED: 'Resumen clínico actualizado',
@@ -25,6 +26,7 @@ const EVENT_LABELS: Record<string, string> = {
 const EVENT_TYPES = [
   { type: 'PATIENT_CREATED', label: 'Alta de paciente' },
   { type: 'PATIENT_UPDATED', label: 'Edición de paciente' },
+  { type: 'PATIENT_DELETED', label: 'Paciente Eliminado' },
   { type: 'PATIENT_STATUS_CHANGED', label: 'Cambio de estado' },
   { type: 'MEDICATION_CHANGED', label: 'Cambio de medicación' },
   { type: 'CLINICAL_SUMMARY_UPDATED', label: 'Resumen clínico actualizado' },
@@ -96,6 +98,17 @@ function resolveThemeKey(name?: string): string {
   return 'default';
 }
 
+function normalizeEventType(v: string): string {
+  return String(v || '').trim().toUpperCase();
+}
+
+function clampPollMinutes(v: number): number {
+  if (!Number.isFinite(v)) return 30;
+  if (v < 1) return 1;
+  if (v > 1440) return 1440;
+  return Math.round(v);
+}
+
 export default function ActivityFeedPage() {
   const { facility } = useFacility();
   // Derivar clave de theme: usar name, si no id, si no default
@@ -114,12 +127,29 @@ export default function ActivityFeedPage() {
   const latestSinceRef = useRef<string | null>(null);
   const pollingRef = useRef<number | null>(null);
 
+  const pollStorageKey = `activity_poll_minutes_${facility?.id ?? 'default'}`;
+  const [pollMinutes, setPollMinutes] = useState<number>(() => {
+    const raw = window.localStorage.getItem(pollStorageKey);
+    const n = raw ? Number(raw) : 30;
+    return clampPollMinutes(n);
+  });
+
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [saveNote, setSaveNote] = useState('');
   const [saveTarget, setSaveTarget] = useState<ActivityEvent | null>(null);
   const [saving, setSaving] = useState(false);
 
   const selectedTypesKey = useMemo(() => selectedTypes.slice().sort().join(','), [selectedTypes]);
+
+  useEffect(() => {
+    const raw = window.localStorage.getItem(pollStorageKey);
+    const n = raw ? Number(raw) : 30;
+    setPollMinutes(clampPollMinutes(n));
+  }, [pollStorageKey]);
+
+  useEffect(() => {
+    window.localStorage.setItem(pollStorageKey, String(clampPollMinutes(pollMinutes)));
+  }, [pollMinutes, pollStorageKey]);
 
   useEffect(() => {
     const load = async () => {
@@ -167,7 +197,7 @@ export default function ActivityFeedPage() {
       pollingRef.current = null;
     }
 
-    const intervalMs = 30000;
+    const intervalMs = clampPollMinutes(pollMinutes) * 60 * 1000;
     pollingRef.current = window.setInterval(async () => {
       try {
         const since = latestSinceRef.current;
@@ -183,11 +213,14 @@ export default function ActivityFeedPage() {
           const byId = new Map<string, ActivityEvent>();
           for (const ev of prev) byId.set(ev.id, ev);
           for (const ev of data) byId.set(ev.id, ev);
+
           const merged = Array.from(byId.values()).sort(
             (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           );
-          latestSinceRef.current = merged?.[0]?.created_at ?? latestSinceRef.current;
-          return merged;
+
+          const trimmed = merged.slice(0, 300);
+          latestSinceRef.current = trimmed?.[0]?.created_at ?? latestSinceRef.current;
+          return trimmed;
         });
       } catch {
         // Silencioso: si falla el polling, no rompemos la UI
@@ -200,7 +233,7 @@ export default function ActivityFeedPage() {
         pollingRef.current = null;
       }
     };
-  }, [facility?.id, selectedTypesKey, tab]);
+  }, [facility?.id, selectedTypesKey, tab, pollMinutes]);
 
   const toggleType = (t: string) => {
     setSelectedTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -248,7 +281,8 @@ export default function ActivityFeedPage() {
 
   const renderSummary = (ev: ActivityEvent): string => {
     const meta: any = ev.meta || {};
-    if (ev.event_type === 'PATIENT_STATUS_CHANGED') {
+    const eventType = normalizeEventType(ev.event_type);
+    if (eventType === 'PATIENT_STATUS_CHANGED') {
       const name = meta.resident_name as string | undefined;
       const status = meta?.changes?.status as string | undefined;
       if (name && status) return `Estado: ${name} → ${status}`;
@@ -256,7 +290,7 @@ export default function ActivityFeedPage() {
       if (status) return `Estado: ${status}`;
     }
 
-    if (ev.event_type === 'PATIENT_CREATED' || ev.event_type === 'PATIENT_UPDATED') {
+    if (eventType === 'PATIENT_CREATED' || eventType === 'PATIENT_UPDATED') {
       const name = meta.resident_name as string | undefined;
       if (name) return name;
     }
@@ -266,11 +300,12 @@ export default function ActivityFeedPage() {
 
   const renderTitle = (ev: ActivityEvent): string => {
     const meta: any = ev.meta || {};
-    if (ev.event_type === 'PATIENT_STATUS_CHANGED') {
+    const eventType = normalizeEventType(ev.event_type);
+    if (eventType === 'PATIENT_STATUS_CHANGED') {
       const name = meta.resident_name as string | undefined;
       if (name) return `Estado: ${name}`;
     }
-    return EVENT_LABELS[ev.event_type] || ev.event_type;
+    return EVENT_LABELS[eventType] || ev.event_type;
   };
 
   const navigateToEntity = (ev: ActivityEvent) => {
@@ -347,6 +382,44 @@ export default function ActivityFeedPage() {
             >
               Guardadas
             </button>
+
+            {tab === 'all' ? (
+              <div className="ml-auto flex items-center gap-2">
+                <div style={{ color: theme.textMuted, fontSize: 14, fontWeight: 600 }}>Auto-actualizar</div>
+                <input
+                  type="number"
+                  min={1}
+                  max={1440}
+                  value={pollMinutes}
+                  onChange={(e) => setPollMinutes(clampPollMinutes(Number(e.target.value)))}
+                  className="w-20 border border-gray-300 rounded-lg px-2 py-1"
+                />
+                <div style={{ color: theme.textMuted, fontSize: 14 }}>min</div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="px-2 py-1 rounded border border-gray-200 text-sm"
+                    onClick={() => setPollMinutes(20)}
+                  >
+                    20
+                  </button>
+                  <button
+                    type="button"
+                    className="px-2 py-1 rounded border border-gray-200 text-sm"
+                    onClick={() => setPollMinutes(40)}
+                  >
+                    40
+                  </button>
+                  <button
+                    type="button"
+                    className="px-2 py-1 rounded border border-gray-200 text-sm"
+                    onClick={() => setPollMinutes(1440)}
+                  >
+                    1 día
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
           {EVENT_TYPES.map(({ type, label }) => (
             <label key={type} style={{

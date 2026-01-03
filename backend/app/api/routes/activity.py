@@ -11,7 +11,14 @@ from app.schemas.activity import (
     SaveActivityEventResponse,
     UnsaveActivityEventResponse,
 )
-from app.services.activity_service import list_events, get_active_saves_for_events, save_activity_event, unsave_activity_event, list_saved_events
+from app.services.activity_service import (
+    list_events,
+    get_active_saves_for_events,
+    save_activity_event,
+    unsave_activity_event,
+    list_saved_events,
+    cleanup_old_activity,
+)
 from app.models.auth import User
 from app.models.auth import UserRoleAssignment, UserRole
 
@@ -22,6 +29,7 @@ router = APIRouter(prefix="/activity", tags=["activity"])
 _NON_OWNER_ALLOWED_EVENT_TYPES = {
     "PATIENT_CREATED",
     "PATIENT_UPDATED",
+    "PATIENT_DELETED",
     "PATIENT_STATUS_CHANGED",
     "MEDICATION_CHANGED",
 }
@@ -75,6 +83,12 @@ async def get_activity(
         else:
             event_types = [t for t in event_types if t in _NON_OWNER_ALLOWED_EVENT_TYPES]
 
+    now = datetime.utcnow()
+    try:
+        cleanup_old_activity(db, facility_id=facility_id, keep_days=30, now=now)
+    except Exception:
+        pass
+
     events = list_events(
         db,
         facility_id=facility_id,
@@ -83,7 +97,6 @@ async def get_activity(
         event_types=event_types,
     )
 
-    now = datetime.utcnow()
     saves = get_active_saves_for_events(
         db,
         facility_id=facility_id,
@@ -126,6 +139,10 @@ async def get_saved_activity(
     _require_can_use_activity_feed(current_user, db, facility_id)
 
     now = datetime.utcnow()
+    try:
+        cleanup_old_activity(db, facility_id=facility_id, keep_days=30, now=now)
+    except Exception:
+        pass
     rows = list_saved_events(db, facility_id=facility_id, user_id=current_user.id, limit=limit, now=now)
 
     response: List[ActivityEventResponse] = []

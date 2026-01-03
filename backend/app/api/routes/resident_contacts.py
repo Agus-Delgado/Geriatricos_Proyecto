@@ -23,7 +23,7 @@ async def create_contact(
     db: Session = Depends(get_db)
 ):
     """Crear contacto familiar/responsable"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -50,7 +50,7 @@ async def list_contacts(
     db: Session = Depends(get_db)
 ):
     """Listar contactos de un residente"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -75,7 +75,7 @@ async def update_contact(
     db: Session = Depends(get_db)
 ):
     """Actualizar contacto"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -113,7 +113,7 @@ async def delete_contact(
     db: Session = Depends(get_db)
 ):
     """Eliminar contacto"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

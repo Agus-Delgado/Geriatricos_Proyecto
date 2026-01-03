@@ -23,6 +23,7 @@ import GeriatricMedicalPage from './pages/GeriatricMedicalPage';
 import CertificatesPage from './pages/CertificatesPage';
 import CertificatePrintPage from './pages/CertificatePrintPage';
 import { ResidentsListPage } from './pages/ResidentsListPage';
+import ResidentsTrashPage from './pages/ResidentsTrashPage';
 import { ResidentDetailPage } from './pages/ResidentDetailPage';
 import { MedicationDuePage } from './pages/MedicationDuePage';
 import { FinancePage } from './pages/FinancePage';
@@ -154,6 +155,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <ResidentsListPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/residents/trash"
+          element={
+            <ProtectedRoute>
+              <ResidentsTrashPage />
             </ProtectedRoute>
           }
         />

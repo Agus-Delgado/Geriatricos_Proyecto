@@ -38,7 +38,7 @@ async def create_medication_plan_endpoint(
     db: Session = Depends(get_db)
 ):
     """Crear plan de medicación"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -61,7 +61,7 @@ async def list_medication_plans(
     db: Session = Depends(get_db)
 ):
     """Listar planes de medicación de un residente"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -160,7 +160,7 @@ async def create_administration(
     db: Session = Depends(get_db)
 ):
     """Registrar administración de medicación (MAR)"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -183,7 +183,7 @@ async def list_administrations(
     db: Session = Depends(get_db)
 ):
     """Listar administraciones de medicación de un residente"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

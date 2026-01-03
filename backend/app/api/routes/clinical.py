@@ -30,7 +30,7 @@ async def get_clinical_summary(
     db: Session = Depends(get_db)
 ):
     """Obtener resumen clínico del residente"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -60,7 +60,7 @@ async def update_clinical_summary(
     db: Session = Depends(get_db)
 ):
     """Actualizar resumen clínico"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -141,7 +141,7 @@ async def list_clinical_notes(
     db: Session = Depends(get_db)
 ):
     """Listar notas clínicas (evoluciones) del residente"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -165,7 +165,7 @@ async def create_clinical_note(
     db: Session = Depends(get_db)
 ):
     """Crear nota clínica (evolución/incidente)"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -245,7 +245,7 @@ async def list_vital_signs(
     db: Session = Depends(get_db)
 ):
     """Listar signos vitales del residente"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -269,7 +269,7 @@ async def create_vital_sign(
     db: Session = Depends(get_db)
 ):
     """Registrar signos vitales"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

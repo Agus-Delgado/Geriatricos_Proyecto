@@ -33,4 +33,21 @@ export const residentsApi = {
   delete: async (residentId: string): Promise<void> => {
     return apiClient.delete<void>(`/residents/${residentId}`);
   },
+
+  listDeleted: async (
+    facilityId: string,
+    params?: { q?: string; within_days?: number }
+  ): Promise<Resident[]> => {
+    const searchParams = new URLSearchParams({ facility_id: facilityId });
+    if (params?.q) searchParams.append('q', params.q);
+    if (params?.within_days) searchParams.append('within_days', String(params.within_days));
+    return apiClient.get<Resident[]>(`/residents/deleted?${searchParams.toString()}`);
+  },
+
+  restore: async (residentId: string, withinDays?: number): Promise<Resident> => {
+    const searchParams = new URLSearchParams();
+    if (withinDays) searchParams.append('within_days', String(withinDays));
+    const qs = searchParams.toString();
+    return apiClient.post<Resident>(`/residents/${residentId}/restore${qs ? `?${qs}` : ''}`, {});
+  },
 };

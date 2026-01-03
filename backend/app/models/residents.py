@@ -30,6 +30,10 @@ class Resident(Base):
     # Estado del paciente (visible en listados): ACTIVE | INACTIVE
     # Si INACTIVE, verificar end_reason para detalles (DISCHARGE/PASSING/TRANSFER)
     status = Column(String(24), nullable=False, default="ACTIVE")
+
+    # Soft delete (Papelera)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
     # Auditoría
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
@@ -53,6 +57,7 @@ class Resident(Base):
         Index("ix_residents_facility_id", "facility_id"),
         Index("ix_residents_stay_status", "stay_status"),
         Index("ix_residents_status", "status"),
+        Index("ix_residents_deleted_at", "deleted_at"),
         Index("ix_residents_name", "last_name", "first_name"),
     )
 

@@ -20,7 +20,7 @@ async def create_document(
     db: Session = Depends(get_db)
 ):
     """Subir documento (metadata + file_url)"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -49,7 +49,7 @@ async def list_documents(
     db: Session = Depends(get_db)
 ):
     """Listar documentos de un residente"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -75,7 +75,7 @@ async def delete_document(
     db: Session = Depends(get_db)
 ):
     """Eliminar documento (soft delete - solo eliminar registro)"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

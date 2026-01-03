@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 from uuid import UUID
+from datetime import datetime, timedelta
 from app.models.residents import Resident, ResidentContact
 from app.models.audit import AuditLog
 from app.services.activity_service import log_event
@@ -85,7 +86,10 @@ def get_residents(
     status: str = None,
 ) -> list[Resident]:
     """Listar residentes con filtros"""
-    query = db.query(Resident).filter(Resident.facility_id == facility_id)
+    query = db.query(Resident).filter(
+        Resident.facility_id == facility_id,
+        Resident.deleted_at.is_(None),
+    )
 
     if stay_status:
         query = query.filter(Resident.stay_status == stay_status)
@@ -105,9 +109,12 @@ def get_residents(
     return query.order_by(Resident.last_name, Resident.first_name).all()
 
 
-def get_resident_by_id(db: Session, resident_id: UUID) -> Resident:
+def get_resident_by_id(db: Session, resident_id: UUID, include_deleted: bool = False) -> Resident:
     """Obtener residente por ID"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    query = db.query(Resident).filter(Resident.id == resident_id)
+    if not include_deleted:
+        query = query.filter(Resident.deleted_at.is_(None))
+    resident = query.first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -210,7 +217,128 @@ def update_resident(
 
 
 def delete_resident(db: Session, resident_id: UUID) -> None:
-    """Eliminar residente definitivamente (solo OWNER)"""
+    """Mover residente a papelera (soft-delete). Mantener compatibilidad."""
+    soft_delete_resident(db, resident_id, user_id=None)
+
+
+def soft_delete_resident(db: Session, resident_id: UUID, user_id: UUID | None) -> None:
+    """Mover residente a papelera (soft-delete)."""
     resident = get_resident_by_id(db, resident_id)
-    db.delete(resident)
+
+    if resident.deleted_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El residente ya está eliminado"
+        )
+
+    resident.deleted_at = datetime.utcnow()
+    resident.deleted_by_user_id = user_id
+    resident.updated_by_user_id = user_id
+    db.flush()
+
+    if user_id is not None:
+        audit_log = AuditLog(
+            facility_id=resident.facility_id,
+            actor_user_id=user_id,
+            action="SOFT_DELETE_RESIDENT",
+            entity_type="Resident",
+            entity_id=resident.id,
+            metadata_json={"resident_name": f"{resident.first_name} {resident.last_name}"}
+        )
+        db.add(audit_log)
+
+    if user_id is not None:
+        try:
+            log_event(
+                db,
+                facility_id=resident.facility_id,
+                actor_user_id=user_id,
+                event_type="PATIENT_DELETED",
+                entity_type="Resident",
+                entity_id=resident.id,
+                summary=f"Paciente eliminado: {resident.last_name}, {resident.first_name}",
+                event_metadata={"resident_id": str(resident.id)},
+            )
+        except Exception:
+            pass
+
     db.commit()
+
+
+def list_deleted_residents(
+    db: Session,
+    facility_id: UUID,
+    q: str = None,
+    within_days: int = 3,
+) -> list[Resident]:
+    """Listar residentes en papelera (eliminados recientemente)"""
+    cutoff = datetime.utcnow() - timedelta(days=within_days)
+
+    query = db.query(Resident).filter(
+        Resident.facility_id == facility_id,
+        Resident.deleted_at.is_not(None),
+        Resident.deleted_at >= cutoff,
+    )
+
+    if q:
+        search_term = f"%{q}%"
+        query = query.filter(
+            or_(
+                Resident.first_name.ilike(search_term),
+                Resident.last_name.ilike(search_term),
+                Resident.dni.ilike(search_term)
+            )
+        )
+
+    return query.order_by(Resident.deleted_at.desc().nullslast(), Resident.last_name, Resident.first_name).all()
+
+
+def restore_resident(db: Session, resident_id: UUID, user_id: UUID, within_days: int = 3) -> Resident:
+    """Restaurar un residente desde papelera dentro de una ventana de tiempo."""
+    resident = get_resident_by_id(db, resident_id, include_deleted=True)
+
+    if resident.deleted_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El residente no está eliminado"
+        )
+
+    cutoff = datetime.utcnow() - timedelta(days=within_days)
+    if resident.deleted_at < cutoff:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El período de restauración expiró"
+        )
+
+    resident.deleted_at = None
+    resident.deleted_by_user_id = None
+    resident.updated_by_user_id = user_id
+    db.flush()
+
+    audit_log = AuditLog(
+        facility_id=resident.facility_id,
+        actor_user_id=user_id,
+        action="RESTORE_RESIDENT",
+        entity_type="Resident",
+        entity_id=resident.id,
+        metadata_json={"resident_name": f"{resident.first_name} {resident.last_name}"}
+    )
+    db.add(audit_log)
+
+    try:
+        log_event(
+            db,
+            facility_id=resident.facility_id,
+            actor_user_id=user_id,
+            event_type="PATIENT_RESTORED",
+            entity_type="Resident",
+            entity_id=resident.id,
+            summary=f"Paciente restaurado: {resident.last_name}, {resident.first_name}",
+            event_metadata={"resident_id": str(resident.id)},
+        )
+    except Exception:
+        pass
+
+    db.commit()
+    db.refresh(resident)
+    return resident

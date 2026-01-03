@@ -23,9 +23,9 @@ export const ResidentsListPage: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingResident, setEditingResident] = useState<Resident | null>(null);
   const { facility } = useFacility();
-  const { isDoctor, getActiveRole } = useAuth();
+  const { isDoctor, isOwner, getActiveRole } = useAuth();
   const navigate = useNavigate();
-  const canEdit = isDoctor || getActiveRole() === 'ADMIN';
+  const canEdit = isOwner || isDoctor || getActiveRole() === 'ADMIN';
 
   useEffect(() => {
     if (facility) {
@@ -103,6 +103,14 @@ export const ResidentsListPage: React.FC = () => {
               placeholder="Buscar por nombre o DNI..."
             />
           </div>
+          {canEdit && (
+            <button
+              onClick={() => navigate('/residents/trash')}
+              className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
+            >
+              Papelera
+            </button>
+          )}
           {canEdit && (
             <button
               onClick={() => setShowCreateModal(true)}

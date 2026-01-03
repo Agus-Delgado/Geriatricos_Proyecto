@@ -29,7 +29,7 @@ async def list_prescription_logs(
 ):
     """Listar logs de recetas de un paciente"""
     # Obtener paciente para validar facility
-    patient = db.query(Resident).filter(Resident.id == patient_id).first()
+    patient = db.query(Resident).filter(Resident.id == patient_id, Resident.deleted_at.is_(None)).first()
     if not patient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -72,7 +72,7 @@ async def create_prescription_log_endpoint(
     """Crear un nuevo log de receta (requiere rol DOCTOR o ADMIN)"""
     
     # Obtener paciente para validar facility
-    patient = db.query(Resident).filter(Resident.id == patient_id).first()
+    patient = db.query(Resident).filter(Resident.id == patient_id, Resident.deleted_at.is_(None)).first()
     if not patient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

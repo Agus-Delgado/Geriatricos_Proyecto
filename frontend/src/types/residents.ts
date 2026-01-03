@@ -19,6 +19,8 @@ export interface Resident {
   updated_at: string;
   created_by_user_id: string | null;
   updated_by_user_id: string | null;
+  deleted_at?: string | null;
+  deleted_by_user_id?: string | null;
 }
 
 export interface ResidentCreate {

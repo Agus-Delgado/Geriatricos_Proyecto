@@ -10,7 +10,9 @@ from app.services.residents_service import (
     get_residents,
     get_resident_by_id,
     update_resident,
-    delete_resident,
+    soft_delete_resident,
+    list_deleted_residents,
+    restore_resident,
 )
 from app.models.auth import User
 
@@ -46,6 +48,34 @@ async def list_residents(
     
     residents = get_residents(db, facility_id, q, stay_status, status)
     return residents
+
+
+@router.get("/deleted", response_model=List[ResidentResponse])
+async def list_deleted_residents_endpoint(
+    facility_id: UUID = Query(..., description="ID de la sede"),
+    q: Optional[str] = Query(None, description="Búsqueda por nombre o DNI"),
+    within_days: int = Query(3, ge=1, le=30, description="Ventana de restauración en días"),
+    current_user: User = Depends(require_facility_role_any(['MEDICO', 'ADMIN'])),
+    db: Session = Depends(get_db)
+):
+    """Listar pacientes en papelera (eliminados recientemente)"""
+    require_facility_access(facility_id)(current_user, db)
+    residents = list_deleted_residents(db, facility_id, q=q, within_days=within_days)
+    return residents
+
+
+@router.post("/{resident_id}/restore", response_model=ResidentResponse)
+async def restore_resident_endpoint(
+    resident_id: UUID,
+    within_days: int = Query(3, ge=1, le=30, description="Ventana de restauración en días"),
+    current_user: User = Depends(require_facility_role_any(['MEDICO', 'ADMIN'])),
+    db: Session = Depends(get_db)
+):
+    """Restaurar paciente desde papelera (dentro de la ventana configurada)"""
+    resident_any = get_resident_by_id(db, resident_id, include_deleted=True)
+    require_facility_access(resident_any.facility_id)(current_user, db)
+    restored = restore_resident(db, resident_id, current_user.id, within_days=within_days)
+    return restored
 
 
 @router.get("/{resident_id}", response_model=ResidentResponse)
@@ -86,9 +116,9 @@ async def delete_resident_endpoint(
     current_user: User = Depends(require_facility_role_any(['MEDICO', 'ADMIN'])),
     db: Session = Depends(get_db)
 ):
-    """Eliminar residente definitivamente (requiere rol MEDICO o ADMIN en la facility activa)"""
+    """Eliminar residente (papelera) (requiere rol MEDICO o ADMIN en la facility activa)"""
     # Nota: Validar acceso a la facility del residente
     resident = get_resident_by_id(db, resident_id)
     require_facility_access(resident.facility_id)(current_user, db)
-    delete_resident(db, resident_id)
+    soft_delete_resident(db, resident_id, current_user.id)
     return

@@ -21,7 +21,7 @@ async def create_certificate(
 ):
     """Crear nueva constancia médica"""
     # Validar que el residente existe
-    resident = db.query(Resident).filter(Resident.id == cert_data.resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == cert_data.resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -100,9 +100,13 @@ async def list_certificates(
     if resident_id:
         query = query.filter(Certificate.resident_id == resident_id)
         # Validar acceso al residente
-        resident = db.query(Resident).filter(Resident.id == resident_id).first()
-        if resident:
-            require_facility_access(resident.facility_id)(current_user, db)
+        resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
+        if not resident:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Residente no encontrado"
+            )
+        require_facility_access(resident.facility_id)(current_user, db)
     
     # Filtrar por tipo si se especifica
     if certificate_type:

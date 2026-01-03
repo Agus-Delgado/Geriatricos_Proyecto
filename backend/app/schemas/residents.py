@@ -77,6 +77,8 @@ class ResidentResponse(BaseModel):
     updated_at: datetime
     created_by_user_id: Optional[UUID]
     updated_by_user_id: Optional[UUID]
+    deleted_at: Optional[datetime] = None
+    deleted_by_user_id: Optional[UUID] = None
 
     class Config:
         from_attributes = True

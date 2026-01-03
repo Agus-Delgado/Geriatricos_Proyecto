@@ -26,11 +26,14 @@ const ALL_TABS = [
 export const ResidentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isOwner, isDoctor } = useAuth();
+  const { isOwner, isDoctor, getActiveRole } = useAuth();
   const [resident, setResident] = useState<Resident | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('summary');
+  const [deleting, setDeleting] = useState(false);
+
+  const canDelete = isOwner || isDoctor || getActiveRole() === 'ADMIN';
 
   // Filtrar tabs según rol
   const availableTabs = useMemo(() => {
@@ -70,6 +73,26 @@ export const ResidentDetailPage: React.FC = () => {
     }
   };
 
+  const handleDeleteResident = async () => {
+    if (!resident) return;
+    const ok = confirm(
+      `¿Eliminar a ${resident.first_name} ${resident.last_name}?\n\nSe moverá a la Papelera por 3 días y luego no podrá restaurarse.`
+    );
+    if (!ok) return;
+
+    try {
+      setDeleting(true);
+      setError(null);
+      await residentsApi.delete(resident.id);
+      navigate('/residents');
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.detail || 'Error al eliminar residente');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -96,7 +119,16 @@ export const ResidentDetailPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="px-4 py-4">
-        <div className="flex justify-end mb-2">
+        <div className="flex justify-end mb-2 gap-2">
+          {canDelete && (
+            <button
+              onClick={handleDeleteResident}
+              disabled={deleting}
+              className="px-3 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-60"
+            >
+              {deleting ? 'Eliminando...' : 'Eliminar'}
+            </button>
+          )}
           <button
             onClick={() => navigate(`/residents/${resident.id}/print`)}
             className="px-3 py-2 text-sm bg-primary-600 text-white rounded hover:bg-primary-700"

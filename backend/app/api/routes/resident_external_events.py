@@ -20,7 +20,7 @@ async def create_external_event(
     db: Session = Depends(get_db)
 ):
     """Registrar evento de plataforma externa (receta como evento)"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -75,7 +75,7 @@ async def list_external_events(
     db: Session = Depends(get_db)
 ):
     """Listar eventos de plataformas externas de un residente"""
-    resident = db.query(Resident).filter(Resident.id == resident_id).first()
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
     if not resident:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

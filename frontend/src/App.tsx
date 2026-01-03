@@ -68,7 +68,12 @@ function AppContent() {
     if (!user) return;
     if (!facility) return;
     const activeRole = getActiveRole();
-    const canSee = isOwner || isDoctor || isPlatformAdmin || activeRole === 'ADMIN';
+    const canSee =
+      isOwner ||
+      isDoctor ||
+      isPlatformAdmin ||
+      activeRole === 'ADMIN' ||
+      activeRole === 'MEDICO';
     if (!canSee) return;
     if (!location.pathname.startsWith('/g/')) return;
     if (location.pathname.includes('/print')) return;

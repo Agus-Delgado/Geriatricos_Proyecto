@@ -4,15 +4,45 @@ import { usePWA } from '../../contexts/PWAContext';
 export const UpdateBanner: React.FC = () => {
   const { needRefresh, updateServiceWorker } = usePWA();
   const [isUpdating, setIsUpdating] = useState(false);
-  const [hidden, setHidden] = useState(false);
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return sessionStorage.getItem('pwa_update_banner_dismissed') === '1';
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
-    if (needRefresh) setHidden(false);
+    if (!needRefresh) {
+      try {
+        sessionStorage.removeItem('pwa_update_banner_dismissed');
+      } catch {
+        // ignore
+      }
+      setHidden(false);
+      return;
+    }
+
+    try {
+      if (sessionStorage.getItem('pwa_update_banner_dismissed') === '1') {
+        setHidden(true);
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
+    setHidden(false);
   }, [needRefresh]);
 
   const handleUpdate = async () => {
     if (!updateServiceWorker) return;
 
+    try {
+      sessionStorage.setItem('pwa_update_banner_dismissed', '1');
+    } catch {
+      // ignore
+    }
     setHidden(true);
     setIsUpdating(true);
     try {

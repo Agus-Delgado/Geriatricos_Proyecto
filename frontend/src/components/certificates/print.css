@@ -1,6 +1,9 @@
 @page {
   margin: 16mm;
 }
+:root {
+  --primary-color: var(--facility-accent, #2563eb);
+}
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   background: white;

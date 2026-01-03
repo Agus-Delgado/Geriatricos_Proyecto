@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { staffApi } from '../api/staff';
 import { useFacility } from '../contexts/FacilityContext';
 import type { StaffReportResponse, StaffReportShiftAssignment } from '../types/staffReport';
+import { resolvePrintThemeVars } from '../theme/printTheme';
 import '../components/certificates/print.css';
 import './resident-print.css';
 
@@ -43,45 +44,7 @@ export default function StaffPrintPage() {
   const [report, setReport] = useState<StaffReportResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  function normalizeFacilityName(name?: string): string {
-    if (!name) return 'default';
-    return name.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
-  }
-  function resolveThemeVars(name?: string) {
-    const n = normalizeFacilityName(name);
-    if (n.includes('amanecer')) {
-      return {
-        ['--primary-color' as any]: '#f97316',
-        ['--bg-light' as any]: '#fff7ed',
-        ['--text-dark' as any]: '#7c2d12',
-        ['--text-muted' as any]: '#a16207',
-      };
-    }
-    if (n.includes('trebol')) {
-      return {
-        ['--primary-color' as any]: '#22c55e',
-        ['--bg-light' as any]: '#f0fdf4',
-        ['--text-dark' as any]: '#14532d',
-        ['--text-muted' as any]: '#166534',
-      };
-    }
-    if (n.includes('estaciones') || n.includes('luz') || n.includes('estrella')) {
-      return {
-        ['--primary-color' as any]: '#3b82f6',
-        ['--bg-light' as any]: '#eff6ff',
-        ['--text-dark' as any]: '#1e3a8a',
-        ['--text-muted' as any]: '#2563eb',
-      };
-    }
-    return {
-      ['--primary-color' as any]: '#2563eb',
-      ['--bg-light' as any]: '#f9fafb',
-      ['--text-dark' as any]: '#1e293b',
-      ['--text-muted' as any]: '#64748b',
-    };
-  }
-  const themeVars = resolveThemeVars(facility?.name);
+  const themeVars = resolvePrintThemeVars(facility?.name);
 
   useEffect(() => {
     setSearchParams((prev) => {

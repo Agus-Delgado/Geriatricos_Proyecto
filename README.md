@@ -1,6 +1,6 @@
-# Plataforma de Gestión para Geriátricos
+# Plataforma de Gestión para Hogares
 
-Sistema completo de gestión para hogares geriátricos desarrollado con arquitectura moderna, incluyendo backend API REST y frontend Progressive Web App (PWA) mobile-first.
+Sistema completo de gestión para hogares desarrollado con arquitectura moderna, incluyendo backend API REST y frontend Progressive Web App (PWA) mobile-first.
 
 ## Índice
 
@@ -13,13 +13,13 @@ Sistema completo de gestión para hogares geriátricos desarrollado con arquitec
 
 ## 📋 Descripción del Proyecto
 
-Esta plataforma está diseñada para facilitar la gestión integral de uno o múltiples hogares geriátricos, permitiendo a propietarios y profesionales de la salud administrar residentes, historiales clínicos, medicaciones, contactos de emergencia, documentos y finanzas desde una aplicación móvil moderna y fácil de usar.
+Esta plataforma está diseñada para facilitar la gestión integral de uno o múltiples hogares, permitiendo a propietarios y profesionales de la salud administrar residentes, historiales clínicos, medicaciones, contactos de emergencia, documentos y finanzas desde una aplicación móvil moderna y fácil de usar.
 
 ### Propósito y Destinatarios
 
 El sistema está destinado a:
 
-- **Propietarios y Administradores** de hogares geriátricos que necesitan gestionar múltiples sedes y controlar aspectos financieros y administrativos
+- **Propietarios y Administradores** de hogares que necesitan gestionar múltiples sedes y controlar aspectos financieros y administrativos
 - **Profesionales de la Salud** (doctores, enfermeros) que requieren acceso rápido a información clínica, planes de medicación y administración de tratamientos
 - **Personal Administrativo** que gestiona datos de residentes, contactos de emergencia y documentación
 
@@ -337,7 +337,7 @@ El frontend está configurado para deploy en Vercel. Ver `frontend/README.md` pa
 
 ## 📝 Estado del Proyecto
 
-Este es un proyecto MVP (Minimum Viable Product) desarrollado para gestionar 3 geriátricos inicialmente, con arquitectura escalable para crecer según las necesidades.
+Este es un proyecto MVP (Minimum Viable Product) desarrollado para gestionar 3 hogares inicialmente, con arquitectura escalable para crecer según las necesidades.
 
 ### Funcionalidades Implementadas ✅
 - ✅ Autenticación y autorización

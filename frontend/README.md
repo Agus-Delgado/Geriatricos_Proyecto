@@ -1,6 +1,6 @@
-# Frontend PWA - Geriátricos App
+# Frontend PWA - Hogares App
 
-Aplicación móvil Progressive Web App (PWA) para la gestión de geriátricos, desarrollada con React, TypeScript, Vite y Tailwind CSS.
+Aplicación móvil Progressive Web App (PWA) para la gestión de hogares, desarrollada con React, TypeScript, Vite y Tailwind CSS.
 
 ## Características
 

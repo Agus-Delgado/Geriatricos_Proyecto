@@ -1,7 +1,7 @@
 {
-  "name": "Geriátricos App",
-  "short_name": "Geriátricos",
-  "description": "Aplicación móvil para gestión de geriátricos",
+  "name": "Hogares App",
+  "short_name": "Hogares",
+  "description": "Aplicación móvil para gestión de hogares",
   "theme_color": "#2563eb",
   "background_color": "#ffffff",
   "display": "standalone",

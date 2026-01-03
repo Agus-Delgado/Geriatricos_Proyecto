@@ -17,10 +17,10 @@ self.addEventListener('push', (event: PushEvent) => {
   try {
     payload = event.data.json();
   } catch {
-    payload = { title: 'Geriátricos', body: event.data.text() };
+    payload = { title: 'Hogares', body: event.data.text() };
   }
 
-  const title = payload?.title ?? 'Geriátricos';
+  const title = payload?.title ?? 'Hogares';
   const body = payload?.body ?? '';
   const url = payload?.url ?? '/activity';
   const tag = payload?.tag ?? 'activity';

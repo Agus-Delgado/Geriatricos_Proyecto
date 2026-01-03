@@ -1,6 +1,6 @@
-# Plataforma Geriátricos - Backend API
+# Plataforma Hogares - Backend API
 
-API backend para gestión de 3 geriátricos (MVP) desarrollada con FastAPI, SQLAlchemy 2.0 y PostgreSQL.
+API backend para gestión de 3 hogares (MVP) desarrollada con FastAPI, SQLAlchemy 2.0 y PostgreSQL.
 
 ## Stack Tecnológico
 

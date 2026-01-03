@@ -132,6 +132,24 @@ def create_shift_assignment(
 
     db.commit()
     db.refresh(assignment)
+
+    if created_by_user_id:
+        try:
+            from app.services.push_service import notify_activity_from_event
+
+            notify_activity_from_event(
+                db,
+                facility_id=assignment_data.facility_id,
+                event_type="SHIFT_ASSIGNED",
+                summary=f"Turno asignado: {staff.first_name} {staff.last_name} - {shift.name} ({assignment_data.date})",
+                meta={
+                    "staff_id": str(assignment_data.staff_id),
+                    "shift_id": str(assignment_data.shift_id),
+                    "date": str(assignment_data.date),
+                },
+            )
+        except Exception:
+            pass
     return assignment
 
 
@@ -217,6 +235,24 @@ def delete_shift_assignment(db: Session, assignment_id: UUID, actor_user_id: Opt
 
     db.delete(assignment)
     db.commit()
+
+    if actor_user_id:
+        try:
+            from app.services.push_service import notify_activity_from_event
+
+            notify_activity_from_event(
+                db,
+                facility_id=assignment.facility_id,
+                event_type="SHIFT_UNASSIGNED",
+                summary=f"Turno removido: {staff.first_name} {staff.last_name} - {shift.name} ({assignment.date})",
+                meta={
+                    "staff_id": str(assignment.staff_id),
+                    "shift_id": str(assignment.shift_id),
+                    "date": str(assignment.date),
+                },
+            )
+        except Exception:
+            pass
 
 
 # ========== DASHBOARD: QUIÉN ESTÁ TRABAJANDO AHORA ==========

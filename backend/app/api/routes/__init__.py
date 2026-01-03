@@ -17,6 +17,7 @@ from . import resident_external_events
 from . import residents
 from . import staff
 from . import activity
+from . import push
 
 __all__ = [
     "admin",
@@ -37,4 +38,5 @@ __all__ = [
     "residents",
     "staff",
     "activity",
+    "push",
 ]

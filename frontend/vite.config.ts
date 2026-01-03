@@ -1,40 +1,25 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-// import { VitePWA } from 'vite-plugin-pwa'
+import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   plugins: [
     react(),
-    // VitePWA({
-    //   registerType: 'prompt',
-    //   includeAssets: ['favicon.ico', 'robots.txt', 'icons/icon-192x192.png', 'icons/icon-512x512.png'],
-    //   filename: 'sw.js',
-    //   manifest: {
-    //     name: 'Geriátricos App',
-    //     short_name: 'Geriátricos',
-    //     description: 'Sistema de gestión para hogares geriátricos',
-    //     theme_color: '#2563eb',
-    //     background_color: '#ffffff',
-    //     display: 'standalone',
-    //     orientation: 'portrait',
-    //     start_url: '/',
-    //     scope: '/',
-    //     icons: [
-    //       {
-    //         src: 'icons/icon-192x192.png',
-    //         sizes: '192x192',
-    //         type: 'image/png',
-    //         purpose: 'any maskable'
-    //       },
-    //       {
-    //         src: 'icons/icon-512x512.png',
-    //         sizes: '512x512',
-    //         type: 'image/png',
-    //         purpose: 'any maskable'
-    //       }
-    //     ]
-    //   },
-    // })
+    VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      registerType: 'prompt',
+      includeAssets: ['pwa-192.png', 'pwa-512.png', 'pwa-512-maskable.png', 'manifest.json'],
+      manifest: false,
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module',
+      },
+    })
   ],
   server: {
     port: 5173,

@@ -60,6 +60,19 @@ def create_resident(db: Session, resident_data: ResidentCreate, user_id: UUID) -
     )
     db.commit()
     db.refresh(resident)
+
+    try:
+        from app.services.push_service import notify_activity_from_event
+
+        notify_activity_from_event(
+            db,
+            facility_id=resident.facility_id,
+            event_type="PATIENT_CREATED",
+            summary=f"Alta de paciente: {resident.last_name}, {resident.first_name}",
+            meta={"resident_id": str(resident.id), "dni": resident.dni},
+        )
+    except Exception:
+        pass
     
     return resident
 
@@ -166,6 +179,32 @@ def update_resident(
         logging.getLogger(__name__).warning(f"log_event failed: {e}")
     db.commit()
     db.refresh(resident)
+
+    try:
+        from app.services.push_service import notify_activity_from_event
+
+        if "status" in update_data_json:
+            notify_activity_from_event(
+                db,
+                facility_id=resident.facility_id,
+                event_type="PATIENT_STATUS_CHANGED",
+                summary=f"Estado: {resident.last_name}, {resident.first_name} → {update_data_json['status']}",
+                meta={
+                    "resident_id": str(resident.id),
+                    "resident_name": f"{resident.last_name}, {resident.first_name}",
+                    "changes": {"status": update_data_json["status"]},
+                },
+            )
+        else:
+            notify_activity_from_event(
+                db,
+                facility_id=resident.facility_id,
+                event_type="PATIENT_UPDATED",
+                summary=f"Edición de paciente: {resident.last_name}, {resident.first_name}",
+                meta={"changes": update_data_json},
+            )
+    except Exception:
+        pass
 
     return resident
 

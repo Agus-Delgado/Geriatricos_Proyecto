@@ -68,6 +68,11 @@ class Settings(BaseSettings):
     )
     EMAIL_VERIFY_TOKEN_TTL_HOURS: int = 24
     EMAIL_REPLY_TO: Optional[str] = None
+
+    # Web Push (VAPID)
+    VAPID_PUBLIC_KEY: Optional[str] = None
+    VAPID_PRIVATE_KEY: Optional[str] = None
+    VAPID_SUBJECT: str = "mailto:soporte@geriatricos.com"
     
     @property
     def cors_origins_list(self) -> List[str]:

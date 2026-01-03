@@ -12,6 +12,7 @@ from app.models.finance import FinanceCategory, FinanceTransaction
 from app.models.audit import AuditLog
 from app.models.staff import Staff
 from app.models.attendance import Attendance
+from app.models.push import PushSubscription, PushPreference
 
 __all__ = [
     "User",
@@ -39,4 +40,6 @@ __all__ = [
     "AuditLog",
     "Staff",
     "Attendance",
+    "PushSubscription",
+    "PushPreference",
 ]

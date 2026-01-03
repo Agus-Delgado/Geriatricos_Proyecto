@@ -9,7 +9,7 @@ from app.api.routes import (
     auth, facilities, residents, resident_contacts, clinical, medications, prescriptions,
     agenda,
     documents, certificates, external_platforms, resident_external_events, finance,
-    staff, attendance, admin, dashboard, activity, shifts
+    staff, attendance, admin, dashboard, activity, shifts, push
 )
 from app.db.session import SessionLocal
 from app.db.bootstrap import bootstrap_production_users
@@ -119,6 +119,7 @@ app.include_router(shifts.router)
 app.include_router(attendance.router)
 app.include_router(dashboard.router)
 app.include_router(activity.router)
+app.include_router(push.router)
 
 
 @app.on_event("startup")
@@ -236,6 +237,44 @@ async def startup_event():
                     "CREATE UNIQUE INDEX IF NOT EXISTS uix_activity_event_saves_user_event ON activity_event_saves (user_id, activity_event_id)"
                 )
             )
+
+            db.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS push_subscriptions (
+                        id UUID PRIMARY KEY,
+                        user_id UUID NOT NULL,
+                        facility_id UUID NOT NULL,
+                        endpoint TEXT NOT NULL,
+                        p256dh TEXT NOT NULL,
+                        auth TEXT NOT NULL,
+                        user_agent VARCHAR(512),
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+                    )
+                    """
+                )
+            )
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_push_subscriptions_user_facility ON push_subscriptions (user_id, facility_id)"))
+            db.execute(text("DROP INDEX IF EXISTS uix_push_subscriptions_endpoint"))
+            db.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uix_push_subscriptions_endpoint_facility ON push_subscriptions (endpoint, facility_id)"))
+
+            db.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS push_preferences (
+                        id UUID PRIMARY KEY,
+                        user_id UUID NOT NULL,
+                        facility_id UUID NOT NULL,
+                        disabled_event_types JSONB NOT NULL DEFAULT '[]'::jsonb,
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+                    )
+                    """
+                )
+            )
+            db.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uix_push_preferences_user_facility ON push_preferences (user_id, facility_id)"))
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_push_preferences_facility ON push_preferences (facility_id)"))
             db.commit()
         finally:
             db.close()

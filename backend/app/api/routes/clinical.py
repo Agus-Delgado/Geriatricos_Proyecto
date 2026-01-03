@@ -116,6 +116,19 @@ async def update_clinical_summary(
 
     db.commit()
     db.refresh(summary)
+
+    try:
+        from app.services.push_service import notify_activity_from_event
+
+        notify_activity_from_event(
+            db,
+            facility_id=resident.facility_id,
+            event_type="CLINICAL_SUMMARY_UPDATED",
+            summary="Resumen clínico actualizado",
+            meta={"resident_id": str(resident_id)},
+        )
+    except Exception:
+        pass
     
     return summary
 
@@ -203,6 +216,23 @@ async def create_clinical_note(
 
     db.commit()
     db.refresh(note)
+
+    try:
+        from app.services.push_service import notify_activity_from_event
+
+        ev_type = "INCIDENT_REPORTED" if (note_data.note_type or "").upper() == "INCIDENT" else "CLINICAL_NOTE_CREATED"
+        notify_activity_from_event(
+            db,
+            facility_id=resident.facility_id,
+            event_type=ev_type,
+            summary=f"{'Incidente' if ev_type == 'INCIDENT_REPORTED' else 'Nota clínica'}: {resident.last_name}, {resident.first_name}",
+            meta={
+                "resident_id": str(resident_id),
+                "note_type": note_data.note_type,
+            },
+        )
+    except Exception:
+        pass
     
     return note
 

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { FacilityProvider } from './contexts/FacilityContext';
+import { PWAProvider } from './contexts/PWAContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { UnauthorizedHandler } from './components/auth/UnauthorizedHandler';
 import { SessionExpiredHandler } from './components/auth/SessionExpiredHandler';
@@ -15,6 +16,7 @@ import { SelectFacilityPage } from './pages/SelectFacilityPage';
 import { PlatformPage } from './pages/PlatformPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { ImpersonationBanner } from './components/admin/ImpersonationBanner';
+import { UpdateBanner } from './components/pwa/UpdateBanner';
 import GeriatricDashboardPage from './pages/GeriatricDashboardPage';
 import GeriatricTasksPage from './pages/GeriatricTasksPage';
 import GeriatricMedicalPage from './pages/GeriatricMedicalPage';
@@ -57,6 +59,7 @@ function AppContent() {
       <UnauthorizedHandler />
       <SessionExpiredHandler />
       <ImpersonationBanner />
+      <UpdateBanner />
       {!isPublic && <Header />}
       <Routes>
         {/* Rutas públicas */}
@@ -317,9 +320,11 @@ function App() {
       <ErrorBoundary>
         <AuthProvider>
           <SessionBootstrap>
-            <FacilityProvider>
-              <AppContent />
-            </FacilityProvider>
+            <PWAProvider>
+              <FacilityProvider>
+                <AppContent />
+              </FacilityProvider>
+            </PWAProvider>
           </SessionBootstrap>
         </AuthProvider>
       </ErrorBoundary>

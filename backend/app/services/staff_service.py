@@ -35,6 +35,23 @@ def create_staff(db: Session, staff_data: StaffCreate, created_by_user_id: UUID)
     )
     db.commit()
     db.refresh(staff)
+
+    try:
+        from app.services.push_service import notify_activity_from_event
+
+        notify_activity_from_event(
+            db,
+            facility_id=staff.facility_id,
+            event_type="STAFF_CREATED",
+            summary=f"{staff.last_name}, {staff.first_name}",
+            meta={
+                "staff_id": str(staff.id),
+                "staff_name": f"{staff.last_name}, {staff.first_name}",
+                "dni": staff.dni,
+            },
+        )
+    except Exception:
+        pass
     return staff
 
 
@@ -84,6 +101,24 @@ def transfer_staff(
 
     db.commit()
     db.refresh(staff)
+
+    try:
+        from app.services.push_service import notify_activity_from_event
+
+        notify_activity_from_event(
+            db,
+            facility_id=to_facility_id,
+            event_type="STAFF_TRANSFERRED",
+            summary=f"Traslado de personal a otra sede: {staff.last_name}, {staff.first_name}",
+            meta={
+                "staff_id": str(staff.id),
+                "from_facility_id": str(from_facility_id),
+                "to_facility_id": str(to_facility_id),
+                "effective_date": str(cutoff),
+            },
+        )
+    except Exception:
+        pass
     return staff
 
 
@@ -168,4 +203,27 @@ def update_staff(
 
     db.commit()
     db.refresh(staff)
+
+    if actor_user_id:
+        try:
+            from app.services.push_service import notify_activity_from_event
+
+            if "is_active" in update_data_json and update_data_json["is_active"] is False:
+                notify_activity_from_event(
+                    db,
+                    facility_id=staff.facility_id,
+                    event_type="STAFF_ARCHIVED",
+                    summary=f"Baja de personal: {staff.last_name}, {staff.first_name}",
+                    meta={"changes": update_data_json},
+                )
+            else:
+                notify_activity_from_event(
+                    db,
+                    facility_id=staff.facility_id,
+                    event_type="STAFF_UPDATED",
+                    summary=f"Edición de personal: {staff.last_name}, {staff.first_name}",
+                    meta={"changes": update_data_json},
+                )
+        except Exception:
+            pass
     return staff

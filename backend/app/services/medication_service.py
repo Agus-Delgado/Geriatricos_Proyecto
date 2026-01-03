@@ -50,6 +50,19 @@ def create_medication_plan(
     )
     db.commit()
     db.refresh(plan)
+
+    try:
+        from app.services.push_service import notify_activity_from_event
+
+        notify_activity_from_event(
+            db,
+            facility_id=facility_id,
+            event_type="MEDICATION_CHANGED",
+            summary=f"Nuevo plan: {plan_data.med_name}",
+            meta={"resident_id": str(resident_id), "dose": plan_data.dose},
+        )
+    except Exception:
+        pass
     
     return plan
 
@@ -115,6 +128,19 @@ def update_medication_plan(
     )
     db.commit()
     db.refresh(plan)
+
+    try:
+        from app.services.push_service import notify_activity_from_event
+
+        notify_activity_from_event(
+            db,
+            facility_id=plan.facility_id,
+            event_type="MEDICATION_CHANGED",
+            summary="Actualización plan de medicación",
+            meta={"changes": update_data_json},
+        )
+    except Exception:
+        pass
     
     return plan
 
@@ -234,5 +260,22 @@ def create_medication_administration(
     )
     db.commit()
     db.refresh(admin)
+
+    try:
+        from app.services.push_service import notify_activity_from_event
+
+        notify_activity_from_event(
+            db,
+            facility_id=facility_id,
+            event_type="MEDICATION_CHANGED",
+            summary="Administración registrada",
+            meta={
+                "resident_id": str(resident_id),
+                "medication_plan_id": str(admin_data.medication_plan_id),
+                "status": admin_data.status,
+            },
+        )
+    except Exception:
+        pass
     
     return admin

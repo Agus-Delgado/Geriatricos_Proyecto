@@ -3,26 +3,18 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 
-// Unregister all service workers and clear caches
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    registrations.forEach((registration) => {
-      registration.unregister().then((success) => {
-        if (success) {
-          console.log('Service Worker unregistered');
-        }
-      });
-    });
-  });
+import { registerSW } from 'virtual:pwa-register';
 
-  if ('caches' in window) {
-    caches.keys().then((cacheNames) => {
-      cacheNames.forEach((cacheName) => {
-        caches.delete(cacheName);
-      });
-    });
-  }
-}
+const updateSW = registerSW({
+  onNeedRefresh() {
+    window.dispatchEvent(new Event('pwa-update-available'));
+  },
+  onOfflineReady() {
+    window.dispatchEvent(new Event('pwa-offline-ready'));
+  },
+});
+
+(window as any).__PWA_UPDATE_SW__ = updateSW;
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

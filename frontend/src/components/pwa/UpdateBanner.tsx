@@ -1,13 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePWA } from '../../contexts/PWAContext';
 
 export const UpdateBanner: React.FC = () => {
   const { needRefresh, updateServiceWorker } = usePWA();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleUpdate = async () => {
-    if (updateServiceWorker) {
+    if (!updateServiceWorker) return;
+
+    setIsUpdating(true);
+    try {
       await updateServiceWorker(true);
+    } catch {
+      try {
+        window.location.reload();
+      } catch {
+        return;
+      }
+      return;
     }
+
+    setTimeout(() => {
+      try {
+        window.location.reload();
+      } catch {
+        return;
+      }
+    }, 600);
   };
 
   if (!needRefresh || !updateServiceWorker) {
@@ -49,15 +68,21 @@ export const UpdateBanner: React.FC = () => {
       
       <div style={{ flex: 1, marginRight: '1rem' }}>
         <div style={{ fontWeight: 600, marginBottom: '0.25rem', fontSize: '1rem' }}>
-          🎉 Nueva versión disponible
+          Nueva versión disponible
         </div>
         <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>
-          Actualiza para obtener las últimas mejoras y correcciones
+          Novedades:
+          <div style={{ marginTop: '0.25rem' }}>
+            - Papelera de pacientes (eliminar/restaurar)
+            <br />
+            - Mejoras y correcciones generales
+          </div>
         </div>
       </div>
       
       <button
         onClick={handleUpdate}
+        disabled={isUpdating}
         style={{
           backgroundColor: 'white',
           color: '#2563eb',
@@ -65,21 +90,24 @@ export const UpdateBanner: React.FC = () => {
           padding: '0.625rem 1.5rem',
           borderRadius: '0.5rem',
           border: 'none',
-          cursor: 'pointer',
+          cursor: isUpdating ? 'not-allowed' : 'pointer',
           fontSize: '0.9375rem',
           transition: 'all 0.2s ease',
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          opacity: isUpdating ? 0.8 : 1,
         }}
         onMouseEnter={(e) => {
+          if (isUpdating) return;
           e.currentTarget.style.transform = 'translateY(-2px)';
           e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
         }}
         onMouseLeave={(e) => {
+          if (isUpdating) return;
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
         }}
       >
-        Actualizar ahora
+        {isUpdating ? 'Actualizando…' : 'Actualizar ahora'}
       </button>
     </div>
   );

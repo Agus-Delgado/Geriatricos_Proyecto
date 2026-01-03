@@ -25,7 +25,8 @@ export const ResidentsListPage: React.FC = () => {
   const { facility } = useFacility();
   const { isDoctor, isOwner, getActiveRole } = useAuth();
   const navigate = useNavigate();
-  const canEdit = isOwner || isDoctor || getActiveRole() === 'ADMIN';
+  const activeRole = getActiveRole();
+  const canEdit = isOwner || isDoctor || activeRole === 'ADMIN' || activeRole === 'MEDICO';
 
   useEffect(() => {
     if (facility) {
@@ -216,7 +217,7 @@ export const ResidentsListPage: React.FC = () => {
           </div>
         )}
 
-        {facility && isDoctor && (
+        {facility && (isDoctor || activeRole === 'MEDICO') && (
           <div className="fixed bottom-24 right-4 z-30">
             <button
               onClick={() => setShowCreateModal(true)}

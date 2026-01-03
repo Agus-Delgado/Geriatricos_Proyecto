@@ -33,16 +33,18 @@ export const ResidentDetailPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('summary');
   const [deleting, setDeleting] = useState(false);
 
-  const canDelete = isOwner || isDoctor || getActiveRole() === 'ADMIN';
+  const activeRole = getActiveRole();
+  const isMedicalRole = isDoctor || activeRole === 'MEDICO';
+  const canDelete = isOwner || isMedicalRole || activeRole === 'ADMIN';
 
   // Filtrar tabs según rol
   const availableTabs = useMemo(() => {
     return ALL_TABS.filter((tab) => {
       if (tab.roles.includes('OWNER') && isOwner) return true;
-      if (tab.roles.includes('DOCTOR') && isDoctor) return true;
+      if (tab.roles.includes('DOCTOR') && isMedicalRole) return true;
       return false;
     });
-  }, [isOwner, isDoctor]);
+  }, [isOwner, isMedicalRole]);
 
   // Ajustar activeTab si el tab actual no está disponible
   useEffect(() => {

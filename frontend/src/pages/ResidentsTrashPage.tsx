@@ -26,7 +26,7 @@ export default function ResidentsTrashPage() {
 
   const canManageTrash = useMemo(() => {
     const role = getActiveRole();
-    return Boolean(isOwner || isDoctor || role === 'ADMIN');
+    return Boolean(isOwner || isDoctor || role === 'ADMIN' || role === 'MEDICO');
   }, [getActiveRole, isDoctor, isOwner]);
 
   useEffect(() => {

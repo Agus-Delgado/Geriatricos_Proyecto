@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { FacilityProvider } from './contexts/FacilityContext';
@@ -16,7 +17,8 @@ import { SelectFacilityPage } from './pages/SelectFacilityPage';
 import { PlatformPage } from './pages/PlatformPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { ImpersonationBanner } from './components/admin/ImpersonationBanner';
-import { UpdateBanner } from './components/pwa/UpdateBanner';
+import { ReleaseNotesModal } from './components/pwa/ReleaseNotesModal';
+import { CURRENT_RELEASE_NOTES } from './config/releaseNotes';
 import GeriatricDashboardPage from './pages/GeriatricDashboardPage';
 import GeriatricTasksPage from './pages/GeriatricTasksPage';
 import GeriatricMedicalPage from './pages/GeriatricMedicalPage';
@@ -48,20 +50,52 @@ import ActivityFeedPage from './pages/ActivityFeedPage';
 import MyAccountPage from './pages/MyAccountPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import { OwnerDashboardPage } from './pages/OwnerDashboardPage';
+import { useAuth } from './contexts/AuthContext';
+import { useFacility } from './contexts/FacilityContext';
 
 function AppContent() {
   useFacilityTheme();
   const location = useLocation();
+  const { user, isOwner, isDoctor } = useAuth();
+  const { facility } = useFacility();
+  const [isReleaseNotesOpen, setIsReleaseNotesOpen] = useState(false);
   
   const isPublic = location.pathname.startsWith('/login') ||
                    location.pathname.startsWith('/reset-password');
+
+  useEffect(() => {
+    if (isPublic) return;
+    if (!user) return;
+    if (!facility) return;
+    if (!isOwner && !isDoctor) return;
+    if (!location.pathname.startsWith('/g/')) return;
+    if (location.pathname.includes('/print')) return;
+
+    const key = `release_notes_last_seen:${user.id}`;
+    const lastSeen = localStorage.getItem(key);
+    if (lastSeen !== CURRENT_RELEASE_NOTES.version) {
+      setIsReleaseNotesOpen(true);
+    }
+  }, [facility, isDoctor, isOwner, isPublic, location.pathname, user]);
+
+  const handleCloseReleaseNotes = () => {
+    if (user) {
+      const key = `release_notes_last_seen:${user.id}`;
+      localStorage.setItem(key, CURRENT_RELEASE_NOTES.version);
+    }
+    setIsReleaseNotesOpen(false);
+  };
 
   return (
     <>
       <UnauthorizedHandler />
       <SessionExpiredHandler />
       <ImpersonationBanner />
-      <UpdateBanner />
+      <ReleaseNotesModal
+        isOpen={isReleaseNotesOpen}
+        onClose={handleCloseReleaseNotes}
+        notes={CURRENT_RELEASE_NOTES}
+      />
       {!isPublic && <Header />}
       <Routes>
         {/* Rutas públicas */}

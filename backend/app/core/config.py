@@ -74,6 +74,12 @@ class Settings(BaseSettings):
     VAPID_PRIVATE_KEY: Optional[str] = None
     VAPID_SUBJECT: str = "mailto:soporte@geriatricos.com"
     
+    # Cloudinary (Storage para documentos)
+    CLOUDINARY_CLOUD_NAME: Optional[str] = None
+    CLOUDINARY_API_KEY: Optional[str] = None
+    CLOUDINARY_API_SECRET: Optional[str] = None
+    CLOUDINARY_FOLDER: str = "residents-docs"
+    
     @property
     def cors_origins_list(self) -> List[str]:
         """Parse CORS_ORIGINS string into list, con defaults para desarrollo si no está definida"""

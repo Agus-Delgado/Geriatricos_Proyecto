@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -7,21 +7,13 @@ import { supportApi } from '../../api/support';
 import { useAuth } from '../../contexts/AuthContext';
 import type { ApiError } from '../../api/client';
 
-export function BugReportFab() {
+export function BugReportButton() {
   const location = useLocation();
   const { user, activeFacilityId } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
-
-  const isPublic = location.pathname.startsWith('/login') || location.pathname.startsWith('/reset-password');
-  const isPrint = location.pathname.includes('/print');
-
-  const canShow = useMemo(() => {
-    if (isPublic || isPrint) return false;
-    return Boolean(user);
-  }, [isPublic, isPrint, user]);
 
   const open = () => {
     setError(null);
@@ -60,19 +52,15 @@ export function BugReportFab() {
     }
   };
 
-  if (!canShow) return null;
-
   return (
     <>
       <button
         onClick={open}
-        className="fixed bottom-24 right-4 z-40 bg-gray-900 text-white rounded-full shadow-lg px-4 py-3 hover:bg-gray-800 transition-colors"
-        style={{ backgroundColor: 'var(--facility-accent, #111827)' }}
+        className="px-2 sm:px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap"
         title="Reportar un error"
       >
-        <span className="flex items-center gap-2 text-sm font-semibold">
-          <span>Reportar error</span>
-        </span>
+        <span className="sm:hidden">Ayuda</span>
+        <span className="hidden sm:inline">Reportar error</span>
       </button>
 
       <Modal isOpen={isOpen} onClose={close} title="Reportar un error" size="lg">

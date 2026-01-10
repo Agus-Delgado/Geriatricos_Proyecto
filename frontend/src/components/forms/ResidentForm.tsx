@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
+import { residentsApi } from '../../api/residents';
 import type { Resident, ResidentCreate, ResidentUpdate, ResidentContactCreate } from '../../types/residents';
+import type { ApiError } from '../../api/client';
 
 interface ResidentFormProps {
   resident?: Resident;
-  onSubmit: (data: ResidentCreate | ResidentUpdate) => Promise<void>;
+  onSubmit: (data: ResidentCreate | ResidentUpdate) => Promise<Resident | void>;
   onCancel: () => void;
   facilityId: string;
 }
@@ -48,6 +50,9 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [alert, setAlert] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -149,6 +154,23 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
           delete (updateData as any).archived;
           delete (updateData as any).archive_note;
           await onSubmit(updateData);
+          
+          // Si hay archivo seleccionado, subirlo después de actualizar
+          if (selectedFile && resident) {
+            try {
+              setUploadingDocument(true);
+              await residentsApi.uploadDocument(resident.id, selectedFile);
+              setSelectedFile(null);
+              if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+              }
+            } catch (uploadError) {
+              const uploadApiError = uploadError as ApiError;
+              setAlert(`Residente actualizado pero error al subir documento: ${uploadApiError.detail || 'Error desconocido'}`);
+            } finally {
+              setUploadingDocument(false);
+            }
+          }
         } else {
           const submitData: ResidentCreate = {
             ...formData,
@@ -158,8 +180,26 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
           };
           delete (submitData as any).archived;
           delete (submitData as any).archive_note;
-          await onSubmit(submitData);
+          const createdResident = await onSubmit(submitData);
+          
+          // Si hay archivo seleccionado, subirlo después de crear
+          if (selectedFile && createdResident?.id) {
+            try {
+              setUploadingDocument(true);
+              await residentsApi.uploadDocument(createdResident.id, selectedFile);
+              setSelectedFile(null);
+              if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+              }
+            } catch (uploadError) {
+              const uploadApiError = uploadError as ApiError;
+              setAlert(`Residente creado pero error al subir documento: ${uploadApiError.detail || 'Error desconocido'}`);
+            } finally {
+              setUploadingDocument(false);
+            }
+          }
         }
+        
         setAlert(null);
       } catch (error: any) {
         let detail = 'Error al guardar el residente';
@@ -359,6 +399,91 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
         />
       </div>
 
+      {/* Sección Documento (Carnet) */}
+      <div className="border-t pt-4 mt-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Documento (Carnet)</h3>
+        
+        {/* Mostrar documento existente si existe */}
+        {resident?.document_url && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-gray-700 mb-2">
+              <strong>Documento actual:</strong> {resident.document_name || 'Sin nombre'}
+              {resident.document_size && (
+                <span className="text-gray-500 ml-2">
+                  ({(resident.document_size / (1024 * 1024)).toFixed(2)} MB)
+                </span>
+              )}
+            </p>
+            <a
+              href={resident.document_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-600 hover:text-blue-800 underline"
+            >
+              Ver documento
+            </a>
+          </div>
+        )}
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Adjuntar carnet (opcional)
+          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".jpg,.jpeg,.png,.pdf"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              if (file) {
+                // Validar tipo de archivo
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+                if (!allowedTypes.includes(file.type)) {
+                  setErrors({
+                    ...errors,
+                    document: 'Tipo de archivo no permitido. Solo JPG, PNG o PDF.',
+                  });
+                  setSelectedFile(null);
+                  return;
+                }
+                // Validar tamaño (10MB)
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                if (file.size > maxSize) {
+                  setErrors({
+                    ...errors,
+                    document: `El archivo es demasiado grande. Tamaño máximo: 10MB. Tamaño actual: ${(file.size / (1024 * 1024)).toFixed(2)}MB`,
+                  });
+                  setSelectedFile(null);
+                  return;
+                }
+                setErrors({ ...errors, document: undefined });
+                setSelectedFile(file);
+              } else {
+                setSelectedFile(null);
+              }
+            }}
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+            disabled={loading || uploadingDocument}
+          />
+          {errors.document && (
+            <p className="mt-1 text-sm text-red-600">{errors.document}</p>
+          )}
+          {selectedFile && (
+            <p className="mt-2 text-sm text-gray-600">
+              Archivo seleccionado: {selectedFile.name} ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
+            </p>
+          )}
+          <p className="mt-1 text-xs text-gray-500">
+            Formatos permitidos: JPG, PNG, PDF. Tamaño máximo: 10MB.
+          </p>
+        </div>
+        {uploadingDocument && (
+          <div className="mt-2 text-sm text-blue-600">
+            Subiendo documento...
+          </div>
+        )}
+      </div>
+
       {/* Sección Dar de baja / Archivar eliminada para destrabar build */}
 
       {alert && (
@@ -369,11 +494,11 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
       )}
 
       <div className="flex space-x-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel} fullWidth disabled={loading}>
+        <Button type="button" variant="secondary" onClick={onCancel} fullWidth disabled={loading || uploadingDocument}>
           Cancelar
         </Button>
-        <Button type="submit" fullWidth disabled={loading}>
-          {loading ? 'Guardando...' : resident ? 'Actualizar' : 'Crear'}
+        <Button type="submit" fullWidth disabled={loading || uploadingDocument}>
+          {loading || uploadingDocument ? 'Guardando...' : resident ? 'Actualizar' : 'Crear'}
         </Button>
       </div>
     </form>

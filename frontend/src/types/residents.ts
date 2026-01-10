@@ -15,6 +15,10 @@ export interface Resident {
   end_date: string | null;
   end_reason: string | null;
   notes: string | null;
+  document_url?: string | null;
+  document_name?: string | null;
+  document_mime?: string | null;
+  document_size?: number | null;
   created_at: string;
   updated_at: string;
   created_by_user_id: string | null;

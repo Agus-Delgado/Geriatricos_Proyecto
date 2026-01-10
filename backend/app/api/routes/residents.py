@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
@@ -14,7 +15,9 @@ from app.services.residents_service import (
     list_deleted_residents,
     restore_resident,
 )
+from app.services.cloudinary_service import upload_document
 from app.models.auth import User
+from app.core.config import settings
 
 router = APIRouter(prefix="/residents", tags=["residents"])
 
@@ -122,3 +125,66 @@ async def delete_resident_endpoint(
     require_facility_access(resident.facility_id)(current_user, db)
     soft_delete_resident(db, resident_id, current_user.id)
     return
+
+
+@router.post("/{resident_id}/document", response_model=ResidentResponse, status_code=200)
+async def upload_resident_document(
+    resident_id: UUID,
+    file: UploadFile = File(..., description="Archivo del documento (JPG, PNG, PDF, máx 10MB)"),
+    current_user: User = Depends(require_facility_role_any(['MEDICO', 'ADMIN'])),
+    db: Session = Depends(get_db)
+):
+    """Subir documento (carnet) para un residente (requiere rol MEDICO o ADMIN)"""
+    # Validar acceso al residente
+    resident = get_resident_by_id(db, resident_id)
+    require_facility_access(resident.facility_id)(current_user, db)
+    
+    # Validar MIME type
+    allowed_mimes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf']
+    if file.content_type not in allowed_mimes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Tipo de archivo no permitido. Tipos permitidos: {', '.join(allowed_mimes)}"
+        )
+    
+    # Leer contenido del archivo
+    file_content = await file.read()
+    
+    # Validar tamaño (10MB máximo)
+    max_size = 10 * 1024 * 1024  # 10MB
+    file_size = len(file_content)
+    if file_size > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"El archivo es demasiado grande. Tamaño máximo: 10MB. Tamaño actual: {file_size / (1024 * 1024):.2f}MB"
+        )
+    
+    try:
+        # Subir a Cloudinary
+        document_url, document_name, document_size = upload_document(
+            file_content=file_content,
+            filename=file.filename or f"document_{resident_id}",
+            mime_type=file.content_type or 'application/pdf',
+            folder=settings.CLOUDINARY_FOLDER
+        )
+        
+        # Actualizar residente con información del documento
+        resident.document_url = document_url
+        resident.document_name = document_name
+        resident.document_mime = file.content_type
+        resident.document_size = document_size
+        resident.updated_by_user_id = current_user.id
+        
+        db.commit()
+        db.refresh(resident)
+        
+        return resident
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al subir documento: {str(e)}"
+        )

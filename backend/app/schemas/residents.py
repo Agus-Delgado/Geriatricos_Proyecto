@@ -73,6 +73,10 @@ class ResidentResponse(BaseModel):
     end_date: Optional[date]
     end_reason: Optional[str]
     notes: Optional[str]
+    document_url: Optional[str] = None
+    document_name: Optional[str] = None
+    document_mime: Optional[str] = None
+    document_size: Optional[int] = None
     created_at: datetime
     updated_at: datetime
     created_by_user_id: Optional[UUID]

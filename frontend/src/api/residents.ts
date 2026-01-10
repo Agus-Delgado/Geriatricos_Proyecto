@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { ApiError } from './client';
 import type {
   Resident,
   ResidentCreate,
@@ -49,5 +50,28 @@ export const residentsApi = {
     if (withinDays) searchParams.append('within_days', String(withinDays));
     const qs = searchParams.toString();
     return apiClient.post<Resident>(`/residents/${residentId}/restore${qs ? `?${qs}` : ''}`, {});
+  },
+
+  uploadDocument: async (residentId: string, file: File): Promise<Resident> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const token = localStorage.getItem('token');
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    
+    const response = await fetch(`${API_BASE_URL}/residents/${residentId}/document`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: response.statusText }));
+      throw { detail: error.detail || 'Error al subir documento', status: response.status } as ApiError;
+    }
+    
+    return response.json();
   },
 };

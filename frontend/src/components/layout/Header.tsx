@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getRoleLabel } from '../../types/auth';
+import { BugReportButton } from '../support/BugReportButton';
 
 interface HeaderProps {
   title?: string;
@@ -101,6 +102,9 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
   // Permiso para ver noticias diarias (ADMIN/MEDICO/STAFF)
   const role = getActiveRole();
   const canViewNews = isOwner || role === 'ADMIN' || role === 'MEDICO' || role === 'STAFF';
+  
+  // Permiso para reportar error: cualquier usuario autenticado
+  const canReportError = Boolean(user);
 
   // Solo mostrar header en rutas internas
   if (!isInternalRoute) {
@@ -149,7 +153,7 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
             </div>
           </div>
 
-          {/* Sección derecha: Noticias diarias + Cambiar Hogar + Menú Usuario */}
+          {/* Sección derecha: Noticias diarias + Reportar Error + Cambiar Hogar + Menú Usuario */}
           <div className="flex items-center gap-2 flex-shrink-0 max-w-full">
             {canViewNews && (
               <button
@@ -159,6 +163,10 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
                 <span className="sm:hidden">Noticias</span>
                 <span className="hidden sm:inline">Noticias diarias</span>
               </button>
+            )}
+            {/* Botón "Reportar Error" visible para usuarios autenticados (no en rutas de impresión) */}
+            {canReportError && !location.pathname.includes('/print') && (
+              <BugReportButton />
             )}
             {/* Botón "Cambiar Hogar" visible cuando hay múltiples memberships */}
             {user && memberships.length > 1 && (

@@ -31,6 +31,12 @@ class Resident(Base):
     # Si INACTIVE, verificar end_reason para detalles (DISCHARGE/PASSING/TRANSFER)
     status = Column(String(24), nullable=False, default="ACTIVE")
 
+    # Documento (carnet)
+    document_url = Column(String(512), nullable=True)
+    document_name = Column(String(255), nullable=True)
+    document_mime = Column(String(80), nullable=True)
+    document_size = Column(BigInteger, nullable=True)
+
     # Soft delete (Papelera)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
     deleted_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

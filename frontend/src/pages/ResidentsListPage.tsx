@@ -56,9 +56,10 @@ export const ResidentsListPage: React.FC = () => {
 
   const handleCreateResident = async (data: any) => {
     try {
-      await residentsApi.create(data);
+      const created = await residentsApi.create(data);
       setShowCreateModal(false);
       loadResidents();
+      return created;
     } catch (err) {
       const apiError = err as ApiError;
       throw new Error(apiError.detail || 'Error al crear residente');

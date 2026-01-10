@@ -27,7 +27,7 @@ import CertificatePrintPage from './pages/CertificatePrintPage';
 import { ResidentsListPage } from './pages/ResidentsListPage';
 import ResidentsTrashPage from './pages/ResidentsTrashPage';
 import { ResidentDetailPage } from './pages/ResidentDetailPage';
-import { MedicationDuePage } from './pages/MedicationDuePage';
+import { MedicalGuidePage } from './pages/MedicalGuidePage';
 import { FinancePage } from './pages/FinancePage';
 import { StaffManagementPage } from './pages/StaffManagementPage';
 import { AttendancePage } from './pages/AttendancePage';
@@ -216,12 +216,22 @@ function AppContent() {
         />
         <Route path="/residents/:id/print" element={<ResidentPrintPage />} />
 
-        {/* Medicaciones */}
+        {/* Guía médica */}
+        <Route
+          path="/medical-guide"
+          element={
+            <ProtectedRoute>
+              <MedicalGuidePage />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Medicaciones - Redirect a Guía médica */}
         <Route
           path="/medication-due"
           element={
             <ProtectedRoute>
-              <MedicationDuePage />
+              <Navigate to="/medical-guide" replace />
             </ProtectedRoute>
           }
         />

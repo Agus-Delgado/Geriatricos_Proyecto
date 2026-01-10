@@ -57,13 +57,11 @@ Este consentimiento es otorgado sin presión alguna y con plena capacidad de dec
 
 Firma y Aclaración del residente:
 
-_________________________________
 ${patientFullName}
 DNI: ${patientDni}
 
 Firma y Aclaración del familiar responsable:
 
-_________________________________
 Nombre y Apellido: 
 DNI: 
 Parentesco: `

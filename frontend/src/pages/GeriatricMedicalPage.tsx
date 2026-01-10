@@ -92,8 +92,8 @@ export default function GeriatricMedicalPage() {
       navigate('/prescriptions-history/search');
     } else if (action === 'residents') {
       navigate('/residents');
-    } else if (action === 'medication-due') {
-      navigate('/medication-due');
+    } else if (action === 'medical-guide') {
+      navigate('/medical-guide');
     }
   };
 
@@ -187,16 +187,16 @@ export default function GeriatricMedicalPage() {
               </p>
             </button>
 
-            {/* Medicaciones */}
+            {/* Guía médica */}
             <button
-              onClick={() => handleQuickAction('medication-due')}
+              onClick={() => handleQuickAction('medical-guide')}
               className="group relative rounded-xl shadow-lg p-6 text-left hover:shadow-xl transition-all duration-300 transform hover:scale-105 border border-gray-200"
               style={{ backgroundColor: 'var(--facility-card, white)' }}
             >
-              <div className="text-4xl mb-3">⏰💊</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Medicaciones</h3>
+              <div className="text-4xl mb-3">📋</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Guía médica</h3>
               <p className="text-sm text-gray-600">
-                Ver medicaciones a administrar hoy
+                Buscar pacientes y ver medicación actual e historial
               </p>
             </button>
 
@@ -213,16 +213,16 @@ export default function GeriatricMedicalPage() {
               </p>
             </button>
 
-            {/* Certificaciones */}
+            {/* Constancias */}
             <button
               onClick={() => handleQuickAction('certificaciones')}
               className="group relative rounded-xl shadow-lg p-6 text-left hover:shadow-xl transition-all duration-300 transform hover:scale-105 border border-gray-200"
               style={{ backgroundColor: 'var(--facility-card, white)' }}
             >
               <div className="text-4xl mb-3">📜</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Certificaciones</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Constancias</h3>
               <p className="text-sm text-gray-600">
-                Gestionar certificaciones médicas
+                Gestionar constancias médicas
               </p>
             </button>
           </div>

@@ -366,6 +366,46 @@ td {
   margin-top: 4mm;
 }
 
+/* Bloques de firma para Consentimiento */
+.print-signature-block {
+  margin-top: 12mm;
+  margin-bottom: 12mm;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.print-signature-label-block {
+  margin-bottom: 0;
+}
+
+.print-signature-title {
+  font-weight: 600;
+  font-size: 11pt;
+  margin-bottom: 4mm;
+  color: #111827;
+}
+
+.print-signature-space {
+  height: 60px;
+  min-height: 60px;
+  margin-bottom: 2mm;
+}
+
+.print-signature-line-block {
+  width: 320px;
+  max-width: 320px;
+  height: 0;
+  border-bottom: 1px solid #000;
+  margin-bottom: 4mm;
+}
+
+.print-signature-info {
+  font-size: 10.5pt;
+  color: #111827;
+  margin: 2px 0;
+  line-height: 1.4;
+}
+
 /* Preview Stage - Para vista previa */
 .previewStage {
   display: flex;
@@ -419,5 +459,23 @@ td {
     width: 210mm !important;
     min-height: 297mm !important;
     border-radius: 0 !important;
+  }
+  
+  /* Espacios de firma para Consentimiento en impresión */
+  .print-signature-block {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-top: 10mm;
+    margin-bottom: 10mm;
+  }
+  
+  .print-signature-space {
+    height: 65px;
+    min-height: 65px;
+  }
+  
+  .print-signature-line-block {
+    width: 360px;
+    max-width: 360px;
   }
 }

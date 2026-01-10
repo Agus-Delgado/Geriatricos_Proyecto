@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { PrintDocument } from './PrintDocument';
@@ -25,34 +25,52 @@ export function CertificateEditor({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
 
+  // Sincronizar con initialDraft cuando cambia (fix para props controladas)
+  useEffect(() => {
+    setDraft(initialDraft);
+  }, [initialDraft]);
+
   const typeLabels: Record<CertificateType, string> = {
     CONTROL_CLINICO: 'Control Clínico',
     OBITO: 'Óbito',
     PRESENCIA: 'Supervivencia',
+    CONSENTIMIENTO: 'Consentimiento informado',
   };
 
   const handleDateChange = (dateStr: string) => {
+    if (!dateStr || dateStr.trim() === '') {
+      const now = new Date();
+      setDraft((prev) => ({ ...prev, issuedAt: now.toISOString() }));
+      return;
+    }
     const [datePart, timePart] = dateStr.split('T');
     const [year, month, day] = datePart.split('-');
     const [hours = '00', minutes = '00'] = (timePart || '').split(':');
     
     const newDate = new Date(`${year}-${month}-${day}T${hours}:${minutes}`);
-    setDraft({ ...draft, issuedAt: newDate.toISOString() });
+    if (!isNaN(newDate.getTime())) {
+      setDraft((prev) => ({ ...prev, issuedAt: newDate.toISOString() }));
+    }
   };
 
   const handleBodyTextChange = (text: string) => {
-    setDraft({ ...draft, bodyText: text });
+    setDraft((prev) => ({ ...prev, bodyText: text ?? '' }));
   };
 
   const handleResetTemplate = () => {
     const issuedAt = new Date(draft.issuedAt);
+    if (isNaN(issuedAt.getTime())) {
+      return;
+    }
     const defaultText = buildDefaultBodyText({
       type: draft.type,
-      patientFullName: draft.patientFullName,
-      patientDni: draft.patientDni,
+      patientFullName: draft.patientFullName ?? '',
+      patientDni: draft.patientDni ?? '',
       issuedAt,
+      hogarName: draft.hogarName ?? undefined,
+      hogarAddress: draft.hogarAddress || undefined,
     });
-    setDraft({ ...draft, bodyText: defaultText });
+    setDraft((prev) => ({ ...prev, bodyText: defaultText }));
   };
 
   const validate = (): boolean => {
@@ -95,8 +113,10 @@ export function CertificateEditor({
     onPrint?.(draft);
   };
 
-  const issuedAtDate = new Date(draft.issuedAt);
-  const dateValue = issuedAtDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+  const issuedAtDate = new Date(draft.issuedAt ?? new Date());
+  const dateValue = !isNaN(issuedAtDate.getTime()) 
+    ? issuedAtDate.toISOString().slice(0, 16) 
+    : new Date().toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
 
   return (
     <div className="space-y-6">
@@ -106,7 +126,7 @@ export function CertificateEditor({
           Tipo de Constancia
         </label>
         <Input
-          value={typeLabels[draft.type]}
+          value={typeLabels[draft.type] ?? ''}
           readOnly
           className="bg-gray-100 cursor-not-allowed"
         />
@@ -118,7 +138,7 @@ export function CertificateEditor({
           Paciente
         </label>
         <Input
-          value={`${draft.patientFullName} - DNI: ${draft.patientDni}`}
+          value={`${draft.patientFullName ?? ''} - DNI: ${draft.patientDni ?? ''}`}
           readOnly
           className="bg-gray-100 cursor-not-allowed"
         />
@@ -131,8 +151,8 @@ export function CertificateEditor({
         </label>
         <Input
           type="datetime-local"
-          value={dateValue}
-          onChange={(e) => handleDateChange(e.target.value)}
+          value={dateValue ?? ''}
+          onChange={(e) => handleDateChange(e.target.value ?? '')}
           error={errors.issuedAt}
         />
         <p className="mt-1 text-xs text-gray-500">
@@ -155,8 +175,8 @@ export function CertificateEditor({
           </button>
         </div>
         <textarea
-          value={draft.bodyText}
-          onChange={(e) => handleBodyTextChange(e.target.value)}
+          value={draft.bodyText ?? ''}
+          onChange={(e) => handleBodyTextChange(e.target.value ?? '')}
           rows={8}
           className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
             errors.bodyText ? 'border-red-500 focus:ring-red-500' : ''

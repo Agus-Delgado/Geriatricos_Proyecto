@@ -133,6 +133,8 @@ export default function CertificatesPage() {
         patientFullName,
         patientDni,
         issuedAt,
+        hogarName: facility.name,
+        hogarAddress: facility.address || undefined,
       }),
       doctorDisplayName: user.full_name,
       doctorLicenseNumber: user.license_number,
@@ -222,6 +224,7 @@ export default function CertificatesPage() {
     { value: 'CONTROL_CLINICO', label: 'Control Clínico' },
     { value: 'OBITO', label: 'Óbito' },
     { value: 'PRESENCIA', label: 'Supervivencia' },
+    { value: 'CONSENTIMIENTO', label: 'Consentimiento informado' },
   ];
 
   const getTypeLabel = (type: CertificateType): string => {

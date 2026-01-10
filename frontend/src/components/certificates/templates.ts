@@ -18,8 +18,10 @@ export function buildDefaultBodyText(args: {
   patientFullName: string;
   patientDni: string;
   issuedAt: Date;
+  hogarName?: string;
+  hogarAddress?: string;
 }): string {
-  const { type, patientFullName, patientDni, issuedAt } = args;
+  const { type, patientFullName, patientDni, issuedAt, hogarName = '', hogarAddress = '' } = args;
   const FECHA = formatDateAR(issuedAt);
   const HORA = formatTimeAR(issuedAt);
 
@@ -40,6 +42,31 @@ Se expide la presente constancia para ser presentada ante quien corresponda.`
       return (
 `Se deja constancia que ${patientFullName}, DNI ${patientDni}, se encuentra en este establecimiento.
 Se expide la presente constancia para ser presentada ante quien corresponda.`
+      );
+
+    case 'CONSENTIMIENTO':
+      const hogarTexto = hogarName ? (hogarAddress ? `${hogarName}, ${hogarAddress}` : hogarName) : 'la residencia';
+      return (
+`CONSENTIMIENTO INFORMADO PARA RESIDENCIAS DE LARGA ESTADÍA
+
+Yo, ${patientFullName}, DNI ${patientDni}, consiento de manera informada y libre mi ingreso y permanencia en ${hogarTexto}, a partir del ${FECHA}.
+
+He sido informado/a acerca de las condiciones de admisión, el régimen interno, los servicios que se prestan, los costos y las políticas de la institución. Comprendo que puedo solicitar información adicional en cualquier momento y que tengo derecho a revocar este consentimiento.
+
+Este consentimiento es otorgado sin presión alguna y con plena capacidad de decisión.
+
+Firma y Aclaración del residente:
+
+_________________________________
+${patientFullName}
+DNI: ${patientDni}
+
+Firma y Aclaración del familiar responsable:
+
+_________________________________
+Nombre y Apellido: 
+DNI: 
+Parentesco: `
       );
 
     default:

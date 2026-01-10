@@ -23,21 +23,23 @@ export function PrintDocument({ draft }: { draft: CertificateDraft }) {
   }, [forbidden]);
 
   const license = draft.doctorLicenseNumber?.trim() ? draft.doctorLicenseNumber.trim() : '(pendiente de configurar)';
-  const facilityAddress = `${draft.hogarName}, ${draft.hogarAddress}, Ramos Mejía`;
+  const facilityAddress = `${draft.hogarName ?? ''}, ${draft.hogarAddress ?? ''}, Ramos Mejía`;
 
   return (
     <RxPaperFrame 
-      headerDate={draft.issuedAt}
-      patientName={draft.patientFullName}
+      headerDate={draft.issuedAt ?? ''}
+      patientName={draft.patientFullName ?? ''}
       patientAddress={draft.patientDni ? `DNI: ${draft.patientDni}` : ''}
     >
       <div className="print-root">
-        {/* Título centrado */}
-        <div className="print-title">CONSTANCIA</div>
+        {/* Título centrado - solo mostrar si no es CONSENTIMIENTO (que ya tiene título en bodyText) */}
+        {draft.type !== 'CONSENTIMIENTO' && (
+          <div className="print-title">CONSTANCIA</div>
+        )}
 
         {/* Cuerpo del documento */}
         <div className="print-body">
-          {draft.bodyText.split('\n').map((line, idx) => (
+          {(draft.bodyText ?? '').split('\n').map((line, idx) => (
             <p key={idx} className="print-paragraph">
               {line}
             </p>
@@ -49,7 +51,7 @@ export function PrintDocument({ draft }: { draft: CertificateDraft }) {
           <div className="print-signature-section">
             <div className="print-signature-label">Firma:</div>
             <div className="print-signature-line"></div>
-            <div className="print-doctor-name">Dr/a. {draft.doctorDisplayName}</div>
+            <div className="print-doctor-name">Dr/a. {draft.doctorDisplayName ?? ''}</div>
             <div className="print-doctor-license">Matrícula: {license}</div>
           </div>
           <div className="print-facility-address">

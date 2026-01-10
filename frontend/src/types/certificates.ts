@@ -1,4 +1,4 @@
-export type CertificateType = 'CONTROL_CLINICO' | 'OBITO' | 'PRESENCIA';
+export type CertificateType = 'CONTROL_CLINICO' | 'OBITO' | 'PRESENCIA' | 'CONSENTIMIENTO';
 
 export interface CertificateDraft {
   type: CertificateType;

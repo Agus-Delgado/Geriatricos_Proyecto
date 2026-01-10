@@ -186,7 +186,7 @@ function AppContent() {
           }
         />
 
-        {/* Certificados - Print */}
+        {/* Constancias - Print */}
         <Route path="/certificates/print" element={<CertificatePrintPage />} />
 
         {/* Residentes */}

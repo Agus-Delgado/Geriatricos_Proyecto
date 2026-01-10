@@ -99,6 +99,7 @@ export default function MedicalFolderPage() {
       CONTROL_CLINICO: 'Control Clínico',
       OBITO: 'Óbito',
       PRESENCIA: 'Presencia',
+      CONSENTIMIENTO: 'Consentimiento informado',
     };
     return labels[type] || type;
   };

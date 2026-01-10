@@ -101,6 +101,7 @@ export default function MedicalFolderPrintPage() {
       CONTROL_CLINICO: 'Control Clínico',
       OBITO: 'Óbito',
       PRESENCIA: 'Presencia',
+      CONSENTIMIENTO: 'Consentimiento informado',
     };
     return labels[type] || type;
   };
@@ -249,7 +250,7 @@ export default function MedicalFolderPrintPage() {
               <div className="print-section-title">Constancias ({certificates.length})</div>
               {certificates.length === 0 ? (
                 <p style={{ fontStyle: 'italic', color: '#666' }}>
-                  No hay certificados registrados.
+                  No hay constancias registradas.
                 </p>
               ) : (
                 <div className="print-card">

@@ -23,7 +23,7 @@ export const VersionUpdateWatcher: React.FC<VersionUpdateWatcherProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const checkingRef = useRef(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<number | null>(null);
 
   const checkVersion = async () => {
     // Prevenir checks concurrentes
@@ -78,12 +78,12 @@ export const VersionUpdateWatcher: React.FC<VersionUpdateWatcherProps> = ({
 
   useEffect(() => {
     // Check inicial después de un pequeño delay (para no bloquear el render inicial)
-    const initialTimeout = setTimeout(() => {
+    const initialTimeoutId = window.setTimeout(() => {
       void checkVersion();
     }, 5000); // Esperar 5 segundos antes del primer check
 
     // Setup interval
-    intervalRef.current = setInterval(() => {
+    intervalRef.current = window.setInterval(() => {
       void checkVersion();
     }, intervalMs);
 
@@ -103,9 +103,9 @@ export const VersionUpdateWatcher: React.FC<VersionUpdateWatcherProps> = ({
     window.addEventListener('focus', handleFocus);
 
     return () => {
-      clearTimeout(initialTimeout);
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      window.clearTimeout(initialTimeoutId);
+      if (intervalRef.current !== null) {
+        window.clearInterval(intervalRef.current);
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);

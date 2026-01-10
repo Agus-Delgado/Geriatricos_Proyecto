@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { FacilityProvider } from './contexts/FacilityContext';
@@ -51,6 +51,7 @@ import MyAccountPage from './pages/MyAccountPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import { OwnerDashboardPage } from './pages/OwnerDashboardPage';
 import { useAuth } from './contexts/AuthContext';
+import { VersionUpdateWatcher } from './components/app/VersionUpdateWatcher';
 
 function AppContent() {
   useFacilityTheme();
@@ -382,6 +383,7 @@ function App() {
           <SessionBootstrap>
             <PWAProvider>
               <FacilityProvider>
+                <AppWithWatcher />
                 <AppContent />
               </FacilityProvider>
             </PWAProvider>
@@ -390,6 +392,18 @@ function App() {
       </ErrorBoundary>
     </BrowserRouter>
   );
+}
+
+// Componente interno para acceder al AuthContext y mostrar el watcher solo cuando hay token
+function AppWithWatcher() {
+  const { token } = useAuth();
+
+  // Solo mostrar el watcher cuando hay token (usuario logueado)
+  if (!token) {
+    return null;
+  }
+
+  return <VersionUpdateWatcher intervalMs={120000} autoReload={false} />;
 }
 
 export default App;

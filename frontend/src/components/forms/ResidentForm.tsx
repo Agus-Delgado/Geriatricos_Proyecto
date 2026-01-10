@@ -415,7 +415,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
               )}
             </p>
             <a
-              href={resident.document_url}
+              href={resident.document_url || '#'}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-blue-600 hover:text-blue-800 underline"
@@ -456,7 +456,10 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
                   setSelectedFile(null);
                   return;
                 }
-                setErrors({ ...errors, document: undefined });
+                // Limpiar error de documento si existe (eliminar propiedad en lugar de undefined)
+                const newErrors = { ...errors };
+                delete newErrors.document;
+                setErrors(newErrors);
                 setSelectedFile(file);
               } else {
                 setSelectedFile(null);

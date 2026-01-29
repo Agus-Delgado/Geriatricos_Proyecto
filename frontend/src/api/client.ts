@@ -174,6 +174,78 @@ class ApiClient {
   delete<T>(endpoint: string, options?: RequestInit): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' });
   }
+
+  async getBlob(endpoint: string, options?: RequestInit): Promise<Blob> {
+    const token = this.getToken();
+    const url = `${this.baseURL}${endpoint}`;
+
+    const headers: Record<string, string> = {
+      ...(options?.headers as Record<string, string>),
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const config: RequestInit = {
+      ...options,
+      method: 'GET',
+      headers,
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        const error: ApiError = {
+          detail: 'Error desconocido',
+          status: response.status,
+        };
+
+        try {
+          const data = await response.json();
+          const detail = data?.detail ?? data?.message;
+          if (typeof detail === 'string') {
+            error.detail = detail;
+          } else if (detail !== undefined) {
+            error.detail = JSON.stringify(detail);
+          }
+        } catch {
+          error.detail = response.statusText || error.detail;
+        }
+
+        // Si es 401, limpiar token y notificar al handler
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('original_token');
+          localStorage.removeItem('facility_id');
+          localStorage.removeItem('activeFacilityId');
+          
+          if (onUnauthorized) {
+            onUnauthorized();
+          }
+        }
+
+        throw error;
+      }
+
+      return await response.blob();
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error(`[Network Error] ${endpoint}`, {
+          url,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+
+      if (error instanceof Error && 'detail' in error) {
+        throw error;
+      }
+      throw {
+        detail: error instanceof Error ? error.message : 'Error de conexión',
+      } as ApiError;
+    }
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

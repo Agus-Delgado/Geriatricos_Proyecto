@@ -26,6 +26,7 @@ export default function ClinicalHistoryPage() {
   const [content, setContent] = useState('');
   const [recordedAt, setRecordedAt] = useState('');
   const [saving, setSaving] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   useEffect(() => {
     if (patientId) {
@@ -65,6 +66,37 @@ export default function ClinicalHistoryPage() {
   const handlePrint = () => {
     if (patientId) {
       navigate(`/clinical-history/${patientId}/print`);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!patientId || !patient) return;
+
+    try {
+      setDownloadingPdf(true);
+      setError(null);
+
+      const blob = await clinicalApi.downloadHistoryPdf(patientId);
+      
+      // Crear URL y descargar
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      const today = new Date().toISOString().split('T')[0];
+      link.download = `Historia_Clinica_${patient.last_name}_${patient.first_name}_${today}.pdf`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Limpiar URL
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.detail || 'Error al descargar PDF');
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -171,6 +203,14 @@ export default function ClinicalHistoryPage() {
               style={{ borderColor: 'var(--facility-accent, #667eea)' }}
             >
               Carpeta
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleDownloadPdf}
+              disabled={downloadingPdf}
+              style={{ borderColor: 'var(--facility-accent, #667eea)' }}
+            >
+              {downloadingPdf ? 'Descargando...' : 'Descargar PDF'}
             </Button>
             <Button
               onClick={handlePrint}

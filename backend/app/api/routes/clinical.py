@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
@@ -288,3 +289,61 @@ async def create_vital_sign(
     db.refresh(vital_sign)
     
     return vital_sign
+
+
+@router.get("/clinical-history.pdf")
+async def download_clinical_history_pdf(
+    resident_id: UUID,
+    current_user: User = Depends(require_facility_role_any(['MEDICO', 'ADMIN'])),
+    db: Session = Depends(get_db)
+):
+    """Descargar Historia Clínica (evoluciones) en PDF"""
+    resident = db.query(Resident).filter(Resident.id == resident_id, Resident.deleted_at.is_(None)).first()
+    if not resident:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Residente no encontrado"
+        )
+    
+    require_facility_access(resident.facility_id)(current_user, db)
+    
+    # Traer notas clínicas ordenadas cronológicamente
+    notes = db.query(ClinicalNote).filter(
+        ClinicalNote.resident_id == resident_id
+    ).order_by(ClinicalNote.recorded_at.asc()).all()
+    
+    # Preparar datos para PDF
+    resident_name = f"{resident.last_name}, {resident.first_name}"
+    resident_dni = resident.dni
+    coverage = resident.coverage_type
+    
+    notes_data = [
+        {
+            "recorded_at": note.recorded_at,
+            "note_type": note.note_type or "GENERAL",
+            "content": note.content
+        }
+        for note in notes
+    ]
+    
+    # Generar PDF
+    from app.services.certificate_service import generate_clinical_history_pdf
+    
+    pdf_buffer = generate_clinical_history_pdf(
+        resident_name=resident_name,
+        resident_dni=resident_dni,
+        coverage=coverage,
+        notes=notes_data,
+        issued_at=datetime.utcnow()
+    )
+    
+    # Preparar nombre de archivo
+    from datetime import date
+    today_str = date.today().strftime("%Y-%m-%d")
+    filename = f"Historia_Clinica_{resident.last_name}_{resident.first_name}_{today_str}.pdf"
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )

@@ -38,4 +38,8 @@ export const clinicalApi = {
       data
     );
   },
+
+  downloadHistoryPdf: async (residentId: string): Promise<Blob> => {
+    return apiClient.getBlob(`/residents/${residentId}/clinical-history.pdf`);
+  },
 };

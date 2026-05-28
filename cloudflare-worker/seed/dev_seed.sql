@@ -2,7 +2,6 @@ PRAGMA foreign_keys = ON;
 
 -- Development-only seed data for local D1.
 -- Do not use real personal or production data.
--- password_hash is a placeholder and must be replaced/validated in the auth block.
 
 INSERT OR REPLACE INTO facilities (
   id,
@@ -68,9 +67,16 @@ INSERT OR REPLACE INTO residents (
   first_name,
   last_name,
   dni,
-  room,
+  birth_date,
+  sex,
+  coverage_type,
+  coverage_number,
+  admission_date,
+  stay_status,
   status,
-  medical_notes,
+  notes,
+  created_by_user_id,
+  updated_by_user_id,
   created_at,
   updated_at
 ) VALUES (
@@ -79,9 +85,16 @@ INSERT OR REPLACE INTO residents (
   'Juan',
   'Demo',
   '11111111',
-  '101',
+  '1940-05-15',
+  NULL,
+  'PARTICULAR',
+  NULL,
+  '2025-06-01',
+  'ACTIVE',
   'ACTIVE',
   'Resident demo for local validation only.',
+  'usr-admin-demo-001',
+  'usr-admin-demo-001',
   '2026-01-01T00:00:00Z',
   '2026-01-01T00:00:00Z'
 );
@@ -93,6 +106,7 @@ INSERT OR REPLACE INTO resident_contacts (
   relationship,
   phone,
   email,
+  address,
   notes,
   is_primary,
   created_at,
@@ -104,6 +118,7 @@ INSERT OR REPLACE INTO resident_contacts (
   'Hija',
   '+54-11-0000-0000',
   'contacto.demo@local.invalid',
+  NULL,
   'Contacto demo de desarrollo local.',
   1,
   '2026-01-01T00:00:00Z',

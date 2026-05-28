@@ -1,4 +1,4 @@
-# Cloudflare Worker — Tests de contrato (Bloques 8–9)
+# Cloudflare Worker — Tests de contrato (Bloques 8–10)
 
 Tests mínimos de contrato HTTP en `cloudflare-worker/`, ejecutados con **Vitest** y **`@cloudflare/vitest-pool-workers`** (runtime Workers + D1 aislado).
 
@@ -21,6 +21,18 @@ Tests mínimos de contrato HTTP en `cloudflare-worker/`, ejecutados con **Vitest
 | Detalle por slug | `GET /facilities/by-slug/hogar-demo-centro` | `200`, `id: fac-demo-001` |
 
 No se asserta el JWT completo ni timestamps dinámicos.
+
+## Alcance — Residents (Bloque 10)
+
+| Caso | Endpoint | Esperado |
+|------|----------|----------|
+| List sin token | `GET /residents?facility_id=fac-demo-001` | `401`, `detail: Not authenticated` |
+| List con token | `GET /residents?facility_id=fac-demo-001` | `200`, incluye `res-demo-001` |
+| Detalle | `GET /residents/res-demo-001` | `200`, residente demo |
+| Alta minima | `POST /residents` | `201`, residente nuevo |
+| Actualizar | `PATCH /residents/:id` | `200`, campo actualizado |
+| Soft delete | `DELETE /residents/:id` luego `GET` | `204` y luego `404` |
+| Alta con contactos | `POST /residents` con `contacts[]` | `201` |
 
 ## Prerrequisitos
 
@@ -66,8 +78,9 @@ No usar credenciales reales ni este seed en producción.
 - `test/seed-dev.ts` — seed demo
 - `test/auth.contract.test.ts` — 4 casos de contrato auth
 - `test/facilities.contract.test.ts` — 4 casos de contrato facilities
+- `test/residents.contract.test.ts` — 7 casos de contrato residents
 
-Contratos documentados en [cloudflare-worker-auth.md](./cloudflare-worker-auth.md) y [cloudflare-worker-facilities.md](./cloudflare-worker-facilities.md).
+Contratos documentados en [cloudflare-worker-auth.md](./cloudflare-worker-auth.md), [cloudflare-worker-facilities.md](./cloudflare-worker-facilities.md) y [cloudflare-worker-residents.md](./cloudflare-worker-residents.md).
 
 ## Troubleshooting
 

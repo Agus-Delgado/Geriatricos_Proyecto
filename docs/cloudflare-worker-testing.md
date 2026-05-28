@@ -1,4 +1,4 @@
-# Cloudflare Worker — Tests de contrato (Bloques 8–10)
+# Cloudflare Worker — Tests de contrato (Bloques 8–11)
 
 Tests mínimos de contrato HTTP en `cloudflare-worker/`, ejecutados con **Vitest** y **`@cloudflare/vitest-pool-workers`** (runtime Workers + D1 aislado).
 
@@ -33,6 +33,17 @@ No se asserta el JWT completo ni timestamps dinámicos.
 | Actualizar | `PATCH /residents/:id` | `200`, campo actualizado |
 | Soft delete | `DELETE /residents/:id` luego `GET` | `204` y luego `404` |
 | Alta con contactos | `POST /residents` con `contacts[]` | `201` |
+
+## Alcance — Contacts (Bloque 11)
+
+| Caso | Endpoint | Esperado |
+|------|----------|----------|
+| List sin token | `GET /residents/res-demo-001/contacts` | `401`, `detail: Not authenticated` |
+| List con token | `GET /residents/res-demo-001/contacts` | `200`, incluye `rc-demo-001` |
+| Residente inexistente | `GET /residents/res-does-not-exist/contacts` | `404`, `Residente no encontrado` |
+| Alta contacto | `POST /residents/res-demo-001/contacts` | `201`, contacto creado |
+| Actualizar | `PATCH /residents/:id/contacts/:contactId` | `200`, campo actualizado |
+| Hard delete | `DELETE .../contacts/:id` luego list | `204` y contacto ausente en listado |
 
 ## Prerrequisitos
 
@@ -79,8 +90,9 @@ No usar credenciales reales ni este seed en producción.
 - `test/auth.contract.test.ts` — 4 casos de contrato auth
 - `test/facilities.contract.test.ts` — 4 casos de contrato facilities
 - `test/residents.contract.test.ts` — 7 casos de contrato residents
+- `test/contacts.contract.test.ts` — 6 casos de contrato contacts
 
-Contratos documentados en [cloudflare-worker-auth.md](./cloudflare-worker-auth.md), [cloudflare-worker-facilities.md](./cloudflare-worker-facilities.md) y [cloudflare-worker-residents.md](./cloudflare-worker-residents.md).
+Contratos documentados en [cloudflare-worker-auth.md](./cloudflare-worker-auth.md), [cloudflare-worker-facilities.md](./cloudflare-worker-facilities.md), [cloudflare-worker-residents.md](./cloudflare-worker-residents.md) y [cloudflare-worker-contacts.md](./cloudflare-worker-contacts.md).
 
 ## Troubleshooting
 

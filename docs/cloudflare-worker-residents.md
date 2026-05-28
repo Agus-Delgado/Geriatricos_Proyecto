@@ -16,8 +16,9 @@ Reutiliza `requireAuth` y control de acceso por facility (`facility_users` + pla
 
 - Papelera: `GET /residents/deleted`, `POST /residents/:id/restore`
 - Documentos / Cloudinary: `POST /residents/:id/document`
-- CRUD de contactos: `/residents/:id/contacts`
 - Clinical, medications, staff, agenda
+
+CRUD de contactos por residente: ver [cloudflare-worker-contacts.md](./cloudflare-worker-contacts.md).
 
 ## Autenticacion
 

@@ -1,13 +1,15 @@
-import type { D1Database } from "@cloudflare/workers-types";
 import { Hono } from "hono";
 import { requireAuth } from "../../middleware/auth";
 import type { AppContext } from "../../types/env";
+import { insertResidentContact } from "../contacts/db";
+import { contactsRouter } from "../contacts";
 import { assertFacilityAccess, canMutateResidents } from "./access";
 import {
   RESIDENT_SELECT_COLUMNS,
   toResidentResponse,
   type DbResidentRow
 } from "./mapper";
+import { fetchResidentById } from "./resident";
 
 type ResidentContactCreateBody = {
   full_name: string;
@@ -53,22 +55,7 @@ const residentsRouter = new Hono<AppContext>();
 
 residentsRouter.use("*", requireAuth);
 
-async function fetchResidentById(
-  db: D1Database,
-  residentId: string,
-  includeDeleted = false
-): Promise<DbResidentRow | null> {
-  const deletedClause = includeDeleted ? "" : " AND deleted_at IS NULL";
-  return db
-    .prepare(
-      `SELECT ${RESIDENT_SELECT_COLUMNS}
-       FROM residents
-       WHERE id = ?1${deletedClause}
-       LIMIT 1`
-    )
-    .bind(residentId)
-    .first<DbResidentRow>();
-}
+residentsRouter.route("/:residentId/contacts", contactsRouter);
 
 function validateCoverageOther(
   coverageType: string | null | undefined,
@@ -224,25 +211,19 @@ residentsRouter.post("/", async (c) => {
     if (!name) {
       continue;
     }
-    const contactId = crypto.randomUUID();
-    await c.env.DB.prepare(
-      `INSERT INTO resident_contacts (
-        id, resident_id, full_name, relationship, phone, email, address,
-        is_primary, created_at, updated_at
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?9)`
-    )
-      .bind(
-        contactId,
-        id,
-        name,
-        contact.relationship_type?.trim() ?? null,
-        contact.phone?.trim() ?? null,
-        contact.email?.trim() ?? null,
-        contact.address?.trim() ?? null,
-        contact.is_primary ? 1 : 0,
-        now
-      )
-      .run();
+    await insertResidentContact(
+      c.env.DB,
+      id,
+      {
+        full_name: name,
+        relationship_type: contact.relationship_type,
+        phone: contact.phone,
+        email: contact.email,
+        address: contact.address,
+        is_primary: contact.is_primary
+      },
+      now
+    );
   }
 
   const created = await fetchResidentById(c.env.DB, id);

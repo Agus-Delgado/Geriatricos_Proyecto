@@ -55,9 +55,10 @@ Seed includes:
 - `active_facility_id` linked to the demo facility
 - 1 demo resident + 1 demo contact
 
-`password_hash` in seed is intentionally a placeholder:
-- `PLACEHOLDER_HASH_REPLACE_IN_AUTH_BLOCK`
-- It must be replaced/validated in the authentication block.
+`password_hash` in seed is a real scrypt hash (verifiable login in local/dev):
+- Demo user: DNI `00000000` or email `admin.demo@local.invalid`
+- Demo password: `AdminDemo123!` (development only; do not use in production)
+- See [cloudflare-worker-auth.md](./cloudflare-worker-auth.md) and [cloudflare-worker-deploy-readiness.md](./cloudflare-worker-deploy-readiness.md) for remote bootstrap guidance.
 
 ## 4) Validate with SELECT queries
 

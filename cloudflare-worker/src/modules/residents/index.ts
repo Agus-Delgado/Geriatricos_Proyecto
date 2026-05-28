@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { requireAuth } from "../../middleware/auth";
 import type { AppContext } from "../../types/env";
 import { insertResidentContact } from "../contacts/db";
+import { clinicalRouter } from "../clinical";
 import { contactsRouter } from "../contacts";
 import { assertFacilityAccess, canMutateResidents } from "./access";
 import {
@@ -56,6 +57,7 @@ const residentsRouter = new Hono<AppContext>();
 residentsRouter.use("*", requireAuth);
 
 residentsRouter.route("/:residentId/contacts", contactsRouter);
+residentsRouter.route("/:residentId", clinicalRouter);
 
 function validateCoverageOther(
   coverageType: string | null | undefined,

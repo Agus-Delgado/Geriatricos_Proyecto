@@ -1,4 +1,4 @@
-# Cloudflare Worker — Tests de contrato (Bloques 8–12)
+# Cloudflare Worker — Tests de contrato (Bloques 8–13)
 
 Tests mínimos de contrato HTTP en `cloudflare-worker/`, ejecutados con **Vitest** y **`@cloudflare/vitest-pool-workers`** (runtime Workers + D1 aislado).
 
@@ -54,6 +54,18 @@ No se asserta el JWT completo ni timestamps dinámicos.
 | Actualizar | `PATCH /residents/:id/contacts/:contactId` | `200`, campo actualizado |
 | Hard delete | `DELETE .../contacts/:id` luego list | `204` y contacto ausente en listado |
 
+## Alcance — Clinical (Bloque 13)
+
+| Caso | Endpoint | Esperado |
+|------|----------|----------|
+| Summary sin token | `GET /residents/res-demo-001/clinical-summary` | `401`, `detail: Not authenticated` |
+| Summary residente inexistente | `GET /residents/res-does-not-exist/clinical-summary` | `404`, `Residente no encontrado` |
+| Summary sin fila | `GET .../clinical-summary` tras `POST /residents` | `404`, `Resumen clínico no encontrado` |
+| Summary upsert | `PUT .../clinical-summary` | `200`, crea y actualiza |
+| Notes sin token | `GET /residents/res-demo-001/clinical-notes` | `401` |
+| Notes con token | `GET .../clinical-notes` | `200`, incluye `cn-demo-001` |
+| Alta nota | `POST .../clinical-notes` | `201`, nota creada |
+
 ## Prerrequisitos
 
 Desde `cloudflare-worker/`:
@@ -100,8 +112,9 @@ No usar credenciales reales ni este seed en producción.
 - `test/facilities.contract.test.ts` — 4 casos de contrato facilities
 - `test/residents.contract.test.ts` — 7 casos de contrato residents
 - `test/contacts.contract.test.ts` — 6 casos de contrato contacts
+- `test/clinical.contract.test.ts` — 7 casos de contrato clinical
 
-Contratos documentados en [cloudflare-worker-auth.md](./cloudflare-worker-auth.md), [cloudflare-worker-facilities.md](./cloudflare-worker-facilities.md), [cloudflare-worker-residents.md](./cloudflare-worker-residents.md) y [cloudflare-worker-contacts.md](./cloudflare-worker-contacts.md).
+Contratos documentados en [cloudflare-worker-auth.md](./cloudflare-worker-auth.md), [cloudflare-worker-facilities.md](./cloudflare-worker-facilities.md), [cloudflare-worker-residents.md](./cloudflare-worker-residents.md), [cloudflare-worker-contacts.md](./cloudflare-worker-contacts.md) y [cloudflare-worker-clinical.md](./cloudflare-worker-clinical.md).
 
 ## Troubleshooting
 

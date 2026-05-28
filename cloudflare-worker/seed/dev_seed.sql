@@ -124,3 +124,47 @@ INSERT OR REPLACE INTO resident_contacts (
   '2026-01-01T00:00:00Z',
   '2026-01-01T00:00:00Z'
 );
+
+INSERT OR REPLACE INTO clinical_summaries (
+  id,
+  resident_id,
+  primary_diagnosis,
+  secondary_diagnoses,
+  allergies,
+  current_medications,
+  medical_history,
+  family_history,
+  updated_by_user_id,
+  updated_at
+) VALUES (
+  'cs-demo-001',
+  'res-demo-001',
+  'Hipertension arterial controlada',
+  'Diabetes tipo 2',
+  'Penicilina',
+  'Metformina 500mg',
+  'Antecedente de caida leve en 2024',
+  'Sin antecedentes relevantes reportados',
+  'usr-admin-demo-001',
+  '2026-01-01T00:00:00Z'
+);
+
+INSERT OR REPLACE INTO clinical_notes (
+  id,
+  resident_id,
+  facility_id,
+  author_user_id,
+  note_type,
+  content,
+  recorded_at,
+  created_at
+) VALUES (
+  'cn-demo-001',
+  'res-demo-001',
+  'fac-demo-001',
+  'usr-admin-demo-001',
+  'EVOLUTION',
+  'Paciente estable. Continua con controles rutinarios.',
+  '2026-01-15T10:00:00Z',
+  '2026-01-15T10:00:00Z'
+);

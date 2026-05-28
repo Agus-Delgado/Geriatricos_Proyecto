@@ -173,28 +173,28 @@
 
 ### Checklist por endpoint
 
-- [ ] Endpoint: `/residents/{residentId}/clinical-summary`
+- [x] Endpoint: `/residents/{residentId}/clinical-summary`
   - Metodo: `GET`
   - Tabla D1 requerida: `clinical_summaries`
   - Archivo frontend consumidor: `frontend/src/api/clinical.ts`
   - Respuesta esperada: `ClinicalSummary`
   - Criterio de done: resumen clinico recuperable por residente
 
-- [ ] Endpoint: `/residents/{residentId}/clinical-summary`
+- [x] Endpoint: `/residents/{residentId}/clinical-summary`
   - Metodo: `PUT`
   - Tabla D1 requerida: `clinical_summaries`
   - Archivo frontend consumidor: `frontend/src/api/clinical.ts`
   - Respuesta esperada: `ClinicalSummary`
   - Criterio de done: actualizacion persistente y consistente
 
-- [ ] Endpoint: `/residents/{residentId}/clinical-notes`
+- [x] Endpoint: `/residents/{residentId}/clinical-notes`
   - Metodo: `GET`
   - Tabla D1 requerida: `clinical_notes`
   - Archivo frontend consumidor: `frontend/src/api/clinical.ts`
   - Respuesta esperada: `ClinicalNote[]`
   - Criterio de done: historial de notas visible en orden correcto
 
-- [ ] Endpoint: `/residents/{residentId}/clinical-notes`
+- [x] Endpoint: `/residents/{residentId}/clinical-notes`
   - Metodo: `POST`
   - Tabla D1 requerida: `clinical_notes`
   - Archivo frontend consumidor: `frontend/src/api/clinical.ts`

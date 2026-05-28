@@ -1,6 +1,6 @@
 /**
- * Configuración de links externos para recetas médicas
- * Los valores pueden venir de variables de entorno con fallback a placeholders
+ * Accesos externos del hub médico (/g/:id/medical).
+ * Las URLs se definen solo vía variables Vite (VITE_*) en build; no hardcodear dominios aquí.
  */
 
 export interface MedicalLink {
@@ -19,16 +19,15 @@ function isValidUrl(url: string): boolean {
 }
 
 /**
- * Obtiene la URL de un link médico desde env vars o usa fallback
+ * Obtiene la URL de un link desde env vars de Vite.
  */
 function getMedicalLinkUrl(envVar: string): { url: string; isValid: boolean } {
   const envValue = import.meta.env[envVar];
-  
+
   if (envValue && isValidUrl(envValue)) {
     return { url: envValue, isValid: true };
   }
-  
-  // Si no hay env var o es inválida, retornar placeholder
+
   return { url: '#', isValid: false };
 }
 
@@ -49,3 +48,8 @@ export const MEDICAL_LINKS: MedicalLink[] = [
     envVar: 'VITE_PAMI_URL',
   },
 ];
+
+/** Links con URL válida configurada en el build (para el panel del hub médico). */
+export function getConfiguredMedicalLinks(): MedicalLink[] {
+  return MEDICAL_LINKS.filter((link) => link.isValid);
+}

@@ -1,37 +1,34 @@
 import React from 'react';
-import { MEDICAL_LINKS } from '../../config/medicalLinks';
-import { openExternal } from '../../utils/externalLinks';
+import { getConfiguredMedicalLinks } from '../../config/medicalLinks';
 
 export const MedicalExternalLinksPanel: React.FC = () => {
-  const validLinks = MEDICAL_LINKS.filter((link) => link.isValid);
+  const validLinks = getConfiguredMedicalLinks();
 
   if (validLinks.length === 0) {
-    return (
-      <div className="rounded-xl border border-gray-200 bg-white/90 p-4 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Enlaces externos</h2>
-        <p className="text-sm text-gray-600">
-          Configurá VITE_MISRX_URL, VITE_RECETO_URL o VITE_PAMI_URL en el build para mostrar
-          accesos rápidos a recetas electrónicas.
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white/90 p-4 mb-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-3">Enlaces externos</h2>
+    <div
+      className="rounded-xl border border-gray-200 shadow-lg p-4 md:p-6 mb-6"
+      style={{ backgroundColor: 'var(--facility-card, white)' }}
+    >
+      <h2 className="text-lg font-semibold text-gray-900">Accesos médicos</h2>
+      <p className="text-sm text-gray-600 mt-1 mb-4">Herramientas externas</p>
       <div className="flex flex-wrap gap-2">
         {validLinks.map((link) => (
-          <button
+          <a
             key={link.envVar}
-            type="button"
-            onClick={() => openExternal(link.url)}
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
             className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
           >
             {link.label}
-          </button>
+          </a>
         ))}
       </div>
+      <p className="text-xs text-gray-500 mt-3">Abrir en nueva pestaña</p>
     </div>
   );
 };

@@ -11,6 +11,7 @@ import { Modal } from '../components/ui/Modal';
 import { ResidentForm } from '../components/forms/ResidentForm';
 import type { Resident, ResidentCreate, ResidentUpdate } from '../types/residents';
 import type { ApiError } from '../api/client';
+import { RESIDENT_HOME_LABELS } from '../config/residentHomeLabels';
 
 export const ResidentsListPage: React.FC = () => {
   const [residents, setResidents] = useState<Resident[]>([]);
@@ -19,6 +20,7 @@ export const ResidentsListPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [stayStatusFilter, setStayStatusFilter] = useState<string>('ACTIVE');
   const [statusFilter, setStatusFilter] = useState<string>('ACTIVE');
+  const [homeLabelFilter, setHomeLabelFilter] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingResident, setEditingResident] = useState<Resident | null>(null);
@@ -33,7 +35,7 @@ export const ResidentsListPage: React.FC = () => {
     if (facility) {
       loadResidents();
     }
-  }, [facility, searchQuery, stayStatusFilter, statusFilter]);
+  }, [facility, searchQuery, stayStatusFilter, statusFilter, homeLabelFilter]);
 
   const loadResidents = async () => {
     if (!facility) return;
@@ -45,6 +47,7 @@ export const ResidentsListPage: React.FC = () => {
         q: searchQuery || undefined,
         stay_status: stayStatusFilter === '' ? undefined : stayStatusFilter,
         status: statusFilter === '' ? undefined : statusFilter,
+        home_label: homeLabelFilter || undefined,
       });
       setResidents(data);
     } catch (err) {
@@ -137,6 +140,19 @@ export const ResidentsListPage: React.FC = () => {
             <option value="">Incluir inactivos</option>
           </select>
         </div>
+        <select
+          value={homeLabelFilter}
+          onChange={(e) => setHomeLabelFilter(e.target.value)}
+          className="input-field w-full"
+          aria-label="Filtrar por hogar"
+        >
+          <option value="">Todos los hogares</option>
+          {RESIDENT_HOME_LABELS.map((label) => (
+            <option key={label} value={label}>
+              {label}
+            </option>
+          ))}
+        </select>
 
         {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
 
@@ -168,6 +184,9 @@ export const ResidentsListPage: React.FC = () => {
                     {resident.dni && (
                       <p className="text-sm text-gray-500 mt-1">DNI: {resident.dni}</p>
                     )}
+                    <p className="text-sm text-gray-500 mt-1">
+                      Hogar: {resident.home_label || '—'}
+                    </p>
                     <p className="text-sm text-gray-500 mt-1">
                       Ingreso: {formatDate(resident.admission_date)}
                     </p>

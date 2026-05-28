@@ -137,6 +137,9 @@ export const ResidentDetailPage: React.FC = () => {
             {resident.first_name} {resident.last_name}
           </h1>
           {resident.dni && <p className="text-sm text-gray-500">DNI: {resident.dni}</p>}
+          {resident.home_label && (
+            <p className="text-sm text-gray-600 mt-1">Hogar: {resident.home_label}</p>
+          )}
           {resident.status === 'INACTIVE' && (
             <span className="inline-block mt-2 px-2 py-1 text-xs rounded bg-amber-100 text-amber-800">
               Paciente inactivo

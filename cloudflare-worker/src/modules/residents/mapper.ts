@@ -26,6 +26,7 @@ export type DbResidentRow = {
   updated_by_user_id: string | null;
   deleted_at: string | null;
   deleted_by_user_id: string | null;
+  home_label: string | null;
 };
 
 export type ResidentResponse = {
@@ -55,6 +56,7 @@ export type ResidentResponse = {
   updated_by_user_id: string | null;
   deleted_at: string | null;
   deleted_by_user_id: string | null;
+  home_label: string | null;
 };
 
 export const RESIDENT_SELECT_COLUMNS = `
@@ -64,8 +66,16 @@ export const RESIDENT_SELECT_COLUMNS = `
   notes, medical_notes,
   document_url, document_name, document_mime, document_size,
   created_at, updated_at, created_by_user_id, updated_by_user_id,
-  deleted_at, deleted_by_user_id
+  deleted_at, deleted_by_user_id, home_label
 `.trim();
+
+export function normalizeHomeLabel(value: string | null | undefined): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
 
 export function toResidentResponse(row: DbResidentRow): ResidentResponse {
   return {
@@ -94,6 +104,7 @@ export function toResidentResponse(row: DbResidentRow): ResidentResponse {
     created_by_user_id: row.created_by_user_id,
     updated_by_user_id: row.updated_by_user_id,
     deleted_at: row.deleted_at,
-    deleted_by_user_id: row.deleted_by_user_id
+    deleted_by_user_id: row.deleted_by_user_id,
+    home_label: row.home_label
   };
 }

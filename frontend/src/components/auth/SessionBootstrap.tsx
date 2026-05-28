@@ -3,11 +3,15 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateActivityTimestamp, checkInactivityTimeout, clearSessionStorage } from '../../utils/session';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import {
+  getSingleActiveFacilityId,
+  needsFacilityPicker,
+} from '../../utils/facilitySelection';
 
 const PUBLIC_ROUTES = ['/login', '/register', '/verify-email', '/reset-password'];
 
 export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { token, user, isBootstrapping, activeFacilityId } = useAuth();
+  const { token, user, isBootstrapping, activeFacilityId, setActiveFacility } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isReady, setIsReady] = useState(false);
@@ -55,26 +59,65 @@ export const SessionBootstrap: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
-    // Hay sesión válida - verificar si necesita seleccionar facility
-    const needsFacilitySelection = 
-      !user.is_platform_admin && // Platform admin puede no tener facility
-      !activeFacilityId && // No hay facility activa
-      user.memberships && user.memberships.length > 0; // Tiene memberships disponibles
+    const activeMemberships =
+      user.memberships?.filter((m) => m.is_active) ?? [];
 
-    if (needsFacilitySelection && location.pathname !== '/select-facility') {
-      if (!hasNavigatedRef.current) {
-        console.log('[SessionBootstrap] necesita seleccionar facility');
+    const ensureFacility = async () => {
+      if (user.is_platform_admin || activeFacilityId) {
+        setIsReady(true);
+        hasNavigatedRef.current = false;
+        return;
+      }
+
+      if (activeMemberships.length === 0) {
+        setIsReady(true);
+        hasNavigatedRef.current = false;
+        return;
+      }
+
+      if (needsFacilityPicker(activeMemberships)) {
+        if (location.pathname !== '/select-facility' && !hasNavigatedRef.current) {
+          console.log('[SessionBootstrap] necesita seleccionar facility');
+          hasNavigatedRef.current = true;
+          navigate('/select-facility', { replace: true });
+        }
+        setIsReady(true);
+        hasNavigatedRef.current = false;
+        return;
+      }
+
+      const singleId = getSingleActiveFacilityId(activeMemberships);
+      if (singleId) {
+        try {
+          await setActiveFacility(singleId);
+          console.log('[SessionBootstrap] facility única asignada:', singleId);
+          setIsReady(true);
+          hasNavigatedRef.current = false;
+          return;
+        } catch (err) {
+          console.error('[SessionBootstrap] error al asignar facility:', err);
+        }
+      }
+
+      if (location.pathname !== '/select-facility' && !hasNavigatedRef.current) {
         hasNavigatedRef.current = true;
         navigate('/select-facility', { replace: true });
       }
-      return;
-    }
+      setIsReady(true);
+      hasNavigatedRef.current = false;
+    };
 
-    // Todo OK, permitir render
-    console.log('[SessionBootstrap] sesión válida, ready');
-    setIsReady(true);
-    hasNavigatedRef.current = false; // Reset para futuras navegaciones
-  }, [isBootstrapping, token, user, activeFacilityId, location.pathname, isPublicRoute, navigate]);
+    void ensureFacility();
+  }, [
+    isBootstrapping,
+    token,
+    user,
+    activeFacilityId,
+    location.pathname,
+    isPublicRoute,
+    navigate,
+    setActiveFacility,
+  ]);
 
   // Timeout por inactividad (60 minutos)
   useEffect(() => {

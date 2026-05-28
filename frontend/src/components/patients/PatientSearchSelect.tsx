@@ -126,6 +126,9 @@ export const PatientSearchSelect: React.FC<PatientSearchSelectProps> = ({
                 </div>
                 <div className="text-sm text-gray-600 mt-1">
                   <span>DNI: {patient.dni || 'N/A'}</span>
+                  {patient.home_label && (
+                    <span className="ml-3">Hogar: {patient.home_label}</span>
+                  )}
                   {age !== null && <span className="ml-3">Edad: {age} años</span>}
                   {patient.coverage_type && (
                     <span className="ml-3">Obra Social: {patient.coverage_type}</span>

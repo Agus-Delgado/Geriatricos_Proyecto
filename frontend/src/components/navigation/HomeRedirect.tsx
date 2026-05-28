@@ -4,10 +4,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { isMedicalAppMode } from '../../config/appMode';
 import { getMedicalHubPath, resolvePostLoginPath } from '../../utils/medicalNavigation';
+import {
+  getSingleActiveFacilityId,
+  needsFacilityPicker,
+} from '../../utils/facilitySelection';
 
 const HomeRedirect: React.FC = () => {
   const navigate = useNavigate();
-  const { user, activeFacilityId, isBootstrapping, getMemberships } = useAuth();
+  const { user, activeFacilityId, isBootstrapping, getMemberships, setActiveFacility } = useAuth();
 
   useEffect(() => {
     if (isBootstrapping) return;
@@ -22,31 +26,55 @@ const HomeRedirect: React.FC = () => {
       ? memberships.find((m) => m.facility_id === activeFacilityId && m.is_active)
       : undefined;
 
-    if (!activeFacilityId && memberships.length > 0) {
-      navigate('/select-facility', { replace: true });
-      return;
-    }
+    const runRedirect = async () => {
+      let facilityId = activeFacilityId;
 
-    if (activeFacilityId) {
-      if (isMedicalAppMode()) {
-        navigate(getMedicalHubPath(activeFacilityId), { replace: true });
+      if (!facilityId && memberships.length > 0) {
+        if (needsFacilityPicker(memberships)) {
+          navigate('/select-facility', { replace: true });
+          return;
+        }
+        const singleId = getSingleActiveFacilityId(memberships);
+        if (singleId) {
+          try {
+            await setActiveFacility(singleId);
+            facilityId = singleId;
+          } catch {
+            navigate('/select-facility', { replace: true });
+            return;
+          }
+        } else {
+          navigate('/select-facility', { replace: true });
+          return;
+        }
+      }
+
+      if (!facilityId) {
+        if (user.is_platform_admin && !isMedicalAppMode()) {
+          navigate('/platform', { replace: true });
+        }
         return;
       }
 
+      if (isMedicalAppMode()) {
+        navigate(getMedicalHubPath(facilityId), { replace: true });
+        return;
+      }
+
+      const membershipForFacility = memberships.find(
+        (m) => m.facility_id === facilityId && m.is_active
+      );
       const path = resolvePostLoginPath({
-        activeFacilityId,
-        membershipRole: activeMembership?.role,
+        activeFacilityId: facilityId,
+        membershipRole: membershipForFacility?.role ?? activeMembership?.role,
         isPlatformAdmin: user.is_platform_admin,
         hasMemberships: memberships.length > 0,
       });
       navigate(path, { replace: true });
-      return;
-    }
+    };
 
-    if (user.is_platform_admin && !isMedicalAppMode()) {
-      navigate('/platform', { replace: true });
-    }
-  }, [user, activeFacilityId, isBootstrapping, getMemberships, navigate]);
+    void runRedirect();
+  }, [user, activeFacilityId, isBootstrapping, getMemberships, navigate, setActiveFacility]);
 
   return <LoadingSpinner fullScreen />;
 };

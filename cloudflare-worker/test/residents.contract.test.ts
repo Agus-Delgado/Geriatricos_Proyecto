@@ -22,6 +22,7 @@ type ResidentResponse = {
   admission_date: string;
   stay_status: string;
   status: string;
+  home_label: string | null;
 };
 
 async function loginAndGetToken(): Promise<string> {
@@ -173,6 +174,91 @@ describe("residents contract", () => {
     expect(getResponse.status).toBe(404);
     const err = (await getResponse.json()) as ErrorResponse;
     expect(err.detail).toBe("Residente no encontrado");
+  });
+
+  it("POST /residents creates resident with home_label", async () => {
+    const token = await loginAndGetToken();
+
+    const response = await SELF.fetch("http://localhost/residents", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        facility_id: DEMO_FACILITY_ID,
+        first_name: "Hogar",
+        last_name: "Uno",
+        admission_date: "2026-06-01",
+        home_label: "Hogar 1"
+      })
+    });
+
+    expect(response.status).toBe(201);
+    const body = (await response.json()) as ResidentResponse;
+    expect(body.home_label).toBe("Hogar 1");
+  });
+
+  it("PATCH /residents/:id updates home_label", async () => {
+    const token = await loginAndGetToken();
+
+    const createResponse = await SELF.fetch("http://localhost/residents", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        facility_id: DEMO_FACILITY_ID,
+        first_name: "Hogar",
+        last_name: "Patch",
+        admission_date: "2026-06-02",
+        home_label: "Hogar 1"
+      })
+    });
+    const created = (await createResponse.json()) as ResidentResponse;
+
+    const patchResponse = await SELF.fetch(`http://localhost/residents/${created.id}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ home_label: "Hogar 2" })
+    });
+
+    expect(patchResponse.status).toBe(200);
+    const patched = (await patchResponse.json()) as ResidentResponse;
+    expect(patched.home_label).toBe("Hogar 2");
+  });
+
+  it("GET /residents filters by home_label", async () => {
+    const token = await loginAndGetToken();
+
+    await SELF.fetch("http://localhost/residents", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        facility_id: DEMO_FACILITY_ID,
+        first_name: "Filtro",
+        last_name: "HogarA",
+        admission_date: "2026-06-03",
+        home_label: "Hogar 3"
+      })
+    });
+
+    const listResponse = await SELF.fetch(
+      `http://localhost/residents?facility_id=${DEMO_FACILITY_ID}&home_label=Hogar%203`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    expect(listResponse.status).toBe(200);
+    const body = (await listResponse.json()) as ResidentResponse[];
+    expect(body.every((r) => r.home_label === "Hogar 3")).toBe(true);
+    expect(body.some((r) => r.last_name === "HogarA")).toBe(true);
   });
 
   it("POST /residents with contacts[] inserts inline contacts", async () => {

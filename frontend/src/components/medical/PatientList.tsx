@@ -9,6 +9,7 @@ import { Modal } from '../ui/Modal';
 import { ResidentForm } from '../forms/ResidentForm';
 import type { ApiError } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { RESIDENT_HOME_LABELS } from '../../config/residentHomeLabels';
 
 interface PatientListProps {
   facilityId: string;
@@ -19,6 +20,7 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [homeLabelFilter, setHomeLabelFilter] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Resident | null>(null);
@@ -28,7 +30,7 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
 
   useEffect(() => {
     loadPatients();
-  }, [facilityId, searchQuery]);
+  }, [facilityId, searchQuery, homeLabelFilter]);
 
   const loadPatients = async () => {
     try {
@@ -37,6 +39,7 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
       const data = await residentsApi.list(facilityId, {
         q: searchQuery || undefined,
         stay_status: 'ACTIVE',
+        home_label: homeLabelFilter || undefined,
       });
       setPatients(data);
     } catch (err) {
@@ -112,12 +115,25 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
         )}
       </div>
 
-      <div className="mb-4 flex items-center gap-4">
+      <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
         <SearchBar
           value={searchQuery}
           onChange={setSearchQuery}
           placeholder="Buscar por DNI o nombre..."
         />
+        <select
+          value={homeLabelFilter}
+          onChange={(e) => setHomeLabelFilter(e.target.value)}
+          className="input-field sm:w-48"
+          aria-label="Filtrar por hogar"
+        >
+          <option value="">Todos los hogares</option>
+          {RESIDENT_HOME_LABELS.map((label) => (
+            <option key={label} value={label}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {error && (
@@ -141,6 +157,7 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Nombre</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Hogar</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">DNI</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Obra Social</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Fecha Ingreso</th>
@@ -155,6 +172,7 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
                       {patient.last_name}, {patient.first_name}
                     </div>
                   </td>
+                  <td className="py-3 px-4 text-gray-600">{patient.home_label || '—'}</td>
                   <td className="py-3 px-4 text-gray-600">{patient.dni || 'N/A'}</td>
                   <td className="py-3 px-4 text-gray-600">
                     {patient.coverage_type || 'N/A'}

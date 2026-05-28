@@ -47,6 +47,10 @@ export const ResidentSummaryTab: React.FC<ResidentSummaryTabProps> = ({
             </div>
           )}
           <div className="flex justify-between">
+            <span className="text-gray-600">Hogar / institución:</span>
+            <span className="font-medium">{resident.home_label || '—'}</span>
+          </div>
+          <div className="flex justify-between">
             <span className="text-gray-600">Fecha de ingreso:</span>
             <span className="font-medium">{formatDate(resident.admission_date)}</span>
           </div>

@@ -9,12 +9,13 @@ import type {
 export const residentsApi = {
   list: async (
     facilityId: string,
-    params?: { q?: string; stay_status?: string; status?: string }
+    params?: { q?: string; stay_status?: string; status?: string; home_label?: string }
   ): Promise<Resident[]> => {
     const searchParams = new URLSearchParams({ facility_id: facilityId });
     if (params?.q) searchParams.append('q', params.q);
     if (params?.stay_status) searchParams.append('stay_status', params.stay_status);
     if (params?.status) searchParams.append('status', params.status);
+    if (params?.home_label) searchParams.append('home_label', params.home_label);
     
     return apiClient.get<Resident[]>(`/residents?${searchParams.toString()}`);
   },

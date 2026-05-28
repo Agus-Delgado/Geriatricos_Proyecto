@@ -7,6 +7,7 @@ import { getRoleLabel } from '../types/auth';
 import { getFacilityTheme } from '../theme/facilityTheme';
 import { isMedicalAppMode } from '../config/appMode';
 import { getMedicalHubPath } from '../utils/medicalNavigation';
+import { getSingleActiveFacilityId } from '../utils/facilitySelection';
 
 export const SelectFacilityPage: React.FC = () => {
   const { user, setActiveFacility, getMemberships, loading: authLoading, activeFacilityId, isOwner } = useAuth();
@@ -65,14 +66,16 @@ export const SelectFacilityPage: React.FC = () => {
 
   const memberships = getMemberships();
 
-  // Si solo hay una membership, seleccionarla automáticamente (solo si no hay activeFacilityId)
+  // Una sola facility técnica: auto-seleccionar sin pantalla de picker
   useEffect(() => {
-    if (memberships.length === 1 && !activeFacilityId && !loadingFacilityId) {
-      const membership = memberships[0];
-      handleSelectFacility(membership.facility_id, membership.role);
+    const singleFacilityId = getSingleActiveFacilityId(memberships);
+    if (singleFacilityId && !activeFacilityId && !loadingFacilityId) {
+      const membership =
+        memberships.find((m) => m.facility_id === singleFacilityId) ?? memberships[0];
+      handleSelectFacility(singleFacilityId, membership.role);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [memberships.length, activeFacilityId, loadingFacilityId]);
+  }, [memberships, activeFacilityId, loadingFacilityId]);
 
   if (memberships.length === 0) {
     return (

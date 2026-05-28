@@ -7,6 +7,7 @@ import { contactsRouter } from "../contacts";
 import { medicationsResidentRouter } from "../medications";
 import { assertFacilityAccess, canMutateResidents } from "./access";
 import {
+  normalizeHomeLabel,
   RESIDENT_SELECT_COLUMNS,
   toResidentResponse,
   type DbResidentRow
@@ -34,6 +35,7 @@ type ResidentCreateBody = {
   coverage_number?: string;
   admission_date: string;
   notes?: string;
+  home_label?: string;
   contacts?: ResidentContactCreateBody[];
 };
 
@@ -51,6 +53,7 @@ type ResidentUpdateBody = {
   end_date?: string;
   end_reason?: string;
   notes?: string;
+  home_label?: string;
 };
 
 const residentsRouter = new Hono<AppContext>();
@@ -90,6 +93,7 @@ residentsRouter.get("/", async (c) => {
   const q = c.req.query("q")?.trim() || null;
   const stayStatus = c.req.query("stay_status")?.trim() || null;
   const status = c.req.query("status")?.trim() || null;
+  const homeLabel = c.req.query("home_label")?.trim() || null;
 
   let sql = `SELECT ${RESIDENT_SELECT_COLUMNS}
     FROM residents
@@ -103,6 +107,10 @@ residentsRouter.get("/", async (c) => {
   if (status) {
     sql += ` AND status = ?${binds.length + 1}`;
     binds.push(status);
+  }
+  if (homeLabel) {
+    sql += ` AND home_label = ?${binds.length + 1}`;
+    binds.push(homeLabel);
   }
   if (q) {
     const pattern = `%${q.toLowerCase()}%`;
@@ -177,18 +185,19 @@ residentsRouter.post("/", async (c) => {
 
   const now = new Date().toISOString();
   const id = crypto.randomUUID();
+  const homeLabel = normalizeHomeLabel(body.home_label);
 
   await c.env.DB.prepare(
     `INSERT INTO residents (
       id, facility_id, first_name, last_name, dni, birth_date,
       sex, coverage_type, coverage_other, coverage_number,
-      admission_date, stay_status, status, notes,
+      admission_date, stay_status, status, notes, home_label,
       created_by_user_id, updated_by_user_id, created_at, updated_at
     ) VALUES (
       ?1, ?2, ?3, ?4, ?5, ?6,
       ?7, ?8, ?9, ?10,
-      ?11, 'ACTIVE', 'ACTIVE', ?12,
-      ?13, ?13, ?14, ?14
+      ?11, 'ACTIVE', 'ACTIVE', ?12, ?13,
+      ?14, ?14, ?15, ?15
     )`
   )
     .bind(
@@ -204,6 +213,7 @@ residentsRouter.post("/", async (c) => {
       body.coverage_number?.trim() ?? null,
       body.admission_date.trim(),
       body.notes?.trim() ?? null,
+      homeLabel,
       userId,
       now
     )
@@ -330,6 +340,10 @@ residentsRouter.patch("/:residentId", async (c) => {
     body.end_reason !== undefined ? (body.end_reason?.trim() ?? null) : undefined
   );
   setField("notes", body.notes !== undefined ? (body.notes?.trim() ?? null) : undefined);
+  setField(
+    "home_label",
+    body.home_label !== undefined ? normalizeHomeLabel(body.home_label) : undefined
+  );
 
   if (updates.length === 0) {
     return c.json(toResidentResponse(resident));

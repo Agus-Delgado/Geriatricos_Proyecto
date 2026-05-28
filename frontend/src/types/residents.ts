@@ -25,6 +25,7 @@ export interface Resident {
   updated_by_user_id: string | null;
   deleted_at?: string | null;
   deleted_by_user_id?: string | null;
+  home_label?: string | null;
 }
 
 export interface ResidentCreate {
@@ -39,6 +40,7 @@ export interface ResidentCreate {
   coverage_number?: string;
   admission_date: string;
   notes?: string;
+  home_label?: string;
   contacts?: ResidentContactCreate[];
 }
 
@@ -56,6 +58,7 @@ export interface ResidentUpdate {
   end_date?: string;
   end_reason?: string;
   notes?: string;
+  home_label?: string;
 }
 
 export interface ResidentContact {

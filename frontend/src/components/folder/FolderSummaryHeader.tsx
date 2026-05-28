@@ -42,6 +42,11 @@ export const FolderSummaryHeader: React.FC<FolderSummaryHeaderProps> = ({
             <p>
               <span className="font-medium">DNI:</span> {patient.dni || 'N/A'}
             </p>
+            {patient.home_label && (
+              <p>
+                <span className="font-medium">Hogar:</span> {patient.home_label}
+              </p>
+            )}
             {age !== null && (
               <p>
                 <span className="font-medium">Edad:</span> {age} años

@@ -5,6 +5,7 @@ import { getRoleLabel } from '../../types/auth';
 import { BugReportButton } from '../support/BugReportButton';
 import { isMedicalAppMode } from '../../config/appMode';
 import { getMedicalHubPath } from '../../utils/medicalNavigation';
+import { needsFacilityPicker } from '../../utils/facilitySelection';
 
 interface HeaderProps {
   title?: string;
@@ -180,8 +181,7 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
             {canReportError && !location.pathname.includes('/print') && (
               <BugReportButton />
             )}
-            {/* Botón "Cambiar Hogar" visible cuando hay múltiples memberships */}
-            {user && memberships.length > 1 && (
+            {user && needsFacilityPicker(memberships) && (
               <button
                 onClick={handleChangeFacility}
                 className="px-2 sm:px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap"

@@ -4,6 +4,7 @@ import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import type { Resident, ResidentCreate, ResidentUpdate, ResidentContactCreate } from '../../types/residents';
 import { isResidentDocumentUploadEnabled } from '../../config/appMode';
+import { RESIDENT_HOME_LABELS } from '../../config/residentHomeLabels';
 
 interface ResidentFormProps {
   resident?: Resident;
@@ -29,6 +30,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
     coverage_number: resident?.coverage_number || '',
     admission_date: resident?.admission_date || new Date().toISOString().split('T')[0],
     notes: resident?.notes || '',
+    home_label: resident?.home_label || RESIDENT_HOME_LABELS[0],
     archived: resident?.status === 'INACTIVE' || false,
     archive_note: '',
   });
@@ -83,6 +85,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
       formData.coverage_type === 'OTRA' ? optionalField(formData.coverage_other) : undefined,
     coverage_number: optionalField(formData.coverage_number),
     notes: optionalField(formData.notes),
+    home_label: formData.home_label.trim(),
     contacts: buildContactsPayload(),
   });
 
@@ -104,6 +107,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
       coverage_number: optionalField(formData.coverage_number),
       status: formData.archived ? 'INACTIVE' : 'ACTIVE',
       notes: notes?.trim() ? notes.trim() : undefined,
+      home_label: formData.home_label.trim(),
     };
   };
 
@@ -115,6 +119,9 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
     }
     if (!formData.last_name.trim()) {
       newErrors.last_name = 'El apellido es requerido';
+    }
+    if (!formData.home_label.trim()) {
+      newErrors.home_label = 'Seleccione el hogar o institución';
     }
     if (!formData.admission_date) {
       newErrors.admission_date = 'La fecha de ingreso es requerida';
@@ -216,6 +223,18 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
           disabled={loading}
         />
       </div>
+
+      <Select
+        label="Hogar / institución *"
+        value={formData.home_label}
+        onChange={(e) => setFormData({ ...formData, home_label: e.target.value })}
+        options={[
+          { value: '', label: 'Seleccionar...' },
+          ...RESIDENT_HOME_LABELS.map((label) => ({ value: label, label })),
+        ]}
+        error={errors.home_label}
+        disabled={loading}
+      />
 
       <Input
         label="DNI"

@@ -8,11 +8,15 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Modal } from '../components/ui/Modal';
 import { isMedicalAppMode } from '../config/appMode';
 import { getMedicalHubPath, resolvePostLoginPath } from '../utils/medicalNavigation';
+import {
+  getSingleActiveFacilityId,
+  needsFacilityPicker,
+} from '../utils/facilitySelection';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, user, token } = useAuth();
+  const { login, user, token, setActiveFacility } = useAuth();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -44,38 +48,47 @@ export const LoginPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user]);
 
-  const redirectAfterLogin = () => {
+  const redirectAfterLogin = async () => {
     if (!user) return;
 
-    const memberships = user.memberships.filter(m => m.is_active);
+    const memberships = user.memberships.filter((m) => m.is_active);
 
-    // Sin memberships -> error (no debería pasar)
     if (memberships.length === 0) {
       setError('Usuario sin acceso asignado');
       return;
     }
 
-    // Si hay active_facility_id, redirigir según rol en esa facility
     if (user.active_facility_id) {
-      const activeMembership = memberships.find(m => m.facility_id === user.active_facility_id);
+      const activeMembership = memberships.find(
+        (m) => m.facility_id === user.active_facility_id
+      );
       if (activeMembership) {
         redirectByRole(activeMembership.role, user.active_facility_id);
         return;
       }
     }
 
-    // Si solo hay una membership, setearla automáticamente y redirigir
-    if (memberships.length === 1) {
-      // El backend debería setearla automáticamente, pero por si acaso
-      // aquí simplemente redirigimos al selector que la seteará
+    if (needsFacilityPicker(memberships)) {
       navigate('/select-facility', { replace: true });
       return;
     }
 
-    // Múltiples memberships -> selector
-    if (memberships.length > 1) {
+    const singleFacilityId = getSingleActiveFacilityId(memberships);
+    if (!singleFacilityId) {
       navigate('/select-facility', { replace: true });
       return;
+    }
+
+    const membership =
+      memberships.find((m) => m.facility_id === singleFacilityId) ?? memberships[0];
+
+    try {
+      if (!user.active_facility_id) {
+        await setActiveFacility(singleFacilityId);
+      }
+      redirectByRole(membership.role, singleFacilityId);
+    } catch {
+      navigate('/select-facility', { replace: true });
     }
   };
 

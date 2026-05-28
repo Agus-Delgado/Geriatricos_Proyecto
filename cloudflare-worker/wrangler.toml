@@ -14,7 +14,7 @@ JWT_SECRET = "dev-only-change-this-secret"
 JWT_EXPIRES_IN_SECONDS = "28800"
 
 # D1 local/dev binding only.
-# Replace database_id only after creating the remote D1 database.
+# Keep this as placeholder. Remote staging uses [env.staging] below.
 # Do not use real production or personal data in this environment.
 [[d1_databases]]
 binding = "DB"
@@ -35,4 +35,4 @@ JWT_EXPIRES_IN_SECONDS = "28800"
 [[env.staging.d1_databases]]
 binding = "DB"
 database_name = "geriatricos_d1_staging"
-database_id = "REPLACE_WITH_STAGING_D1_DATABASE_ID"
+database_id = "6a420074-605e-49a6-b00e-95564d8d6eb6"

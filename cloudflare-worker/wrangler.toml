@@ -7,6 +7,10 @@ compatibility_date = "2026-05-28"
 # CORS_ORIGINS = "http://localhost:5173,https://my-frontend.vercel.app"
 CORS_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 ENVIRONMENT = "development"
+# Dev-only value. Replace in real environments.
+JWT_SECRET = "dev-only-change-this-secret"
+# Dev default token TTL in seconds (8 hours).
+JWT_EXPIRES_IN_SECONDS = "28800"
 
 # D1 local/dev binding only.
 # Replace database_id only after creating the remote D1 database.

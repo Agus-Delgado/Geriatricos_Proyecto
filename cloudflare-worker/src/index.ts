@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import { createCorsMiddleware } from "./middleware/cors";
-import type { Env } from "./types/env";
+import { authRouter } from "./modules/auth";
+import type { AppContext } from "./types/env";
 
-const app = new Hono<{ Bindings: Env }>();
+const app = new Hono<AppContext>();
 
 app.use("*", async (c, next) => {
   const corsMiddleware = createCorsMiddleware(c.env);
@@ -15,5 +16,7 @@ app.get("/health", (c) => {
     service: "geriatricos-worker"
   });
 });
+
+app.route("/auth", authRouter);
 
 export default app;

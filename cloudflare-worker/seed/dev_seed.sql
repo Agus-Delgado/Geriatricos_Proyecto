@@ -36,7 +36,7 @@ INSERT OR REPLACE INTO users (
   '00000000',
   'admin.demo@local.invalid',
   'Admin Demo',
-  'PLACEHOLDER_HASH_REPLACE_IN_AUTH_BLOCK',
+  'scrypt$v1$16384$8$1$6SmRSRPUeU0c3Esw5lSesQ==$+h43zkkVyGMXdA0m4Ov9h2HUZZc3A6XJMc0mvVMz9Oo=',
   'admin',
   'fac-demo-001',
   1,

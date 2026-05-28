@@ -12,7 +12,6 @@ export default function PrescriptionsHistorySearchPage() {
     navigate(`/prescriptions-history/${patient.id}`);
   };
 
-  // Determinar fallback según rol y facility
   const getFallbackPath = () => {
     if (activeFacilityId) {
       const role = getActiveRole();
@@ -25,19 +24,16 @@ export default function PrescriptionsHistorySearchPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
-      <BackHeader
-        title="Historial de Recetas"
-        fallbackPath={getFallbackPath()}
-      />
+      <BackHeader title="Indicaciones guardadas" fallbackPath={getFallbackPath()} />
       <div
         className="rounded-xl shadow-lg p-6 mb-6"
         style={{ backgroundColor: 'var(--facility-card, white)' }}
       >
         <p className="text-gray-600 mb-6">
-          Busque un paciente para ver su historial completo de recetas y planes de medicación.
+          Buscar paciente para ver indicaciones guardadas.
         </p>
         <PatientSearchSelect onSelect={handleSelectPatient} />
       </div>
     </div>
   );
-}
+};

@@ -271,7 +271,7 @@ export const AgendaToday: React.FC<AgendaTodayProps> = ({ onRefreshStats }) => {
                     className="text-xs px-3 py-1.5 rounded bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors"
                     style={{ minHeight: '44px' }}
                   >
-                    Receta
+                    Indicación
                   </button>
                   <button
                     onClick={() => handleQuickAction('certificate', entry.patient_id)}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { residentsApi } from '../api/residents';
 import { medicationsApi } from '../api/medications';
-import { prescriptionsApi } from '../api/prescriptions';
 import { useAuth } from '../contexts/AuthContext';
 import { useFacility } from '../contexts/FacilityContext';
 import { Input } from '../components/ui/Input';
@@ -9,23 +9,26 @@ import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { BottomNav } from '../components/layout/BottomNav';
+import { parseMedicationInstructions } from '../utils/medicationInstructions';
 import type { Resident } from '../types/residents';
 import type { MedicationPlan } from '../types/medications';
-import type { PrescriptionLog } from '../types/prescriptions';
 import type { ApiError } from '../api/client';
 
+function getPlanSortDate(plan: MedicationPlan): Date {
+  return new Date(plan.start_date || plan.created_at);
+}
+
 export const MedicalGuidePage: React.FC = () => {
+  const navigate = useNavigate();
   const { activeFacilityId } = useAuth();
   const { facility } = useFacility();
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [residents, setResidents] = useState<Resident[]>([]);
   const [loadingResidents, setLoadingResidents] = useState(false);
   const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
-  const [currentMedications, setCurrentMedications] = useState<MedicationPlan[]>([]);
-  const [prescriptionHistory, setPrescriptionHistory] = useState<PrescriptionLog[]>([]);
-  const [loadingMedications, setLoadingMedications] = useState(false);
-  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [allPlans, setAllPlans] = useState<MedicationPlan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,16 +39,15 @@ export const MedicalGuidePage: React.FC = () => {
 
   useEffect(() => {
     if (selectedResident) {
-      loadMedicationData();
+      loadPlans();
     } else {
-      setCurrentMedications([]);
-      setPrescriptionHistory([]);
+      setAllPlans([]);
     }
   }, [selectedResident]);
 
   const loadResidents = async () => {
     if (!activeFacilityId) return;
-    
+
     try {
       setLoadingResidents(true);
       setError(null);
@@ -55,35 +57,34 @@ export const MedicalGuidePage: React.FC = () => {
       setResidents(data);
     } catch (err) {
       const apiError = err as ApiError;
-      setError(apiError.detail || 'Error al cargar residentes');
+      setError(apiError.detail || 'Error al cargar pacientes');
     } finally {
       setLoadingResidents(false);
     }
   };
 
-  const loadMedicationData = async () => {
+  const loadPlans = async () => {
     if (!selectedResident) return;
-    
+
     try {
-      setLoadingMedications(true);
-      setLoadingHistory(true);
+      setLoadingPlans(true);
       setError(null);
-      
-      const [medicationsData, historyData] = await Promise.all([
-        medicationsApi.listPlans(selectedResident.id, false).catch(() => []),
-        prescriptionsApi.listLogs(selectedResident.id, 50).catch(() => []),
-      ]);
-      
-      setCurrentMedications(medicationsData);
-      setPrescriptionHistory(historyData);
+      const data = await medicationsApi.listPlans(selectedResident.id, false);
+      setAllPlans(
+        data.sort((a, b) => getPlanSortDate(b).getTime() - getPlanSortDate(a).getTime())
+      );
     } catch (err) {
       const apiError = err as ApiError;
-      setError(apiError.detail || 'Error al cargar datos de medicación');
+      setError(apiError.detail || 'Error al cargar indicaciones');
     } finally {
-      setLoadingMedications(false);
-      setLoadingHistory(false);
+      setLoadingPlans(false);
     }
   };
+
+  const activePlans = useMemo(
+    () => allPlans.filter((p) => p.is_active),
+    [allPlans]
+  );
 
   const filteredResidents = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -105,18 +106,53 @@ export const MedicalGuidePage: React.FC = () => {
     }
   };
 
-  const formatDateTime = (dateString: string): string => {
-    try {
-      return new Date(dateString).toLocaleString('es-AR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return '';
-    }
+  const renderPlanCard = (plan: MedicationPlan) => {
+    const { frequency, observations, legacyText } = parseMedicationInstructions(
+      plan.instructions
+    );
+
+    return (
+      <div key={plan.id} className="border border-gray-100 rounded-lg p-3 bg-gray-50">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1">
+            <h4 className="font-semibold text-gray-900">{plan.med_name}</h4>
+            <p className="text-sm text-gray-600 mt-1">
+              <strong>Dosis:</strong> {plan.dose}
+            </p>
+            {plan.route && (
+              <p className="text-sm text-gray-600 mt-1">
+                <strong>Vía:</strong> {plan.route}
+              </p>
+            )}
+            {frequency && (
+              <p className="text-sm text-gray-600 mt-1">
+                <strong>Frecuencia:</strong> {frequency}
+              </p>
+            )}
+            {observations && (
+              <p className="text-sm text-gray-600 mt-1">
+                <strong>Observaciones:</strong> {observations}
+              </p>
+            )}
+            {legacyText && !frequency && !observations && (
+              <p className="text-sm text-gray-600 mt-2">{legacyText}</p>
+            )}
+            {plan.start_date && (
+              <p className="text-xs text-gray-500 mt-2">
+                Inicio: {formatDate(plan.start_date)}
+              </p>
+            )}
+          </div>
+          <span
+            className={`inline-block px-2 py-1 text-xs rounded ml-2 shrink-0 ${
+              plan.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+            }`}
+          >
+            {plan.is_active ? 'Activa' : 'Inactiva'}
+          </span>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -125,20 +161,17 @@ export const MedicalGuidePage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-4">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Guía médica</h1>
           <p className="text-sm text-gray-600">
-            Buscar pacientes y ver medicación actual e historial
+            Buscar pacientes y consultar medicación activa e indicaciones registradas
           </p>
         </div>
 
-        {error && (
-          <ErrorMessage message={error} onDismiss={() => setError(null)} />
-        )}
+        {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
 
-        {/* Búsqueda */}
         <Input
-          label="Buscar por Nombre o DNI"
+          label="Buscar por nombre o DNI"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value ?? '')}
-          placeholder="Buscar residente..."
+          placeholder="Buscar paciente..."
         />
 
         {loadingResidents ? (
@@ -147,22 +180,22 @@ export const MedicalGuidePage: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Lista de resultados */}
             {searchQuery && filteredResidents.length > 0 && (
               <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto bg-white">
                 {filteredResidents.map((resident) => (
                   <button
                     key={resident.id}
+                    type="button"
                     onClick={() => {
                       setSelectedResident(resident);
                       setSearchQuery('');
                     }}
-                    className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors ${
+                    className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
                       selectedResident?.id === resident.id ? 'bg-primary-50' : ''
                     }`}
                   >
                     <div className="font-medium text-gray-900">
-                      {resident.last_name ?? ''}, {resident.first_name ?? ''}
+                      {resident.last_name}, {resident.first_name}
                     </div>
                     <div className="text-sm text-gray-600">DNI: {resident.dni ?? 'N/A'}</div>
                   </button>
@@ -172,141 +205,76 @@ export const MedicalGuidePage: React.FC = () => {
 
             {searchQuery && filteredResidents.length === 0 && (
               <div className="text-center text-gray-500 py-4 bg-white rounded-lg border border-gray-200">
-                No se encontraron residentes
+                No se encontraron pacientes
               </div>
             )}
           </>
         )}
 
-        {/* Panel de ficha */}
         {selectedResident && (
           <div className="space-y-4">
-            {/* Ficha del residente */}
             <div className="border border-gray-200 rounded-lg p-4 bg-white">
-              <h2 className="font-semibold text-gray-900 mb-3 text-lg">Ficha del Residente</h2>
+              <h2 className="font-semibold text-gray-900 mb-3 text-lg">Paciente</h2>
               <div className="text-sm text-gray-700 space-y-1">
                 <p>
-                  <strong>Nombre:</strong> {selectedResident.last_name ?? ''}, {selectedResident.first_name ?? ''}
+                  <strong>Nombre:</strong> {selectedResident.last_name},{' '}
+                  {selectedResident.first_name}
                 </p>
                 <p>
                   <strong>DNI:</strong> {selectedResident.dni ?? 'N/A'}
                 </p>
                 {facility && (
                   <p>
-                    <strong>Hogar:</strong> {facility.name ?? ''}
+                    <strong>Sede:</strong> {facility.name ?? ''}
                   </p>
                 )}
-                <p>
-                  <strong>Fecha:</strong> {new Date().toLocaleDateString('es-AR')}
-                </p>
               </div>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setSelectedResident(null);
-                  setSearchQuery('');
-                }}
-                className="mt-4"
-              >
-                Limpiar Selección
-              </Button>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => navigate(`/prescriptions-history/${selectedResident.id}`)}
+                >
+                  Ver historial completo
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setSelectedResident(null);
+                    setSearchQuery('');
+                  }}
+                >
+                  Limpiar selección
+                </Button>
+              </div>
             </div>
 
-            {/* Medicaciones actuales */}
             <div className="border border-gray-200 rounded-lg p-4 bg-white">
-              <h3 className="font-semibold text-gray-900 mb-3">Medicaciones actuales</h3>
-              
-              {loadingMedications ? (
+              <h3 className="font-semibold text-gray-900 mb-3">Medicación activa</h3>
+              {loadingPlans ? (
                 <div className="flex justify-center py-4">
                   <LoadingSpinner />
                 </div>
-              ) : currentMedications.length === 0 ? (
-                <div className="text-center text-gray-500 py-4">
-                  No hay medicaciones registradas
-                </div>
+              ) : activePlans.length === 0 ? (
+                <p className="text-center text-gray-500 py-4 text-sm">
+                  No hay indicaciones activas
+                </p>
               ) : (
-                <div className="space-y-3">
-                  {currentMedications.map((plan) => (
-                    <div key={plan.id} className="border border-gray-100 rounded-lg p-3 bg-gray-50">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">{plan.med_name ?? ''}</h4>
-                          <p className="text-sm text-gray-600 mt-1">
-                            <strong>Dosis:</strong> {plan.dose ?? ''}
-                          </p>
-                          {plan.route && (
-                            <p className="text-sm text-gray-600 mt-1">
-                              <strong>Vía:</strong> {plan.route}
-                            </p>
-                          )}
-                          {plan.instructions && (
-                            <p className="text-sm text-gray-600 mt-2">
-                              <strong>Instrucciones:</strong> {plan.instructions}
-                            </p>
-                          )}
-                          {plan.start_date && (
-                            <p className="text-xs text-gray-500 mt-2">
-                              <strong>Período:</strong> {formatDate(plan.start_date)}
-                              {plan.end_date && ` - ${formatDate(plan.end_date)}`}
-                              {!plan.end_date && ' (sin fecha de fin)'}
-                            </p>
-                          )}
-                        </div>
-                        <span
-                          className={`inline-block px-2 py-1 text-xs rounded ml-2 ${
-                            plan.is_active
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {plan.is_active ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <div className="space-y-3">{activePlans.map(renderPlanCard)}</div>
               )}
             </div>
 
-            {/* Historial */}
             <div className="border border-gray-200 rounded-lg p-4 bg-white">
-              <h3 className="font-semibold text-gray-900 mb-3">Historial</h3>
-              
-              {loadingHistory ? (
+              <h3 className="font-semibold text-gray-900 mb-3">Indicaciones registradas</h3>
+              {loadingPlans ? (
                 <div className="flex justify-center py-4">
                   <LoadingSpinner />
                 </div>
-              ) : prescriptionHistory.length === 0 ? (
-                <div className="text-center text-gray-500 py-4">
-                  Sin registros históricos
-                </div>
+              ) : allPlans.length === 0 ? (
+                <p className="text-center text-gray-500 py-4 text-sm">
+                  Sin indicaciones registradas
+                </p>
               ) : (
-                <div className="space-y-3">
-                  {prescriptionHistory.map((log) => (
-                    <div key={log.id} className="border border-gray-100 rounded-lg p-3 bg-gray-50">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">
-                            {formatDateTime(log.created_at)}
-                          </p>
-                          <p className="text-sm text-gray-900 whitespace-pre-wrap">
-                            {log.medications_text ?? ''}
-                          </p>
-                          {log.instructions && (
-                            <p className="text-sm text-gray-600 mt-2">
-                              <strong>Instrucciones:</strong> {log.instructions}
-                            </p>
-                          )}
-                          {log.author_name && (
-                            <p className="text-xs text-gray-500 mt-2">
-                              Autor: {log.author_name}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <div className="space-y-3">{allPlans.map(renderPlanCard)}</div>
               )}
             </div>
           </div>
@@ -314,7 +282,7 @@ export const MedicalGuidePage: React.FC = () => {
 
         {!selectedResident && !searchQuery && (
           <div className="text-center text-gray-500 py-12 bg-white rounded-lg border border-gray-200">
-            <p className="text-lg font-medium mb-2">Buscar residente</p>
+            <p className="text-lg font-medium mb-2">Buscar paciente</p>
             <p className="text-sm">Ingresá el nombre o DNI para comenzar</p>
           </div>
         )}

@@ -166,12 +166,12 @@ export default function MedicalFolderPage() {
         )}
       />
 
-      {/* Sección Recetas */}
+      {/* Sección Indicaciones */}
       <FolderSection
-        title="Recetas"
+        title="Indicaciones medicamentosas"
         count={prescriptions.length}
         items={lastPrescriptions}
-        emptyMessage="No hay recetas registradas"
+        emptyMessage="No hay indicaciones registradas"
         renderItem={(prescription: MedicationPlan) => (
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">

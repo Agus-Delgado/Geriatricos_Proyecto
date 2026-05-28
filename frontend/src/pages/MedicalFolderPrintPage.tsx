@@ -219,10 +219,12 @@ export default function MedicalFolderPrintPage() {
 
             {/* Recetas */}
             <div style={{ marginTop: '30px', marginBottom: '30px' }}>
-              <div className="print-section-title">Recetas ({prescriptions.length})</div>
+              <div className="print-section-title">
+                Indicaciones medicamentosas ({prescriptions.length})
+              </div>
               {prescriptions.length === 0 ? (
                 <p style={{ fontStyle: 'italic', color: '#666' }}>
-                  No hay recetas registradas.
+                  No hay indicaciones registradas.
                 </p>
               ) : (
                 <div className="print-card">

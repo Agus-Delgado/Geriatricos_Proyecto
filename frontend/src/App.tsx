@@ -373,7 +373,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        <Route path="/clinical-history/:patientId/print" element={<ClinicalHistoryPrintPage />} />
+        <Route
+          path="/clinical-history/:patientId/print"
+          element={
+            <ProtectedRoute requireRoles={[...CLINICAL_ROLES]}>
+              <ClinicalHistoryPrintPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Carpeta Médica */}
         <Route
@@ -392,9 +399,16 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        <Route path="/medical-folder/:patientId/print" element={<MedicalFolderPrintPage />} />
+        <Route
+          path="/medical-folder/:patientId/print"
+          element={
+            <ProtectedRoute requireRoles={[...CLINICAL_ROLES]}>
+              <MedicalFolderPrintPage />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Historial de Recetas */}
+        {/* Indicaciones guardadas */}
         <Route
           path="/prescriptions-history/search"
           element={
@@ -411,7 +425,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        <Route path="/prescriptions-history/:patientId/print" element={<PrescriptionPrintPage />} />
+        <Route
+          path="/prescriptions-history/:patientId/print"
+          element={
+            <ProtectedRoute requireRoles={[...CLINICAL_ROLES]}>
+              <PrescriptionPrintPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Actividad */}
         <Route

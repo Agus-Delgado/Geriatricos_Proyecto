@@ -78,8 +78,8 @@ export default function GeriatricMedicalPage() {
     {
       id: 'historial-recetas',
       emoji: '💊',
-      title: 'Indicaciones',
-      description: 'Planes de medicación por paciente',
+      title: 'Indicaciones guardadas',
+      description: 'Registrar y consultar indicaciones medicamentosas',
       action: 'historial-recetas',
     },
     {

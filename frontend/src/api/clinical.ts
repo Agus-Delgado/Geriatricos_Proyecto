@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { ApiError } from './client';
 import type {
   ClinicalSummary,
   ClinicalSummaryUpdate,
@@ -12,6 +13,21 @@ export const clinicalApi = {
     return apiClient.get<ClinicalSummary>(
       `/residents/${residentId}/clinical-summary`
     );
+  },
+
+  /** 404 → null (sin resumen registrado aún). */
+  getSummaryOrNull: async (residentId: string): Promise<ClinicalSummary | null> => {
+    try {
+      return await apiClient.get<ClinicalSummary>(
+        `/residents/${residentId}/clinical-summary`
+      );
+    } catch (err) {
+      const apiError = err as ApiError;
+      if (apiError.status === 404) {
+        return null;
+      }
+      throw err;
+    }
   },
 
   updateSummary: async (

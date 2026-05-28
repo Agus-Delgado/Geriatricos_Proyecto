@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { residentsApi } from '../api/residents';
 import { medicationsApi } from '../api/medications';
+import { parseMedicationInstructions } from '../utils/medicationInstructions';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import type { Resident } from '../types/residents';
 import type { MedicationPlan } from '../types/medications';
@@ -12,7 +13,7 @@ export default function PrescriptionPrintPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
   const [patient, setPatient] = useState<Resident | null>(null);
-  const [prescriptions, setPrescriptions] = useState<MedicationPlan[]>([]);
+  const [indications, setIndications] = useState<MedicationPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,16 +30,18 @@ export default function PrescriptionPrintPage() {
       setLoading(true);
       setError(null);
 
-      const [patientData, prescriptionsData] = await Promise.all([
+      const [patientData, plansData] = await Promise.all([
         residentsApi.get(patientId),
         medicationsApi.listPlans(patientId, false),
       ]);
 
       setPatient(patientData);
-      setPrescriptions(
-        prescriptionsData.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        )
+      setIndications(
+        plansData.sort((a, b) => {
+          const dateA = new Date(a.start_date || a.created_at).getTime();
+          const dateB = new Date(b.start_date || b.created_at).getTime();
+          return dateB - dateA;
+        })
       );
     } catch (err) {
       const apiError = err as ApiError;
@@ -115,7 +118,7 @@ export default function PrescriptionPrintPage() {
       <div className="paper">
         <div className="print-root">
           {/* Título */}
-          <div className="print-title">HISTORIAL DE RECETAS</div>
+          <div className="print-title">INDICACIONES MEDICAMENTOSAS</div>
 
           <div className="print-meta">
             <div>
@@ -150,61 +153,60 @@ export default function PrescriptionPrintPage() {
               </div>
             </div>
 
-            {/* Recetas */}
             <div style={{ marginTop: 18 }}>
-              <div className="print-section-title">Recetas ({prescriptions.length})</div>
-              {prescriptions.length === 0 ? (
+              <div className="print-section-title">Indicaciones ({indications.length})</div>
+              {indications.length === 0 ? (
                 <p style={{ fontStyle: 'italic', color: '#666' }}>
-                  No hay recetas registradas.
+                  No hay indicaciones registradas.
                 </p>
               ) : (
                 <div className="print-card">
-                  {prescriptions.map((prescription) => (
-                    <div
-                      key={prescription.id}
-                      className="print-entry"
-                    >
-                      <div className="print-entry-header">
-                        <div>{prescription.med_name}</div>
-                        <div>{formatDate(prescription.created_at)}</div>
-                      </div>
-                      <div className="print-entry-body">
-                        <div className="print-kv-grid">
-                          <div className="print-kv">
-                            <div className="print-kv-label">Dosis</div>
-                            <div className="print-kv-value">{prescription.dose}</div>
-                          </div>
-                          <div className="print-kv">
-                            <div className="print-kv-label">Estado</div>
-                            <div className="print-kv-value">{prescription.is_active ? 'Activa' : 'Inactiva'}</div>
-                          </div>
-                          <div className="print-kv">
-                            <div className="print-kv-label">Vía</div>
-                            <div className="print-kv-value">{prescription.route || 'N/A'}</div>
-                          </div>
-                          <div className="print-kv">
-                            <div className="print-kv-label">Período</div>
-                            <div className="print-kv-value">
-                              {prescription.start_date ? (
-                                <>
-                                  {formatDate(prescription.start_date)}
-                                  {prescription.end_date && ` - ${formatDate(prescription.end_date)}`}
-                                  {!prescription.end_date && ' (sin fecha de fin)'}
-                                </>
-                              ) : (
-                                'N/A'
-                              )}
+                  {indications.map((plan) => {
+                    const { frequency, observations, legacyText } = parseMedicationInstructions(
+                      plan.instructions
+                    );
+                    const displayDate = plan.start_date || plan.created_at;
+
+                    return (
+                      <div key={plan.id} className="print-entry">
+                        <div className="print-entry-header">
+                          <div>{plan.med_name}</div>
+                          <div>{formatDate(displayDate)}</div>
+                        </div>
+                        <div className="print-entry-body">
+                          <div className="print-kv-grid">
+                            <div className="print-kv">
+                              <div className="print-kv-label">Dosis</div>
+                              <div className="print-kv-value">{plan.dose}</div>
+                            </div>
+                            <div className="print-kv">
+                              <div className="print-kv-label">Estado</div>
+                              <div className="print-kv-value">
+                                {plan.is_active ? 'Activa' : 'Inactiva'}
+                              </div>
+                            </div>
+                            <div className="print-kv">
+                              <div className="print-kv-label">Vía</div>
+                              <div className="print-kv-value">{plan.route || 'N/A'}</div>
                             </div>
                           </div>
+                          {frequency && (
+                            <div style={{ marginTop: 8 }}>
+                              <strong>Frecuencia:</strong> {frequency}
+                            </div>
+                          )}
+                          {observations && (
+                            <div style={{ marginTop: 8 }}>
+                              <strong>Observaciones:</strong> {observations}
+                            </div>
+                          )}
+                          {legacyText && !frequency && !observations && (
+                            <div style={{ marginTop: 8 }}>{legacyText}</div>
+                          )}
                         </div>
-                        {prescription.instructions ? (
-                          <div style={{ marginTop: 8 }}>
-                            <strong>Instrucciones:</strong> {prescription.instructions}
-                          </div>
-                        ) : null}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { clinicalApi } from '../api/clinical';
+import { parseMedicationInstructions } from '../utils/medicationInstructions';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import type { ClinicalNote, ClinicalSummary } from '../types/clinical';
 import type { MedicationPlan } from '../types/medications';
@@ -11,6 +12,7 @@ import '../components/certificates/print.css';
 const NOTE_TYPE_LABELS: Record<string, string> = {
   EVOLUTION: 'Evolución',
   INCIDENT: 'Incidente',
+  OBSERVATION: 'Observación',
   GENERAL: 'Nota general',
 };
 
@@ -195,9 +197,13 @@ export default function ClinicalHistoryPrintPage() {
               </div>
             </div>
 
-            {summary && (
-              <div className="print-card" style={{ marginBottom: 16 }}>
-                <div className="print-section-title">Resumen clínico</div>
+            <div className="print-card" style={{ marginBottom: 16 }}>
+              <div className="print-section-title">Resumen clínico</div>
+              {!summary ? (
+                <p style={{ fontStyle: 'italic', color: '#666' }}>
+                  No hay resumen clínico registrado.
+                </p>
+              ) : (
                 <div className="print-kv-grid">
                   {summary.primary_diagnosis && (
                     <div className="print-kv">
@@ -236,30 +242,36 @@ export default function ClinicalHistoryPrintPage() {
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             <div style={{ marginTop: 18, marginBottom: 16 }}>
               <div className="print-section-title">Medicación activa</div>
               {medicationPlans.length === 0 ? (
                 <p style={{ fontStyle: 'italic', color: '#666' }}>
-                  No hay planes de medicación activos.
+                  No hay medicación activa registrada.
                 </p>
               ) : (
                 <div className="print-card">
-                  {medicationPlans.map((plan) => (
-                    <div key={plan.id} className="print-entry">
-                      <div className="print-entry-header">
-                        <div>
-                          <strong>{plan.med_name}</strong> — {plan.dose}
-                          {plan.route ? ` (${plan.route})` : ''}
+                  {medicationPlans.map((plan) => {
+                    const { frequency, observations, legacyText } =
+                      parseMedicationInstructions(plan.instructions);
+                    return (
+                      <div key={plan.id} className="print-entry">
+                        <div className="print-entry-header">
+                          <div>
+                            <strong>{plan.med_name}</strong> — {plan.dose}
+                            {plan.route ? ` (${plan.route})` : ''}
+                          </div>
+                        </div>
+                        <div className="print-entry-body">
+                          {frequency && <div>Frecuencia: {frequency}</div>}
+                          {observations && <div>Observaciones: {observations}</div>}
+                          {legacyText && !frequency && !observations && <div>{legacyText}</div>}
                         </div>
                       </div>
-                      {plan.instructions && (
-                        <div className="print-entry-body">{plan.instructions}</div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -288,9 +300,13 @@ export default function ClinicalHistoryPrintPage() {
               )}
             </div>
 
-            {contacts.length > 0 && (
-              <div style={{ marginTop: 18 }}>
-                <div className="print-section-title">Contactos / familiares</div>
+            <div style={{ marginTop: 18 }}>
+              <div className="print-section-title">Contactos / familiares</div>
+              {contacts.length === 0 ? (
+                <p style={{ fontStyle: 'italic', color: '#666' }}>
+                  No hay contactos registrados.
+                </p>
+              ) : (
                 <div className="print-card">
                   {contacts.map((contact) => (
                     <div key={contact.id} className="print-entry">
@@ -311,8 +327,8 @@ export default function ClinicalHistoryPrintPage() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>

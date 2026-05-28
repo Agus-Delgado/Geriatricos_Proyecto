@@ -30,7 +30,8 @@ export const EvolutionsList: React.FC<EvolutionsListProps> = ({
     const labels: Record<string, string> = {
       EVOLUTION: 'Evolución',
       INCIDENT: 'Incidente',
-      GENERAL: 'General',
+      OBSERVATION: 'Observación',
+      GENERAL: 'Nota general',
     };
     return labels[type] || type;
   };

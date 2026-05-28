@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { trackPatientView } from '../utils/patientTracking';
 import { residentsApi } from '../api/residents';
 import { clinicalApi } from '../api/clinical';
+import { ClinicalSummarySection } from '../components/clinical/ClinicalSummarySection';
 import { EvolutionsList } from '../components/clinical/EvolutionsList';
 import { BackHeader } from '../components/ui/BackHeader';
 import { Button } from '../components/ui/Button';
@@ -11,7 +12,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { Modal } from '../components/ui/Modal';
 import type { Resident } from '../types/residents';
-import type { ClinicalNote, ClinicalNoteCreate } from '../types/clinical';
+import type { ClinicalNote, ClinicalNoteCreate, ClinicalSummary } from '../types/clinical';
 import type { ApiError } from '../api/client';
 
 export default function ClinicalHistoryPage() {
@@ -19,13 +20,15 @@ export default function ClinicalHistoryPage() {
   const navigate = useNavigate();
   const { activeFacilityId } = useAuth();
   const [patient, setPatient] = useState<Resident | null>(null);
+  const [summary, setSummary] = useState<ClinicalSummary | null>(null);
   const [notes, setNotes] = useState<ClinicalNote[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [content, setContent] = useState('');
   const [recordedAt, setRecordedAt] = useState('');
   const [saving, setSaving] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (patientId) {
@@ -38,25 +41,28 @@ export default function ClinicalHistoryPage() {
 
     try {
       setLoading(true);
-      setError(null);
+      setPageError(null);
 
-      const [patientData, notesData] = await Promise.all([
+      const [patientData, summaryData, notesData] = await Promise.all([
         residentsApi.get(patientId),
+        clinicalApi.getSummaryOrNull(patientId),
         clinicalApi.listNotes(patientId),
       ]);
 
       setPatient(patientData);
-      setNotes(notesData.sort((a, b) => 
-        new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
-      ));
+      setSummary(summaryData);
+      setNotes(
+        notesData.sort(
+          (a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
+        )
+      );
 
-      // Track patient view (localStorage fallback)
       if (activeFacilityId && patientId) {
         trackPatientView(activeFacilityId, patientId);
       }
     } catch (err) {
       const apiError = err as ApiError;
-      setError(apiError.detail || 'Error al cargar datos');
+      setPageError(apiError.detail || 'Error al cargar la historia clínica');
     } finally {
       setLoading(false);
     }
@@ -94,7 +100,7 @@ export default function ClinicalHistoryPage() {
 
   const handleOpenAddModal = () => {
     setContent('');
-    // Inicializar fecha/hora con ahora (formato local para input datetime-local)
+    setModalError(null);
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -107,13 +113,13 @@ export default function ClinicalHistoryPage() {
 
   const handleSaveEvolution = async () => {
     if (!patientId || !content.trim()) {
-      setError('El contenido es obligatorio');
+      setModalError('El contenido de la evolución es obligatorio');
       return;
     }
 
     try {
       setSaving(true);
-      setError(null);
+      setModalError(null);
 
       const payload: ClinicalNoteCreate = {
         note_type: 'EVOLUTION',
@@ -128,7 +134,7 @@ export default function ClinicalHistoryPage() {
       await loadData();
     } catch (err) {
       const apiError = err as ApiError;
-      setError(apiError.detail || 'Error al crear evolución');
+      setModalError(apiError.detail || 'Error al registrar la evolución');
     } finally {
       setSaving(false);
     }
@@ -138,7 +144,7 @@ export default function ClinicalHistoryPage() {
     setShowAddModal(false);
     setContent('');
     setRecordedAt('');
-    setError(null);
+    setModalError(null);
   };
 
   if (loading) {
@@ -151,11 +157,11 @@ export default function ClinicalHistoryPage() {
     );
   }
 
-  if (error || !patient) {
+  if (pageError || !patient) {
     return (
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         <ErrorMessage
-          message={error || 'Paciente no encontrado'}
+          message={pageError || 'Paciente no encontrado'}
           onDismiss={() => navigate('/clinical-history/search')}
         />
       </div>
@@ -195,24 +201,33 @@ export default function ClinicalHistoryPage() {
         }
       />
 
-      {/* Header con datos del paciente */}
       <div
         className="rounded-xl shadow-lg p-6 mb-6"
         style={{ backgroundColor: 'var(--facility-card, white)' }}
       >
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Historia Clínica
-          </h2>
+        <div className="mb-2">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Historia clínica</h2>
           <div className="text-sm text-gray-600 space-y-1">
             <p>DNI: {patient.dni || 'N/A'}</p>
             {age !== null && <p>Edad: {age} años</p>}
-            {patient.coverage_type && <p>Obra Social: {patient.coverage_type}</p>}
+            {patient.coverage_type && <p>Cobertura: {patient.coverage_type}</p>}
           </div>
         </div>
       </div>
 
-      {/* Lista de evoluciones */}
+      <div
+        className="rounded-xl shadow-lg p-6 mb-6"
+        style={{ backgroundColor: 'var(--facility-card, white)' }}
+      >
+        <ClinicalSummarySection
+          residentId={patientId!}
+          summary={summary}
+          loading={false}
+          onSummaryChange={setSummary}
+          onUpdate={loadData}
+        />
+      </div>
+
       <div
         className="rounded-xl shadow-lg p-6"
         style={{ backgroundColor: 'var(--facility-card, white)' }}
@@ -222,39 +237,38 @@ export default function ClinicalHistoryPage() {
             className="text-xl font-semibold text-gray-900"
             style={{ color: 'var(--facility-accent, #667eea)' }}
           >
-            Últimas Evoluciones
+            Evoluciones clínicas
           </h2>
           <Button
             onClick={handleOpenAddModal}
             style={{ backgroundColor: 'var(--facility-accent, #667eea)' }}
           >
-            + Agregar evolución
+            + Registrar evolución
           </Button>
         </div>
         <EvolutionsList notes={notes} loading={false} />
       </div>
 
-      {/* Modal para agregar evolución */}
       <Modal
         isOpen={showAddModal}
         onClose={handleCancelAdd}
-        title="Agregar evolución"
+        title="Registrar evolución"
         size="md"
       >
         <div className="space-y-4">
-          {error && (
+          {modalError && (
             <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
-              {error}
+              {modalError}
             </div>
           )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Contenido <span className="text-red-500">*</span>
+              Evolución <span className="text-red-500">*</span>
             </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Describa la evolución clínica..."
+              placeholder="Describa la evolución clínica del paciente..."
               rows={8}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               disabled={saving}
@@ -273,15 +287,11 @@ export default function ClinicalHistoryPage() {
               disabled={saving}
             />
             <p className="text-xs text-gray-500 mt-1">
-              Si no se especifica, se usará la fecha y hora actual
+              Si no se indica, se usará la fecha y hora actual
             </p>
           </div>
           <div className="flex justify-end gap-3 pt-4">
-            <Button
-              variant="secondary"
-              onClick={handleCancelAdd}
-              disabled={saving}
-            >
+            <Button variant="secondary" onClick={handleCancelAdd} disabled={saving}>
               Cancelar
             </Button>
             <Button
@@ -289,11 +299,11 @@ export default function ClinicalHistoryPage() {
               disabled={saving || !content.trim()}
               style={{ backgroundColor: 'var(--facility-accent, #667eea)' }}
             >
-              {saving ? 'Guardando...' : 'Guardar'}
+              {saving ? 'Guardando...' : 'Guardar evolución'}
             </Button>
           </div>
         </div>
       </Modal>
     </div>
   );
-}
+};

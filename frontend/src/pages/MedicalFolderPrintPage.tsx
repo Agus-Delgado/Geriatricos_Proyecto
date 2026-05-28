@@ -10,6 +10,7 @@ import type { ClinicalNote } from '../types/clinical';
 import type { Certificate } from '../types/certificates';
 import type { MedicationPlan } from '../types/medications';
 import type { ApiError } from '../api/client';
+import { getCertificateTypeLabel } from '../utils/certificateLabels';
 import '../components/certificates/print.css';
 
 export default function MedicalFolderPrintPage() {
@@ -94,16 +95,6 @@ export default function MedicalFolderPrintPage() {
       age--;
     }
     return age;
-  };
-
-  const getCertificateTypeLabel = (type: string): string => {
-    const labels: Record<string, string> = {
-      CONTROL_CLINICO: 'Control Clínico',
-      OBITO: 'Óbito',
-      PRESENCIA: 'Presencia',
-      CONSENTIMIENTO: 'Consentimiento informado',
-    };
-    return labels[type] || type;
   };
 
   if (loading) {
@@ -247,12 +238,12 @@ export default function MedicalFolderPrintPage() {
               )}
             </div>
 
-            {/* Constancias */}
+            {/* Certificados */}
             <div style={{ marginTop: '30px' }}>
-              <div className="print-section-title">Constancias ({certificates.length})</div>
+              <div className="print-section-title">Certificados ({certificates.length})</div>
               {certificates.length === 0 ? (
                 <p style={{ fontStyle: 'italic', color: '#666' }}>
-                  No hay constancias registradas.
+                  No hay certificados registrados.
                 </p>
               ) : (
                 <div className="print-card">

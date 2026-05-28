@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { PrintDocument } from './PrintDocument';
-import type { CertificateType, CertificateDraft } from '../../types/certificates';
+import type { CertificateDraft } from '../../types/certificates';
+import { getCertificateTypeLabel } from '../../utils/certificateLabels';
 import { buildDefaultBodyText, formatDateAR, formatTimeAR } from './templates';
 
 export type CertificateEditorProps = {
@@ -29,13 +30,6 @@ export function CertificateEditor({
   useEffect(() => {
     setDraft(initialDraft);
   }, [initialDraft]);
-
-  const typeLabels: Record<CertificateType, string> = {
-    CONTROL_CLINICO: 'Control Clínico',
-    OBITO: 'Óbito',
-    PRESENCIA: 'Supervivencia',
-    CONSENTIMIENTO: 'Consentimiento informado',
-  };
 
   const handleDateChange = (dateStr: string) => {
     if (!dateStr || dateStr.trim() === '') {
@@ -77,7 +71,7 @@ export function CertificateEditor({
     const newErrors: Record<string, string> = {};
     
     if (!draft.bodyText.trim()) {
-      newErrors.bodyText = 'El texto del cuerpo es requerido';
+      newErrors.bodyText = 'El texto del certificado es requerido';
     }
     
     if (!draft.issuedAt) {
@@ -123,10 +117,10 @@ export function CertificateEditor({
       {/* Tipo (readonly) */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Tipo de Constancia
+          Tipo de certificado
         </label>
         <Input
-          value={typeLabels[draft.type] ?? ''}
+          value={getCertificateTypeLabel(draft.type)}
           readOnly
           className="bg-gray-100 cursor-not-allowed"
         />
@@ -147,7 +141,7 @@ export function CertificateEditor({
       {/* Fecha y Hora (editable) */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Fecha y Hora
+          Fecha y hora de emisión
         </label>
         <Input
           type="datetime-local"
@@ -164,7 +158,7 @@ export function CertificateEditor({
       <div>
         <div className="flex justify-between items-center mb-2">
           <label className="block text-sm font-medium text-gray-700">
-            Cuerpo de la Constancia
+            Texto del certificado
           </label>
           <button
             type="button"
@@ -181,7 +175,7 @@ export function CertificateEditor({
           className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
             errors.bodyText ? 'border-red-500 focus:ring-red-500' : ''
           }`}
-          placeholder="Ingrese el texto de la constancia..."
+          placeholder="Ingrese el texto del certificado..."
         />
         {errors.bodyText && (
           <p className="mt-1 text-sm text-red-600">{errors.bodyText}</p>

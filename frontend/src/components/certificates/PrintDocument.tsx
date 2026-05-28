@@ -1,7 +1,25 @@
 import { useEffect, useMemo } from 'react';
 import type { CertificateDraft } from '../../types/certificates';
+import { getCertificateTypeLabel } from '../../utils/certificateLabels';
 import { RxPaperFrame } from './RxPaperFrame';
 import './print.css';
+
+function formatIssuedAt(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function buildFacilityLine(name?: string, address?: string): string {
+  const parts = [name?.trim(), address?.trim()].filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : '';
+}
 
 // Componente especial para renderizar el consentimiento con firmas mejoradas
 function ConsentimientoContent({ bodyText }: { bodyText: string }) {
@@ -109,20 +127,37 @@ export function PrintDocument({ draft }: { draft: CertificateDraft }) {
     }
   }, [forbidden]);
 
-  const license = draft.doctorLicenseNumber?.trim() ? draft.doctorLicenseNumber.trim() : '(pendiente de configurar)';
-  const facilityAddress = `${draft.hogarName ?? ''}, ${draft.hogarAddress ?? ''}, Ramos Mejía`;
+  const license = draft.doctorLicenseNumber?.trim()
+    ? draft.doctorLicenseNumber.trim()
+    : 'sin matrícula';
+  const facilityAddress = buildFacilityLine(draft.hogarName, draft.hogarAddress);
+  const doctorName = draft.doctorDisplayName?.trim() || 'Profesional a cargo';
+  const patientName = draft.patientFullName?.trim() || 'Paciente';
+  const typeLabel = getCertificateTypeLabel(draft.type);
 
   return (
     <RxPaperFrame 
       headerDate={draft.issuedAt ?? ''}
-      patientName={draft.patientFullName ?? ''}
-      patientAddress={draft.patientDni ? `DNI: ${draft.patientDni}` : ''}
+      patientName={patientName}
+      patientAddress={draft.patientDni?.trim() ? `DNI: ${draft.patientDni.trim()}` : ''}
     >
       <div className="print-root">
-        {/* Título centrado - solo mostrar si no es CONSENTIMIENTO (que ya tiene título en bodyText) */}
         {draft.type !== 'CONSENTIMIENTO' && (
           <div className="print-title">CONSTANCIA</div>
         )}
+
+        <div className="print-meta">
+          <div>
+            <strong>Paciente:</strong> {patientName}
+            {draft.patientDni?.trim() ? ` — DNI ${draft.patientDni.trim()}` : ''}
+          </div>
+          <div>
+            <strong>Tipo:</strong> {typeLabel}
+          </div>
+          <div>
+            <strong>Fecha y hora de emisión:</strong> {formatIssuedAt(draft.issuedAt ?? '')}
+          </div>
+        </div>
 
         {/* Cuerpo del documento */}
         <div className="print-body">
@@ -144,12 +179,14 @@ export function PrintDocument({ draft }: { draft: CertificateDraft }) {
           <div className="print-signature-section">
             <div className="print-signature-label">Firma:</div>
             <div className="print-signature-line"></div>
-            <div className="print-doctor-name">Dr/a. {draft.doctorDisplayName ?? ''}</div>
+            <div className="print-doctor-name">Dr/a. {doctorName}</div>
             <div className="print-doctor-license">Matrícula: {license}</div>
           </div>
-          <div className="print-facility-address">
-            {facilityAddress}
-          </div>
+          {facilityAddress && (
+            <div className="print-facility-address">
+              {facilityAddress}
+            </div>
+          )}
         </div>
       </div>
     </RxPaperFrame>

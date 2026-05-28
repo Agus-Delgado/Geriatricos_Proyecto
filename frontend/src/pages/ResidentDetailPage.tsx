@@ -22,7 +22,7 @@ const ALL_TABS = [
   { id: 'notes', label: 'Notas clínicas' },
   { id: 'medications', label: 'Medicación' },
   { id: 'contacts', label: 'Contactos' },
-  { id: 'certificates', label: 'Constancias' },
+  { id: 'certificates', label: 'Certificados' },
 ];
 
 export const ResidentDetailPage: React.FC = () => {
@@ -159,6 +159,16 @@ export const ResidentDetailPage: React.FC = () => {
           >
             Historia clínica
           </button>
+          {isClinicalUser && facility && (
+            <button
+              onClick={() =>
+                navigate(`/g/${facility.id}/certificates?resident_id=${resident.id}`)
+              }
+              className="px-3 py-2 text-sm bg-white border border-primary-200 text-primary-700 rounded hover:bg-primary-50"
+            >
+              Certificados del paciente
+            </button>
+          )}
           {canDelete && (
             <button
               onClick={handleDeleteResident}
@@ -190,7 +200,10 @@ export const ResidentDetailPage: React.FC = () => {
           {activeTab === 'medications' && <ResidentMedicationsTab residentId={resident.id} />}
           {activeTab === 'contacts' && <ResidentContactsTab residentId={resident.id} />}
           {activeTab === 'certificates' && (
-            <ResidentCertificatesTab residentId={resident.id} />
+            <ResidentCertificatesTab
+              residentId={resident.id}
+              facilityId={facility?.id}
+            />
           )}
         </div>
       </div>

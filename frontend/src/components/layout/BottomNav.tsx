@@ -71,7 +71,7 @@ export const BottomNav: React.FC = () => {
         },
         {
           path: certsPath,
-          label: 'Constancias',
+          label: 'Certificados',
           icon: certsIcon,
           match: (p: string) => p.includes('/certificates'),
         },

@@ -85,8 +85,8 @@ export default function GeriatricMedicalPage() {
     {
       id: 'certificaciones',
       emoji: '📜',
-      title: 'Constancias',
-      description: 'Certificados y constancias médicas',
+      title: 'Certificados',
+      description: 'Constancias y certificados del paciente',
       action: 'certificaciones',
     },
     {

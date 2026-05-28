@@ -15,10 +15,13 @@ import type { ClinicalNote } from '../types/clinical';
 import type { Certificate } from '../types/certificates';
 import type { MedicationPlan } from '../types/medications';
 import type { ApiError } from '../api/client';
+import { getCertificateTypeLabel } from '../utils/certificateLabels';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function MedicalFolderPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
+  const { activeFacilityId } = useAuth();
   const [patient, setPatient] = useState<Resident | null>(null);
   const [evolutions, setEvolutions] = useState<ClinicalNote[]>([]);
   const [prescriptions, setPrescriptions] = useState<MedicationPlan[]>([]);
@@ -94,15 +97,7 @@ export default function MedicalFolderPage() {
     });
   };
 
-  const getCertificateTypeLabel = (type: string): string => {
-    const labels: Record<string, string> = {
-      CONTROL_CLINICO: 'Control Clínico',
-      OBITO: 'Óbito',
-      PRESENCIA: 'Presencia',
-      CONSENTIMIENTO: 'Consentimiento informado',
-    };
-    return labels[type] || type;
-  };
+  const certificatesFacilityId = patient?.facility_id ?? activeFacilityId ?? '';
 
   if (loading) {
     return (
@@ -205,12 +200,20 @@ export default function MedicalFolderPage() {
         )}
       />
 
-      {/* Sección Constancias */}
+      {/* Sección Certificados */}
       <FolderSection
-        title="Constancias"
+        title="Certificados"
         count={certificates.length}
         items={lastCertificates}
-        emptyMessage="No hay constancias registradas"
+        onViewAll={
+          certificatesFacilityId && patientId
+            ? () =>
+                navigate(
+                  `/g/${certificatesFacilityId}/certificates?resident_id=${patientId}`
+                )
+            : undefined
+        }
+        emptyMessage="No hay certificados registrados"
         renderItem={(certificate: Certificate) => (
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">

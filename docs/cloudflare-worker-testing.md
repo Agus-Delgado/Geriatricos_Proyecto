@@ -1,8 +1,8 @@
-# Cloudflare Worker — Tests de contrato (Bloque 8)
+# Cloudflare Worker — Tests de contrato (Bloques 8–9)
 
-Tests mínimos de contrato HTTP para autenticación en `cloudflare-worker/`, ejecutados con **Vitest** y **`@cloudflare/vitest-pool-workers`** (runtime Workers + D1 aislado).
+Tests mínimos de contrato HTTP en `cloudflare-worker/`, ejecutados con **Vitest** y **`@cloudflare/vitest-pool-workers`** (runtime Workers + D1 aislado).
 
-## Alcance
+## Alcance — Auth (Bloque 8)
 
 | Caso | Endpoint | Esperado |
 |------|----------|----------|
@@ -10,6 +10,15 @@ Tests mínimos de contrato HTTP para autenticación en `cloudflare-worker/`, eje
 | Login fallido | `POST /auth/login` | `401`, `detail: Credenciales inválidas` |
 | Me sin token | `GET /auth/me` | `401`, `detail: Not authenticated` |
 | Me con token | `GET /auth/me` | `200`, perfil demo con campos clave |
+
+## Alcance — Facilities (Bloque 9)
+
+| Caso | Endpoint | Esperado |
+|------|----------|----------|
+| List sin token | `GET /facilities` | `401`, `detail: Not authenticated` |
+| List con token | `GET /facilities` | `200`, array con `fac-demo-001` |
+| Detalle por id | `GET /facilities/fac-demo-001` | `200`, facility demo |
+| Detalle por slug | `GET /facilities/by-slug/hogar-demo-centro` | `200`, `id: fac-demo-001` |
 
 No se asserta el JWT completo ni timestamps dinámicos.
 
@@ -55,9 +64,10 @@ No usar credenciales reales ni este seed en producción.
 - `vitest.config.ts` — integración Wrangler + D1
 - `test/apply-migrations.ts` — migraciones D1
 - `test/seed-dev.ts` — seed demo
-- `test/auth.contract.test.ts` — 4 casos de contrato
+- `test/auth.contract.test.ts` — 4 casos de contrato auth
+- `test/facilities.contract.test.ts` — 4 casos de contrato facilities
 
-Contrato documentado en [cloudflare-worker-auth.md](./cloudflare-worker-auth.md).
+Contratos documentados en [cloudflare-worker-auth.md](./cloudflare-worker-auth.md) y [cloudflare-worker-facilities.md](./cloudflare-worker-facilities.md).
 
 ## Troubleshooting
 

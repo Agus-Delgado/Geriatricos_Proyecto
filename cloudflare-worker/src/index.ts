@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { createCorsMiddleware } from "./middleware/cors";
 import { authRouter } from "./modules/auth";
+import { facilitiesRouter } from "./modules/facilities";
 import type { AppContext } from "./types/env";
 
 const app = new Hono<AppContext>();
@@ -18,5 +19,6 @@ app.get("/health", (c) => {
 });
 
 app.route("/auth", authRouter);
+app.route("/facilities", facilitiesRouter);
 
 export default app;

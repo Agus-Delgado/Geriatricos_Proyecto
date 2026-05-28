@@ -184,6 +184,12 @@ curl http://127.0.0.1:8787/auth/me \
   - `doctor` o `medico` -> `MEDICO`
   - `staff` -> `STAFF`
 
+## Tests de contrato
+
+Tests automatizados (Vitest + Workers pool) para `POST /auth/login` y `GET /auth/me`.
+
+Ver [cloudflare-worker-testing.md](./cloudflare-worker-testing.md). Desde `cloudflare-worker/`: `npm test`.
+
 ## Advertencia
 
 Las credenciales y datos demo son solo para desarrollo local.

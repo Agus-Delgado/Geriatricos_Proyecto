@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 const buildId =
   process.env.VERCEL_GIT_COMMIT_SHA ||
+  process.env.CF_PAGES_COMMIT_SHA ||
   process.env.GITHUB_SHA ||
   process.env.BUILD_ID ||
   new Date().toISOString();

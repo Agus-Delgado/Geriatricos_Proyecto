@@ -4,12 +4,15 @@ interface DoctorBannerProps {
   userName?: string;
   facilityName?: string;
   medicalQuote: string;
+  /** En modo médico, sin nombre de hogar se muestra "Inicio médico" en lugar de pedir selección. */
+  medicalMode?: boolean;
 }
 
 export const DoctorBanner: React.FC<DoctorBannerProps> = ({
   userName,
   facilityName,
   medicalQuote,
+  medicalMode = false,
 }) => {
   // Determinar saludo según hora del día
   const getGreeting = (userName?: string): string => {
@@ -30,7 +33,9 @@ export const DoctorBanner: React.FC<DoctorBannerProps> = ({
   // Determinar subtítulo
   const subtitle = facilityName
     ? `Hogar activo: ${facilityName}`
-    : 'Seleccioná un hogar';
+    : medicalMode
+      ? 'Inicio médico'
+      : 'Seleccioná un hogar';
 
   return (
     <div

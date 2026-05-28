@@ -6,6 +6,8 @@ Guía operativa para apagar **Render** (FastAPI + PostgreSQL) una vez validada l
 
 **No hay migración de datos** desde Render hacia D1. Un backup de Render es **opcional** (archivo histórico), no requisito para seguir operando.
 
+**Validación funcional detallada de la app médica** (login, pacientes, clínica, certificados, sin Render en Network): usar [medical-production-checklist.md](./medical-production-checklist.md). Guía para el médico: [medical-doctor-handoff.md](./medical-doctor-handoff.md).
+
 ---
 
 ## Antes de apagar — validaciones en producción

@@ -50,7 +50,12 @@ export const SelectFacilityPage: React.FC = () => {
       // Navegar inmediatamente sin esperar refresh
       redirectByRole(role, facilityId);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al seleccionar hogar. Intenta nuevamente.';
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : isMedicalAppMode()
+            ? 'Error al seleccionar el hogar. Intentá nuevamente.'
+            : 'Error al seleccionar hogar. Intenta nuevamente.';
       setError(errorMessage);
       setLoadingFacilityId(null);
     }
@@ -81,7 +86,13 @@ export const SelectFacilityPage: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="w-full max-w-md">
-          <ErrorMessage message="No tienes acceso a ninguna sede" />
+          <ErrorMessage
+            message={
+              isMedicalAppMode()
+                ? 'No tenés acceso a ningún hogar. Contactá al administrador.'
+                : 'No tienes acceso a ninguna sede'
+            }
+          />
         </div>
       </div>
     );
@@ -158,9 +169,11 @@ export const SelectFacilityPage: React.FC = () => {
                       <h3 className="text-2xl font-bold text-white mb-1">
                         {membership.facility_name}
                       </h3>
-                      <p className="text-white/90 text-sm">
-                        Código: {membership.facility_code}
-                      </p>
+                      {!isMedicalAppMode() && (
+                        <p className="text-white/90 text-sm">
+                          Código: {membership.facility_code}
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className="text-xs font-medium text-gray-900 bg-white/90 px-3 py-1.5 rounded-full">

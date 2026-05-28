@@ -50,6 +50,7 @@ flowchart LR
 | Health check | `GET {WORKER_URL}/health` → `200`, `{"ok":true,"service":"geriatricos-worker"}` |
 | Rutas API | [`cloudflare-worker/src/index.ts`](../cloudflare-worker/src/index.ts) |
 | Superusuario inicial | Script `cloudflare-worker/scripts/create-production-superuser.mjs` (ver runbook histórico en [cutover-render-cloudflare.md](./cutover-render-cloudflare.md)) |
+| Usuario médico inicial | Script `cloudflare-worker/scripts/create-production-medical-user.mjs` — ver [medical-doctor-handoff.md](./medical-doctor-handoff.md) |
 
 **Render (legacy):** el backend histórico vivía en `https://geriatricos-proyecto.onrender.com` (confirmar URL vigente en dashboard Render antes de apagar). Ya no es la API de la app médica.
 
@@ -100,6 +101,7 @@ El directorio [`/backend`](../backend) (FastAPI) permanece en el repo como refer
 | **B2+B3** | Historia clínica (resumen, notas, reporte) e indicaciones (medication plans/times) |
 | **B4** | Certificados |
 | **B5** | Accesos externos médicos (env vars + panel en hub) |
+| **B9** | Entrega al médico: guía, checklist producción, script usuario médico, copy y navegación final |
 
 ---
 
@@ -117,6 +119,8 @@ El directorio [`/backend`](../backend) (FastAPI) permanece en el repo como refer
 
 | Documento | Uso |
 |-----------|-----|
+| [medical-doctor-handoff.md](./medical-doctor-handoff.md) | Guía simple para el médico y entrega operativa |
+| [medical-production-checklist.md](./medical-production-checklist.md) | Validación funcional en producción antes de entregar |
 | [render-shutdown-checklist.md](./render-shutdown-checklist.md) | Checklist para apagar Render |
 | [cutover-render-cloudflare.md](./cutover-render-cloudflare.md) | Runbook histórico de cutover (cancelado para enfoque actual) |
 | [cloudflare-worker-local-dev.md](./cloudflare-worker-local-dev.md) | Desarrollo local del Worker |
@@ -134,3 +138,4 @@ El directorio [`/backend`](../backend) (FastAPI) permanece en el repo como refer
 | Fecha | Evento |
 |-------|--------|
 | 2026-05-28 | B6 — Documento creado; estado producción app médica en Vercel + Worker + D1 |
+| 2026-05-28 | B9 — Entrega final al médico (docs, script, copy) |

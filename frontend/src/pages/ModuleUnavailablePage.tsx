@@ -6,12 +6,14 @@ interface ModuleUnavailablePageProps {
   title?: string;
   message?: string;
   showSelectFacility?: boolean;
+  medicalHubPath?: string;
 }
 
 export const ModuleUnavailablePage: React.FC<ModuleUnavailablePageProps> = ({
   title = 'Módulo no disponible',
   message = 'Esta función no está disponible en la aplicación médica.',
   showSelectFacility = false,
+  medicalHubPath,
 }) => {
   const navigate = useNavigate();
 
@@ -21,10 +23,16 @@ export const ModuleUnavailablePage: React.FC<ModuleUnavailablePageProps> = ({
         <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
         <p className="text-gray-600 text-sm">{message}</p>
         <div className="flex flex-col gap-2 pt-2">
-          {showSelectFacility && (
-            <Button onClick={() => navigate('/select-facility')}>Elegir sede</Button>
+          {medicalHubPath && (
+            <Button onClick={() => navigate(medicalHubPath)}>Volver al inicio médico</Button>
           )}
-          <Button variant="secondary" onClick={() => navigate(-1)}>
+          {showSelectFacility && (
+            <Button onClick={() => navigate('/select-facility')}>Elegir hogar</Button>
+          )}
+          <Button
+            variant={medicalHubPath ? 'secondary' : undefined}
+            onClick={() => navigate(-1)}
+          >
             Volver
           </Button>
         </div>

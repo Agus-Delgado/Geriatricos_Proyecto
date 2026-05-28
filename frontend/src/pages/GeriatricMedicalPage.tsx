@@ -21,7 +21,7 @@ export default function GeriatricMedicalPage() {
   const activeMembership = memberships.find(
     (m) => m.facility_id === (activeFacilityId ?? facilityId) && m.is_active
   );
-  const facilityName = activeMembership?.facility_name ?? facilityId;
+  const facilityName = activeMembership?.facility_name;
 
   const [medicalQuote, setMedicalQuote] = useState(getRandomMedicalQuote());
   const [showWelcome, setShowWelcome] = useState(false);
@@ -132,6 +132,7 @@ export default function GeriatricMedicalPage() {
             userName={user?.full_name}
             facilityName={facilityName}
             medicalQuote={medicalQuote}
+            medicalMode
           />
 
           {showWelcome && user?.id && (
@@ -144,7 +145,7 @@ export default function GeriatricMedicalPage() {
 
           {patientsViewedToday > 0 && (
             <p className="text-sm text-gray-600 mb-4 rounded-lg bg-white/80 shadow px-4 py-3 border border-gray-100">
-              Pacientes consultados hoy (local): {patientsViewedToday}
+              Pacientes vistos hoy: {patientsViewedToday}
             </p>
           )}
 

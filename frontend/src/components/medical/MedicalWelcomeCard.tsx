@@ -40,9 +40,9 @@ export function MedicalWelcomeCard({ userId, dni, onDismiss }: MedicalWelcomeCar
 
   return (
     <div className="mb-6 rounded-xl border border-indigo-100 bg-white/90 shadow-sm p-5">
-      <h2 className="text-lg font-semibold text-gray-900 mb-1">Bienvenido al módulo médico</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-1">Bienvenido — Inicio médico</h2>
       <p className="text-sm text-gray-600 mb-4">
-        Resumen rápido de las secciones principales:
+        Resumen de las secciones principales:
       </p>
       {!hasDni && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

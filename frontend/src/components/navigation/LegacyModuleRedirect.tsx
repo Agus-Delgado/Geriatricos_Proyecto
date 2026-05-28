@@ -1,5 +1,4 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMedicalHubPath } from '../../utils/medicalNavigation';
 import { ModuleUnavailablePage } from '../../pages/ModuleUnavailablePage';
@@ -9,8 +8,8 @@ interface LegacyModuleRedirectProps {
 }
 
 /**
- * En modo médico, redirige módulos legacy (finanzas, staff, etc.) al hub médico
- * o muestra pantalla informativa si no hay sede activa.
+ * En modo médico, muestra pantalla informativa para módulos legacy (finanzas, staff, etc.)
+ * con opción de volver al inicio médico.
  */
 export const LegacyModuleRedirect: React.FC<LegacyModuleRedirectProps> = ({
   moduleName = 'Este módulo',
@@ -19,13 +18,19 @@ export const LegacyModuleRedirect: React.FC<LegacyModuleRedirectProps> = ({
   const facilityId = activeFacilityId ?? user?.active_facility_id ?? null;
 
   if (facilityId) {
-    return <Navigate to={getMedicalHubPath(facilityId)} replace />;
+    return (
+      <ModuleUnavailablePage
+        title={`${moduleName} no disponible`}
+        message="Esta función no forma parte de la aplicación médica."
+        medicalHubPath={getMedicalHubPath(facilityId)}
+      />
+    );
   }
 
   return (
     <ModuleUnavailablePage
       title={`${moduleName} no disponible`}
-      message="Seleccioná una sede para continuar con la aplicación médica."
+      message="Seleccioná un hogar para continuar con la aplicación médica."
       showSelectFacility
     />
   );

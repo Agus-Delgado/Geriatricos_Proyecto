@@ -220,7 +220,7 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
                         <p className="text-sm font-medium text-gray-900">
                           {user.full_name || user.email || user.dni || 'Usuario'}
                         </p>
-                        {getActiveRole() && (
+                        {getActiveRole() && !isMedicalAppMode() && (
                           <p className="text-xs text-gray-500 mt-1">
                             {getRoleLabel(getActiveRole()!)}
                           </p>

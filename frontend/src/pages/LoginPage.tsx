@@ -162,7 +162,11 @@ export const LoginPage: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Hogares de Cuidado y Cariño
             </h1>
-            <p className="text-gray-600 text-sm">Acceso gestionado por administradores</p>
+            <p className="text-gray-600 text-sm">
+              {isMedicalAppMode()
+                ? 'Ingresá con el email y la contraseña que te entregaron'
+                : 'Acceso gestionado por administradores'}
+            </p>
           </div>
 
           {error && (

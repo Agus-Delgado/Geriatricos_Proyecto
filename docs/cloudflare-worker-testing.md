@@ -1,4 +1,4 @@
-# Cloudflare Worker — Tests de contrato (Bloques 8–11)
+# Cloudflare Worker — Tests de contrato (Bloques 8–12)
 
 Tests mínimos de contrato HTTP en `cloudflare-worker/`, ejecutados con **Vitest** y **`@cloudflare/vitest-pool-workers`** (runtime Workers + D1 aislado).
 
@@ -10,6 +10,15 @@ Tests mínimos de contrato HTTP en `cloudflare-worker/`, ejecutados con **Vitest
 | Login fallido | `POST /auth/login` | `401`, `detail: Credenciales inválidas` |
 | Me sin token | `GET /auth/me` | `401`, `detail: Not authenticated` |
 | Me con token | `GET /auth/me` | `200`, perfil demo con campos clave |
+
+## Alcance — Active facility (Bloque 12)
+
+| Caso | Endpoint | Esperado |
+|------|----------|----------|
+| Sin token | `POST /auth/active-facility` | `401`, `detail: Not authenticated` |
+| Sede válida con membership | `POST /auth/active-facility` | `200`, `active_facility_id: fac-demo-001`; `/auth/me` refleja el mismo valor |
+| Sede inexistente | `POST /auth/active-facility` | `404`, `detail: Geriátrico no encontrado` |
+| Sede sin membership | `POST /auth/active-facility` | `403`, `detail: No tiene acceso a este geriátrico` (sede `fac-other-001` insertada solo en el test) |
 
 ## Alcance — Facilities (Bloque 9)
 
@@ -87,7 +96,7 @@ No usar credenciales reales ni este seed en producción.
 - `vitest.config.ts` — integración Wrangler + D1
 - `test/apply-migrations.ts` — migraciones D1
 - `test/seed-dev.ts` — seed demo
-- `test/auth.contract.test.ts` — 4 casos de contrato auth
+- `test/auth.contract.test.ts` — 8 casos de contrato auth (login, me, active-facility)
 - `test/facilities.contract.test.ts` — 4 casos de contrato facilities
 - `test/residents.contract.test.ts` — 7 casos de contrato residents
 - `test/contacts.contract.test.ts` — 6 casos de contrato contacts

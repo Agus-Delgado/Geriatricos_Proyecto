@@ -6,6 +6,7 @@ Implementacion minima de autenticacion real en `cloudflare-worker/` para entorno
 
 - `POST /auth/login`
 - `GET /auth/me`
+- `POST /auth/active-facility`
 - Middleware JWT Bearer para rutas protegidas
 - JWT HS256 con Web Crypto (compatible con Workers)
 - Password hashing/verificacion con `@noble/hashes` + `scrypt`
@@ -77,6 +78,54 @@ Respuesta compatible con frontend (campos faltantes en D1 Fase 1 se completan co
     }
   ]
 }
+```
+
+### POST /auth/active-facility
+
+Header requerido:
+
+`Authorization: Bearer <token>`
+
+Request:
+
+```json
+{
+  "facility_id": "fac-demo-001"
+}
+```
+
+Response OK:
+
+```json
+{
+  "active_facility_id": "fac-demo-001"
+}
+```
+
+Validaciones:
+
+- `401` sin token (`Not authenticated`)
+- `422` si falta `facility_id` o viene vacío
+- `404` si la sede no existe o `is_active != 1` (`Geriátrico no encontrado`)
+- `403` si el usuario no es platform admin/owner y no tiene membership activa en `facility_users` (`No tiene acceso a este geriátrico`)
+
+Persistencia:
+
+- Actualiza `users.active_facility_id` y `users.updated_at`.
+
+Platform admin / owner (`users.role` = `owner` o `platform_admin`):
+
+- Puede fijar cualquier sede activa existente sin membership.
+
+**JWT y sede activa:** este endpoint no reemite el token. El claim `active_facility_id` del JWT puede quedar desactualizado hasta el próximo login. La fuente de verdad operativa es `users.active_facility_id` en D1 y `GET /auth/me` (el frontend ya actualiza el estado local tras el POST).
+
+Ejemplo:
+
+```bash
+curl -X POST http://127.0.0.1:8787/auth/active-facility \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d "{\"facility_id\":\"fac-demo-001\"}"
 ```
 
 ## JWT (HS256) en Workers
@@ -186,7 +235,7 @@ curl http://127.0.0.1:8787/auth/me \
 
 ## Tests de contrato
 
-Tests automatizados (Vitest + Workers pool) para `POST /auth/login` y `GET /auth/me`.
+Tests automatizados (Vitest + Workers pool) para `POST /auth/login`, `GET /auth/me` y `POST /auth/active-facility`.
 
 Ver [cloudflare-worker-testing.md](./cloudflare-worker-testing.md). Desde `cloudflare-worker/`: `npm test`.
 

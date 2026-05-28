@@ -1,5 +1,10 @@
 import { Hono } from "hono";
 import { requireAuth } from "../../middleware/auth";
+import {
+  getUserRole,
+  hasFacilityMembership,
+  isPlatformAdmin
+} from "../facilities/access";
 import { getJwtExpiresInSeconds, signJwt } from "./jwt";
 import { verifyPassword } from "./password";
 import type { AppContext } from "../../types/env";
@@ -167,6 +172,51 @@ authRouter.get("/me", requireAuth, async (c) => {
     roles,
     memberships
   });
+});
+
+authRouter.post("/active-facility", requireAuth, async (c) => {
+  if (!c.env.DB) {
+    return c.json({ detail: "Database binding not configured" }, 500);
+  }
+
+  const body = await c.req.json<{ facility_id?: string }>().catch(() => null);
+  const facilityId = body?.facility_id?.trim() ?? "";
+  if (!facilityId) {
+    return c.json({ detail: "facility_id es requerido" }, 422);
+  }
+
+  const facility = await c.env.DB.prepare(
+    `SELECT id, is_active
+     FROM facilities
+     WHERE id = ?1
+     LIMIT 1`
+  )
+    .bind(facilityId)
+    .first<{ id: string; is_active: number }>();
+
+  if (!facility || facility.is_active !== 1) {
+    return c.json({ detail: "Geriátrico no encontrado" }, 404);
+  }
+
+  const userId = c.get("jwtPayload").sub;
+  const role = await getUserRole(c.env.DB, userId);
+  if (!isPlatformAdmin(role)) {
+    const hasMembership = await hasFacilityMembership(c.env.DB, userId, facilityId);
+    if (!hasMembership) {
+      return c.json({ detail: "No tiene acceso a este geriátrico" }, 403);
+    }
+  }
+
+  const now = new Date().toISOString();
+  await c.env.DB.prepare(
+    `UPDATE users
+     SET active_facility_id = ?1, updated_at = ?2
+     WHERE id = ?3`
+  )
+    .bind(facilityId, now, userId)
+    .run();
+
+  return c.json({ active_facility_id: facilityId });
 });
 
 export { authRouter };

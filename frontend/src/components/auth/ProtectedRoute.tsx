@@ -4,6 +4,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useFacility } from '../../contexts/FacilityContext';
 import { syncActiveFacility } from '../../utils/session';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { isMedicalAppMode } from '../../config/appMode';
+import { getMedicalHubPath } from '../../utils/medicalNavigation';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -182,6 +184,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     if (!roleToCheck || !rolesToCheck.includes(roleToCheck)) {
       const currentFacilityId = urlFacilityId ?? activeFacilityId ?? user.active_facility_id;
       if (currentFacilityId) {
+        if (isMedicalAppMode()) {
+          return <Navigate to={getMedicalHubPath(currentFacilityId)} replace />;
+        }
         if (roleToCheck === 'ADMIN') return <Navigate to={`/g/${currentFacilityId}/dashboard`} replace />;
         if (roleToCheck === 'MEDICO') return <Navigate to={`/g/${currentFacilityId}/medical`} replace />;
         if (roleToCheck === 'STAFF') return <Navigate to={`/g/${currentFacilityId}/tasks`} replace />;

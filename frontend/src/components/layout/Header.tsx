@@ -3,6 +3,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getRoleLabel } from '../../types/auth';
 import { BugReportButton } from '../support/BugReportButton';
+import { isMedicalAppMode } from '../../config/appMode';
+import { getMedicalHubPath } from '../../utils/medicalNavigation';
 
 interface HeaderProps {
   title?: string;
@@ -81,12 +83,16 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
       // Para rutas geriátricas, intentar volver al dashboard correspondiente
       const facilityId = location.pathname.match(/\/g\/([^/]+)/)?.[1];
       if (facilityId) {
-        const role = getActiveRole();
-        if (isOwner) fallbackPath = `/g/${facilityId}/owner`;
-        else if (role === 'ADMIN') fallbackPath = `/g/${facilityId}/dashboard`;
-        else if (role === 'MEDICO') fallbackPath = `/g/${facilityId}/medical`;
-        else if (role === 'STAFF') fallbackPath = `/g/${facilityId}/tasks`;
-        else fallbackPath = `/g/${facilityId}/dashboard`;
+        if (isMedicalAppMode()) {
+          fallbackPath = getMedicalHubPath(facilityId);
+        } else {
+          const role = getActiveRole();
+          if (isOwner) fallbackPath = `/g/${facilityId}/owner`;
+          else if (role === 'ADMIN') fallbackPath = `/g/${facilityId}/dashboard`;
+          else if (role === 'MEDICO') fallbackPath = `/g/${facilityId}/medical`;
+          else if (role === 'STAFF') fallbackPath = `/g/${facilityId}/tasks`;
+          else fallbackPath = `/g/${facilityId}/dashboard`;
+        }
       }
     }
     
@@ -101,7 +107,9 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
 
   // Permiso para ver noticias diarias (ADMIN/MEDICO/STAFF)
   const role = getActiveRole();
-  const canViewNews = isOwner || role === 'ADMIN' || role === 'MEDICO' || role === 'STAFF';
+  const canViewNews =
+    !isMedicalAppMode() &&
+    (isOwner || role === 'ADMIN' || role === 'MEDICO' || role === 'STAFF');
   
   // Permiso para reportar error: cualquier usuario autenticado
   const canReportError = Boolean(user);
@@ -137,13 +145,17 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
                   className="text-sm text-gray-600 truncate font-semibold hover:underline focus:underline max-w-full"
                   style={{ color: 'var(--facility-accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                   onClick={() => {
-                    // Navegar al panel principal del hogar
-                    const role = getActiveRole();
-                    if (isOwner) navigate(`/g/${activeMembership.facility_id}/owner`);
-                    else if (role === 'ADMIN') navigate(`/g/${activeMembership.facility_id}/dashboard`);
-                    else if (role === 'MEDICO') navigate(`/g/${activeMembership.facility_id}/medical`);
-                    else if (role === 'STAFF') navigate(`/g/${activeMembership.facility_id}/tasks`);
-                    else navigate(`/g/${activeMembership.facility_id}/dashboard`);
+                    const fid = activeMembership.facility_id;
+                    if (isMedicalAppMode()) {
+                      navigate(getMedicalHubPath(fid));
+                      return;
+                    }
+                    const membershipRole = getActiveRole();
+                    if (isOwner) navigate(`/g/${fid}/owner`);
+                    else if (membershipRole === 'ADMIN') navigate(`/g/${fid}/dashboard`);
+                    else if (membershipRole === 'MEDICO') navigate(`/g/${fid}/medical`);
+                    else if (membershipRole === 'STAFF') navigate(`/g/${fid}/tasks`);
+                    else navigate(`/g/${fid}/dashboard`);
                   }}
                   title="Ir al panel principal"
                 >

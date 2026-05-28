@@ -12,6 +12,7 @@ import {
   type ClinicalSummaryField
 } from "./db";
 import { toSummaryResponse } from "./mapper";
+import { handleClinicalReport } from "./report";
 
 type ResidentContext =
   | { ok: false; response: Response }
@@ -85,6 +86,8 @@ function parseSummaryUpdateBody(
 }
 
 const clinicalRouter = new Hono<AppContext>();
+
+clinicalRouter.get("/clinical-report", handleClinicalReport);
 
 clinicalRouter.get("/clinical-summary", async (c) => {
   const ctx = await resolveResidentContext(c);

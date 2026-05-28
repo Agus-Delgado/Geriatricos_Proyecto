@@ -1,3 +1,6 @@
+import type { MedicationPlan } from './medications';
+import type { Resident, ResidentContact } from './residents';
+
 export interface ClinicalSummary {
   id: string;
   resident_id: string;
@@ -35,4 +38,13 @@ export interface ClinicalNoteCreate {
   note_type: string;
   content: string;
   recorded_at?: string;
+}
+
+export interface ClinicalReport {
+  generated_at: string;
+  resident: Resident;
+  clinical_summary: ClinicalSummary | null;
+  clinical_notes: ClinicalNote[];
+  medication_plans: MedicationPlan[];
+  contacts: ResidentContact[];
 }

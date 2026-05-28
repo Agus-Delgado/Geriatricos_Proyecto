@@ -133,3 +133,6 @@ Thumbs.db
 
 # Cloudflare local state
 cloudflare-worker/.wrangler/
+
+# Superuser SQL generado localmente (contiene password_hash; no commitear)
+cloudflare-worker/superuser-production-insert.sql

@@ -5,6 +5,8 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { getRoleLabel } from '../types/auth';
 import { getFacilityTheme } from '../theme/facilityTheme';
+import { isMedicalAppMode } from '../config/appMode';
+import { getMedicalHubPath } from '../utils/medicalNavigation';
 
 export const SelectFacilityPage: React.FC = () => {
   const { user, setActiveFacility, getMemberships, loading: authLoading, activeFacilityId, isOwner } = useAuth();
@@ -14,21 +16,25 @@ export const SelectFacilityPage: React.FC = () => {
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
   const redirectByRole = (role: 'ADMIN' | 'MEDICO' | 'STAFF', facilityId: string) => {
-    // Si el usuario es OWNER global, su panel principal por sede es /g/:id/owner
+    if (isMedicalAppMode()) {
+      navigate(getMedicalHubPath(facilityId), { replace: true });
+      return;
+    }
+
     if (isOwner) {
-      navigate(`/g/${facilityId}/owner`);
+      navigate(`/g/${facilityId}/owner`, { replace: true });
       return;
     }
 
     switch (role) {
       case 'ADMIN':
-        navigate(`/g/${facilityId}/dashboard`);
+        navigate(`/g/${facilityId}/dashboard`, { replace: true });
         break;
       case 'MEDICO':
-        navigate(`/g/${facilityId}/medical`);
+        navigate(`/g/${facilityId}/medical`, { replace: true });
         break;
       case 'STAFF':
-        navigate(`/g/${facilityId}/tasks`);
+        navigate(`/g/${facilityId}/tasks`, { replace: true });
         break;
     }
   };

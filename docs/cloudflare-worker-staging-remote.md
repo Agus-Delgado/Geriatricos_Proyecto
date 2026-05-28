@@ -62,7 +62,7 @@ por el UUID real. **No** modificar el bloque root `[[d1_databases]]` (`geriatric
 
 Commitear el `database_id` staging si el equipo lo permite (no es secreto).
 
-### 3. Aplicar migraciones remotas (0001–0004)
+### 3. Aplicar migraciones remotas (0001–0005)
 
 Orden (carpeta `migrations/`):
 
@@ -70,6 +70,7 @@ Orden (carpeta `migrations/`):
 2. `0002_residents_frontend_align.sql`
 3. `0003_clinical_phase.sql`
 4. `0004_medications_phase.sql`
+5. `0005_certificates.sql`
 
 ```bash
 npx wrangler d1 migrations apply geriatricos_d1_staging --remote --env staging
@@ -291,7 +292,7 @@ curl -s -X POST "$WORKER_URL/auth/login" \
 ## Criterios de éxito (ETAPA 2)
 
 - [ ] D1 `geriatricos_d1_staging` creada; `database_id` en `[env.staging]`.
-- [ ] Migraciones 0001–0004 aplicadas con `--remote --env staging`.
+- [ ] Migraciones 0001–0005 aplicadas con `--remote --env staging`.
 - [ ] `staging_seed.sql` cargado; `SELECT` muestra facility, admin y residente ficticios.
 - [ ] `JWT_SECRET` configurado con `wrangler secret put` (no en TOML).
 - [ ] `wrangler deploy --env staging` OK.

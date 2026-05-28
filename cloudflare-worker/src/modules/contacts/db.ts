@@ -62,6 +62,23 @@ export async function insertResidentContact(
   return toContactResponse(row);
 }
 
+export async function listContactsByResident(
+  db: D1Database,
+  residentId: string
+): Promise<ContactResponse[]> {
+  const result = await db
+    .prepare(
+      `SELECT ${CONTACT_SELECT_COLUMNS}
+       FROM resident_contacts
+       WHERE resident_id = ?1 AND deleted_at IS NULL
+       ORDER BY is_primary DESC, full_name`
+    )
+    .bind(residentId)
+    .all<DbContactRow>();
+
+  return (result.results ?? []).map(toContactResponse);
+}
+
 export async function fetchContactById(
   db: D1Database,
   residentId: string,

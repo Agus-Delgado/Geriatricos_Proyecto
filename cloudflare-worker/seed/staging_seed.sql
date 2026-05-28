@@ -217,3 +217,51 @@ INSERT OR REPLACE INTO medication_schedule_times (
   -1,
   '2026-01-01T00:00:00Z'
 );
+
+INSERT OR REPLACE INTO certificates (
+  id,
+  resident_id,
+  facility_id,
+  certificate_type,
+  issued_at,
+  issued_by_user_id,
+  body_text,
+  content_json,
+  pdf_url,
+  created_at
+) VALUES (
+  'cert-staging-001',
+  'res-staging-001',
+  'fac-staging-001',
+  'CONTROL_CLINICO',
+  '2026-01-10T12:00:00Z',
+  'usr-admin-staging-001',
+  'Certifico que el/la paciente se encuentra bajo control clinico en esta institucion. Constancia ficticia para staging.',
+  NULL,
+  NULL,
+  '2026-01-10T12:00:00Z'
+);
+
+INSERT OR REPLACE INTO certificates (
+  id,
+  resident_id,
+  facility_id,
+  certificate_type,
+  issued_at,
+  issued_by_user_id,
+  body_text,
+  content_json,
+  pdf_url,
+  created_at
+) VALUES (
+  'cert-staging-002',
+  'res-staging-001',
+  'fac-staging-001',
+  'PRESENCIA',
+  '2026-01-12T09:30:00Z',
+  'usr-admin-staging-001',
+  'Dejo constancia de presencia del paciente en la sede. Documento de prueba staging.',
+  NULL,
+  NULL,
+  '2026-01-12T09:30:00Z'
+);

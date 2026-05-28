@@ -126,6 +126,23 @@ export async function listClinicalNotes(
   return (result.results ?? []).map(toNoteResponse);
 }
 
+export async function listClinicalNotesAsc(
+  db: D1Database,
+  residentId: string
+): Promise<ClinicalNoteResponse[]> {
+  const result = await db
+    .prepare(
+      `SELECT ${NOTE_SELECT_COLUMNS}
+       FROM clinical_notes
+       WHERE resident_id = ?1
+       ORDER BY recorded_at ASC`
+    )
+    .bind(residentId)
+    .all<DbClinicalNoteRow>();
+
+  return (result.results ?? []).map(toNoteResponse);
+}
+
 export type ClinicalNoteCreateInput = {
   note_type?: string;
   content: string;

@@ -52,6 +52,10 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import { OwnerDashboardPage } from './pages/OwnerDashboardPage';
 import { useAuth } from './contexts/AuthContext';
 import { VersionUpdateWatcher } from './components/app/VersionUpdateWatcher';
+import { isMedicalAppMode } from './config/appMode';
+import { LegacyModuleRedirect } from './components/navigation/LegacyModuleRedirect';
+
+const CLINICAL_ROLES = ['MEDICO', 'ADMIN'] as const;
 
 function AppContent() {
   useFacilityTheme();
@@ -132,7 +136,11 @@ function AppContent() {
           path="/platform"
           element={
             <ProtectedRoute requirePlatformAdmin={true} requireFacility={false}>
-              <PlatformPage />
+              {isMedicalAppMode() ? (
+                <LegacyModuleRedirect moduleName="Administración de plataforma" />
+              ) : (
+                <PlatformPage />
+              )}
             </ProtectedRoute>
           }
         />
@@ -140,7 +148,11 @@ function AppContent() {
           path="/admin/users"
           element={
             <ProtectedRoute requirePlatformAdmin={true} requireFacility={false}>
-              <AdminUsersPage />
+              {isMedicalAppMode() ? (
+                <LegacyModuleRedirect moduleName="Usuarios de plataforma" />
+              ) : (
+                <AdminUsersPage />
+              )}
             </ProtectedRoute>
           }
         />
@@ -150,7 +162,11 @@ function AppContent() {
           path="/g/:id/dashboard"
           element={
             <ProtectedRoute requireRole="ADMIN">
-              <GeriatricDashboardPage />
+              {isMedicalAppMode() ? (
+                <LegacyModuleRedirect moduleName="Panel administrativo" />
+              ) : (
+                <GeriatricDashboardPage />
+              )}
             </ProtectedRoute>
           }
         />
@@ -158,7 +174,11 @@ function AppContent() {
           path="/g/:id/owner"
           element={
             <ProtectedRoute requireOwner={true}>
-              <OwnerDashboardPage />
+              {isMedicalAppMode() ? (
+                <LegacyModuleRedirect moduleName="Panel del propietario" />
+              ) : (
+                <OwnerDashboardPage />
+              )}
             </ProtectedRoute>
           }
         />
@@ -166,7 +186,11 @@ function AppContent() {
           path="/g/:id/tasks"
           element={
             <ProtectedRoute requireRole="STAFF">
-              <GeriatricTasksPage />
+              {isMedicalAppMode() ? (
+                <LegacyModuleRedirect moduleName="Tareas de personal" />
+              ) : (
+                <GeriatricTasksPage />
+              )}
             </ProtectedRoute>
           }
         />
@@ -181,7 +205,7 @@ function AppContent() {
         <Route
           path="/g/:id/certificates"
           element={
-            <ProtectedRoute requireRole="MEDICO">
+            <ProtectedRoute requireRoles={[...CLINICAL_ROLES]}>
               <CertificatesPage />
             </ProtectedRoute>
           }
@@ -202,9 +226,13 @@ function AppContent() {
         <Route
           path="/residents/trash"
           element={
-            <ProtectedRoute>
-              <ResidentsTrashPage />
-            </ProtectedRoute>
+            isMedicalAppMode() ? (
+              <Navigate to="/residents" replace />
+            ) : (
+              <ProtectedRoute>
+                <ResidentsTrashPage />
+              </ProtectedRoute>
+            )
           }
         />
         <Route
@@ -242,7 +270,11 @@ function AppContent() {
           path="/finance"
           element={
             <ProtectedRoute requireOwner={true}>
-              <FinancePage />
+              {isMedicalAppMode() ? (
+                <LegacyModuleRedirect moduleName="Finanzas" />
+              ) : (
+                <FinancePage />
+              )}
             </ProtectedRoute>
           }
         />
@@ -252,18 +284,35 @@ function AppContent() {
           path="/staff"
           element={
             <ProtectedRoute requireOwner={true}>
-              <StaffManagementPage />
+              {isMedicalAppMode() ? (
+                <LegacyModuleRedirect moduleName="Personal" />
+              ) : (
+                <StaffManagementPage />
+              )}
             </ProtectedRoute>
           }
         />
-        <Route path="/staff/:id/print" element={<StaffPrintPage />} />
+        <Route
+          path="/staff/:id/print"
+          element={
+            isMedicalAppMode() ? (
+              <LegacyModuleRedirect moduleName="Impresión de personal" />
+            ) : (
+              <StaffPrintPage />
+            )
+          }
+        />
 
         {/* Asistencia (solo OWNER) */}
         <Route
           path="/attendance"
           element={
             <ProtectedRoute requireOwner={true}>
-              <AttendancePage />
+              {isMedicalAppMode() ? (
+                <LegacyModuleRedirect moduleName="Asistencia" />
+              ) : (
+                <AttendancePage />
+              )}
             </ProtectedRoute>
           }
         />
@@ -272,7 +321,11 @@ function AppContent() {
           path="/currently-working"
           element={
             <ProtectedRoute requireOwner={true}>
-              <CurrentlyWorkingPage />
+              {isMedicalAppMode() ? (
+                <LegacyModuleRedirect moduleName="Personal en turno" />
+              ) : (
+                <CurrentlyWorkingPage />
+              )}
             </ProtectedRoute>
           }
         />
@@ -281,7 +334,11 @@ function AppContent() {
           path="/shifts-management"
           element={
             <ProtectedRoute requireOwner={true}>
-              <ShiftsManagementPage />
+              {isMedicalAppMode() ? (
+                <LegacyModuleRedirect moduleName="Gestión de turnos" />
+              ) : (
+                <ShiftsManagementPage />
+              )}
             </ProtectedRoute>
           }
         />
@@ -290,7 +347,11 @@ function AppContent() {
           path="/shift-assignments"
           element={
             <ProtectedRoute requireOwner={true}>
-              <ShiftAssignmentsPage />
+              {isMedicalAppMode() ? (
+                <LegacyModuleRedirect moduleName="Asignación de turnos" />
+              ) : (
+                <ShiftAssignmentsPage />
+              )}
             </ProtectedRoute>
           }
         />
@@ -299,7 +360,7 @@ function AppContent() {
         <Route
           path="/clinical-history/search"
           element={
-            <ProtectedRoute requireRole="MEDICO">
+            <ProtectedRoute requireRoles={[...CLINICAL_ROLES]}>
               <ClinicalHistorySearchPage />
             </ProtectedRoute>
           }
@@ -307,7 +368,7 @@ function AppContent() {
         <Route
           path="/clinical-history/:patientId"
           element={
-            <ProtectedRoute requireRole="MEDICO">
+            <ProtectedRoute requireRoles={[...CLINICAL_ROLES]}>
               <ClinicalHistoryPage />
             </ProtectedRoute>
           }
@@ -318,7 +379,7 @@ function AppContent() {
         <Route
           path="/medical-folder/search"
           element={
-            <ProtectedRoute requireRole="MEDICO">
+            <ProtectedRoute requireRoles={[...CLINICAL_ROLES]}>
               <MedicalFolderSearchPage />
             </ProtectedRoute>
           }
@@ -326,7 +387,7 @@ function AppContent() {
         <Route
           path="/medical-folder/:patientId"
           element={
-            <ProtectedRoute requireRole="MEDICO">
+            <ProtectedRoute requireRoles={[...CLINICAL_ROLES]}>
               <MedicalFolderPage />
             </ProtectedRoute>
           }
@@ -337,7 +398,7 @@ function AppContent() {
         <Route
           path="/prescriptions-history/search"
           element={
-            <ProtectedRoute requireRole="MEDICO">
+            <ProtectedRoute requireRoles={[...CLINICAL_ROLES]}>
               <PrescriptionsHistorySearchPage />
             </ProtectedRoute>
           }
@@ -345,7 +406,7 @@ function AppContent() {
         <Route
           path="/prescriptions-history/:patientId"
           element={
-            <ProtectedRoute requireRole="MEDICO">
+            <ProtectedRoute requireRoles={[...CLINICAL_ROLES]}>
               <PrescriptionsHistoryPage />
             </ProtectedRoute>
           }
@@ -357,7 +418,11 @@ function AppContent() {
           path="/activity"
           element={
             <ProtectedRoute>
-              <ActivityFeedPage />
+              {isMedicalAppMode() ? (
+                <LegacyModuleRedirect moduleName="Noticias / actividad" />
+              ) : (
+                <ActivityFeedPage />
+              )}
             </ProtectedRoute>
           }
         />

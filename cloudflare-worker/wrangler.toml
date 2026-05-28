@@ -36,3 +36,20 @@ JWT_EXPIRES_IN_SECONDS = "28800"
 binding = "DB"
 database_name = "geriatricos_d1_staging"
 database_id = "6a420074-605e-49a6-b00e-95564d8d6eb6"
+
+# Remote production (Etapa 6). Deploy: wrangler deploy --env production
+# JWT_SECRET for production: wrangler secret put JWT_SECRET --env production (never in this file).
+# Complete database_id after: wrangler d1 create geriatricos_d1_prod
+# Complete CORS_ORIGINS with the real Vercel production origin before browser cutover.
+[env.production]
+name = "geriatricos-worker-production"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+CORS_ORIGINS = "https://geriatricos-proyecto.vercel.app"
+JWT_EXPIRES_IN_SECONDS = "28800"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "geriatricos_d1_prod"
+database_id = "0030ba95-4024-4a6d-bfa2-6ed46b85781d"

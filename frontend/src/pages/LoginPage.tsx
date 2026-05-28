@@ -6,6 +6,8 @@ import { Input } from '../components/ui/Input';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Modal } from '../components/ui/Modal';
+import { isMedicalAppMode } from '../config/appMode';
+import { getMedicalHubPath, resolvePostLoginPath } from '../utils/medicalNavigation';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -45,12 +47,6 @@ export const LoginPage: React.FC = () => {
   const redirectAfterLogin = () => {
     if (!user) return;
 
-    // Platform admin -> /platform
-    if (user.is_platform_admin) {
-      navigate('/platform', { replace: true });
-      return;
-    }
-
     const memberships = user.memberships.filter(m => m.is_active);
 
     // Sin memberships -> error (no debería pasar)
@@ -84,17 +80,17 @@ export const LoginPage: React.FC = () => {
   };
 
   const redirectByRole = (role: 'ADMIN' | 'MEDICO' | 'STAFF', facilityId: string) => {
-    switch (role) {
-      case 'ADMIN':
-        navigate(`/g/${facilityId}/dashboard`, { replace: true });
-        break;
-      case 'MEDICO':
-        navigate(`/g/${facilityId}/medical`, { replace: true });
-        break;
-      case 'STAFF':
-        navigate(`/g/${facilityId}/tasks`, { replace: true });
-        break;
+    if (isMedicalAppMode()) {
+      navigate(getMedicalHubPath(facilityId), { replace: true });
+      return;
     }
+    const path = resolvePostLoginPath({
+      activeFacilityId: facilityId,
+      membershipRole: role,
+      isPlatformAdmin: user?.is_platform_admin,
+      hasMemberships: true,
+    });
+    navigate(path, { replace: true });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

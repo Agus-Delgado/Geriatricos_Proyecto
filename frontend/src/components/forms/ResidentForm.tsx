@@ -1,10 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
-import { residentsApi } from '../../api/residents';
 import type { Resident, ResidentCreate, ResidentUpdate, ResidentContactCreate } from '../../types/residents';
-import type { ApiError } from '../../api/client';
+import { isResidentDocumentUploadEnabled } from '../../config/appMode';
 
 interface ResidentFormProps {
   resident?: Resident;
@@ -50,9 +49,63 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [alert, setAlert] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadingDocument, setUploadingDocument] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const documentUploadEnabled = isResidentDocumentUploadEnabled();
+
+  const optionalField = (value: string): string | undefined => {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : undefined;
+  };
+
+  const buildContactsPayload = (): ResidentContactCreate[] | undefined => {
+    const contactsToSend: ResidentContactCreate[] = contacts
+      .filter((c) => c.first_name.trim() || c.last_name.trim())
+      .map((c) => ({
+        full_name: `${c.first_name.trim()} ${c.last_name.trim()}`.trim(),
+        phone: optionalField(c.phone),
+        email: optionalField(c.email),
+        relationship_type: optionalField(c.relationship_type),
+        is_primary: false,
+      }))
+      .filter((c) => c.full_name.length > 0);
+    return contactsToSend.length > 0 ? contactsToSend : undefined;
+  };
+
+  const buildCreatePayload = (): ResidentCreate => ({
+    facility_id: facilityId,
+    first_name: formData.first_name.trim(),
+    last_name: formData.last_name.trim(),
+    admission_date: formData.admission_date,
+    dni: optionalField(formData.dni),
+    birth_date: optionalField(formData.birth_date),
+    sex: optionalField(formData.sex),
+    coverage_type: optionalField(formData.coverage_type),
+    coverage_other:
+      formData.coverage_type === 'OTRA' ? optionalField(formData.coverage_other) : undefined,
+    coverage_number: optionalField(formData.coverage_number),
+    notes: optionalField(formData.notes),
+    contacts: buildContactsPayload(),
+  });
+
+  const buildUpdatePayload = (): ResidentUpdate => {
+    let notes = formData.notes;
+    if (formData.archive_note.trim()) {
+      const archiveLine = `Motivo de baja: ${formData.archive_note.trim()}`;
+      notes = notes?.trim() ? `${notes}\n---\n${archiveLine}` : archiveLine;
+    }
+    return {
+      first_name: formData.first_name.trim(),
+      last_name: formData.last_name.trim(),
+      dni: optionalField(formData.dni),
+      birth_date: optionalField(formData.birth_date),
+      sex: optionalField(formData.sex),
+      coverage_type: optionalField(formData.coverage_type),
+      coverage_other:
+        formData.coverage_type === 'OTRA' ? optionalField(formData.coverage_other) : undefined,
+      coverage_number: optionalField(formData.coverage_number),
+      status: formData.archived ? 'INACTIVE' : 'ACTIVE',
+      notes: notes?.trim() ? notes.trim() : undefined,
+    };
+  };
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -96,21 +149,6 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
       newErrors.coverage_other = 'Debe especificar la cobertura cuando selecciona OTRA';
     }
 
-    // Validar contactos: al menos uno debe tener nombre y teléfono
-    const validContacts = contacts.filter(
-      (c) => c.first_name.trim() || c.last_name.trim() || c.phone.trim()
-    );
-    if (validContacts.length > 0) {
-      validContacts.forEach((contact, index) => {
-        if (!contact.first_name.trim() && !contact.last_name.trim()) {
-          newErrors[`contact_${index}_name`] = 'Nombre o apellido es requerido';
-        }
-        if (!contact.phone.trim()) {
-          newErrors[`contact_${index}_phone`] = 'Teléfono es requerido';
-        }
-      });
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -133,71 +171,10 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
       setLoading(true);
       setErrors({});
       try {
-        // Preparar contactos para enviar (solo los que tienen datos)
-        const contactsToSend: ResidentContactCreate[] = contacts
-          .filter((c) => (c.first_name.trim() || c.last_name.trim()) && c.phone.trim())
-          .map((c) => ({
-            full_name: `${c.first_name.trim()} ${c.last_name.trim()}`.trim(),
-            phone: c.phone.trim(),
-            email: c.email.trim() || undefined,
-            relationship_type: c.relationship_type.trim() || undefined,
-            is_primary: false,
-          }));
         if (resident) {
-          const updateData: ResidentUpdate = {
-            ...formData,
-            status: formData.archived ? 'INACTIVE' : 'ACTIVE',
-            notes: formData.archive_note
-              ? (formData.notes ? formData.notes + '\n---\nMotivo de baja: ' + formData.archive_note : 'Motivo de baja: ' + formData.archive_note)
-              : formData.notes,
-          };
-          delete (updateData as any).archived;
-          delete (updateData as any).archive_note;
-          await onSubmit(updateData);
-          
-          // Si hay archivo seleccionado, subirlo después de actualizar
-          if (selectedFile && resident) {
-            try {
-              setUploadingDocument(true);
-              await residentsApi.uploadDocument(resident.id, selectedFile);
-              setSelectedFile(null);
-              if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-              }
-            } catch (uploadError) {
-              const uploadApiError = uploadError as ApiError;
-              setAlert(`Residente actualizado pero error al subir documento: ${uploadApiError.detail || 'Error desconocido'}`);
-            } finally {
-              setUploadingDocument(false);
-            }
-          }
+          await onSubmit(buildUpdatePayload());
         } else {
-          const submitData: ResidentCreate = {
-            ...formData,
-            facility_id: facilityId,
-            coverage_other: formData.coverage_other || undefined,
-            contacts: contactsToSend.length > 0 ? contactsToSend : undefined,
-          };
-          delete (submitData as any).archived;
-          delete (submitData as any).archive_note;
-          const createdResident = await onSubmit(submitData);
-          
-          // Si hay archivo seleccionado, subirlo después de crear
-          if (selectedFile && createdResident?.id) {
-            try {
-              setUploadingDocument(true);
-              await residentsApi.uploadDocument(createdResident.id, selectedFile);
-              setSelectedFile(null);
-              if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-              }
-            } catch (uploadError) {
-              const uploadApiError = uploadError as ApiError;
-              setAlert(`Residente creado pero error al subir documento: ${uploadApiError.detail || 'Error desconocido'}`);
-            } finally {
-              setUploadingDocument(false);
-            }
-          }
+          await onSubmit(buildCreatePayload());
         }
         
         setAlert(null);
@@ -320,7 +297,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
               onChange={e => setFormData({ ...formData, archived: e.target.checked })}
               disabled={loading}
             />
-            Dar de baja / Archivar residente
+            Marcar paciente como inactivo
           </label>
           <div className="mt-2">
             <Input
@@ -337,7 +314,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
       <div className="border-t pt-4 mt-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Contactos / Familiares</h3>
         <p className="text-sm text-gray-600 mb-4">
-          Complete al menos un contacto con nombre y teléfono. Los campos de email y parentesco son opcionales.
+          Los contactos son opcionales. Si completás uno, indicá al menos nombre o apellido.
         </p>
         <div className="space-y-4">
           {contacts.map((contact, index) => (
@@ -360,10 +337,9 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
               </div>
               <div className="grid grid-cols-2 gap-3 mt-3">
                 <Input
-                  label="Teléfono *"
+                  label="Teléfono"
                   value={contact.phone}
                   onChange={(e) => updateContact(index, 'phone', e.target.value)}
-                  error={errors[`contact_${index}_phone`]}
                   disabled={loading}
                 />
                 <Input
@@ -399,93 +375,19 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
         />
       </div>
 
-      {/* Sección Documento (Carnet) */}
-      <div className="border-t pt-4 mt-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Documento (Carnet)</h3>
-        
-        {/* Mostrar documento existente si existe */}
-        {resident?.document_url && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-gray-700 mb-2">
-              <strong>Documento actual:</strong> {resident.document_name || 'Sin nombre'}
-              {resident.document_size && (
-                <span className="text-gray-500 ml-2">
-                  ({(resident.document_size / (1024 * 1024)).toFixed(2)} MB)
-                </span>
-              )}
-            </p>
-            <a
-              href={resident.document_url || '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-blue-600 hover:text-blue-800 underline"
-            >
-              Ver documento
-            </a>
-          </div>
-        )}
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Adjuntar carnet (opcional)
-          </label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".jpg,.jpeg,.png,.pdf"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              if (file) {
-                // Validar tipo de archivo
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-                if (!allowedTypes.includes(file.type)) {
-                  setErrors({
-                    ...errors,
-                    document: 'Tipo de archivo no permitido. Solo JPG, PNG o PDF.',
-                  });
-                  setSelectedFile(null);
-                  return;
-                }
-                // Validar tamaño (10MB)
-                const maxSize = 10 * 1024 * 1024; // 10MB
-                if (file.size > maxSize) {
-                  setErrors({
-                    ...errors,
-                    document: `El archivo es demasiado grande. Tamaño máximo: 10MB. Tamaño actual: ${(file.size / (1024 * 1024)).toFixed(2)}MB`,
-                  });
-                  setSelectedFile(null);
-                  return;
-                }
-                // Limpiar error de documento si existe (eliminar propiedad en lugar de undefined)
-                const newErrors = { ...errors };
-                delete newErrors.document;
-                setErrors(newErrors);
-                setSelectedFile(file);
-              } else {
-                setSelectedFile(null);
-              }
-            }}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
-            disabled={loading || uploadingDocument}
-          />
-          {errors.document && (
-            <p className="mt-1 text-sm text-red-600">{errors.document}</p>
-          )}
-          {selectedFile && (
-            <p className="mt-2 text-sm text-gray-600">
-              Archivo seleccionado: {selectedFile.name} ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
-            </p>
-          )}
-          <p className="mt-1 text-xs text-gray-500">
-            Formatos permitidos: JPG, PNG, PDF. Tamaño máximo: 10MB.
-          </p>
+      {documentUploadEnabled && resident?.document_url && (
+        <div className="border-t pt-4 mt-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Documento</h3>
+          <a
+            href={resident.document_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            Ver documento adjunto
+          </a>
         </div>
-        {uploadingDocument && (
-          <div className="mt-2 text-sm text-blue-600">
-            Subiendo documento...
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Sección Dar de baja / Archivar eliminada para destrabar build */}
 
@@ -497,11 +399,11 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
       )}
 
       <div className="flex space-x-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel} fullWidth disabled={loading || uploadingDocument}>
+        <Button type="button" variant="secondary" onClick={onCancel} fullWidth disabled={loading}>
           Cancelar
         </Button>
-        <Button type="submit" fullWidth disabled={loading || uploadingDocument}>
-          {loading || uploadingDocument ? 'Guardando...' : resident ? 'Actualizar' : 'Crear'}
+        <Button type="submit" fullWidth disabled={loading}>
+          {loading ? 'Guardando...' : resident ? 'Actualizar paciente' : 'Crear paciente'}
         </Button>
       </div>
     </form>

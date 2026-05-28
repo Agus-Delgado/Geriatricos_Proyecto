@@ -9,7 +9,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { Modal } from '../components/ui/Modal';
 import { ResidentForm } from '../components/forms/ResidentForm';
-import type { Resident } from '../types/residents';
+import type { Resident, ResidentCreate, ResidentUpdate } from '../types/residents';
 import type { ApiError } from '../api/client';
 
 export const ResidentsListPage: React.FC = () => {
@@ -23,10 +23,11 @@ export const ResidentsListPage: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingResident, setEditingResident] = useState<Resident | null>(null);
   const { facility } = useFacility();
-  const { isDoctor, isOwner, getActiveRole } = useAuth();
+  const { isDoctor, isOwner, isPlatformAdmin, getActiveRole } = useAuth();
   const navigate = useNavigate();
   const activeRole = getActiveRole();
-  const canEdit = isOwner || isDoctor || activeRole === 'ADMIN' || activeRole === 'MEDICO';
+  const canEdit =
+    isPlatformAdmin || isOwner || isDoctor || activeRole === 'ADMIN' || activeRole === 'MEDICO';
 
   useEffect(() => {
     if (facility) {
@@ -48,21 +49,22 @@ export const ResidentsListPage: React.FC = () => {
       setResidents(data);
     } catch (err) {
       const apiError = err as ApiError;
-      setError(apiError.detail || 'Error al cargar residentes');
+      setError(apiError.detail || 'Error al cargar pacientes');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateResident = async (data: any) => {
+  const handleCreateResident = async (data: ResidentCreate | ResidentUpdate) => {
+    const createData = data as ResidentCreate;
     try {
-      const created = await residentsApi.create(data);
+      const created = await residentsApi.create(createData);
       setShowCreateModal(false);
       loadResidents();
       return created;
     } catch (err) {
       const apiError = err as ApiError;
-      throw new Error(apiError.detail || 'Error al crear residente');
+      throw new Error(apiError.detail || 'Error al crear paciente');
     }
   };
 
@@ -73,20 +75,21 @@ export const ResidentsListPage: React.FC = () => {
       setShowEditModal(true);
     } catch (err) {
       const apiError = err as ApiError;
-      setError(apiError.detail || 'Error al cargar residente');
+      setError(apiError.detail || 'Error al cargar paciente');
     }
   };
 
-  const handleUpdateResident = async (data: any) => {
+  const handleUpdateResident = async (data: ResidentCreate | ResidentUpdate) => {
+    const updateData = data as ResidentUpdate;
     if (!editingResident) return;
     try {
-      await residentsApi.update(editingResident.id, data);
+      await residentsApi.update(editingResident.id, updateData);
       setShowEditModal(false);
       setEditingResident(null);
       loadResidents();
     } catch (err) {
       const apiError = err as ApiError;
-      throw new Error(apiError.detail || 'Error al actualizar residente');
+      throw new Error(apiError.detail || 'Error al actualizar paciente');
     }
   };
 
@@ -97,55 +100,45 @@ export const ResidentsListPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="px-4 py-4 space-y-4">
-        <div className="flex space-x-2">
-          <div className="flex-1">
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Buscar por nombre o DNI..."
-            />
-          </div>
-          {canEdit && (
-            <button
-              onClick={() => navigate('/residents/trash')}
-              className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
-            >
-              Papelera
-            </button>
-          )}
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-xl font-semibold text-gray-900">Pacientes</h1>
           {canEdit && (
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap text-sm font-medium"
             >
-              Agregar
+              Agregar paciente
             </button>
           )}
         </div>
+
+        <SearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Buscar por nombre o DNI..."
+        />
 
         <div className="flex items-center gap-2">
           <select
             value={stayStatusFilter}
             onChange={(e) => setStayStatusFilter(e.target.value)}
-            className="input-field"
+            className="input-field flex-1"
           >
-            <option value="ACTIVE">Activos</option>
-            <option value="ENDED">Finalizados</option>
-            <option value="">Todos los estados</option>
+            <option value="ACTIVE">Estadía activa</option>
+            <option value="ENDED">Estadía finalizada</option>
+            <option value="">Todas las estadías</option>
           </select>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="input-field"
+            className="input-field flex-1"
           >
-            <option value="ACTIVE">Pacientes activos</option>
-            <option value="">Ver todos (incluye inactivos)</option>
+            <option value="ACTIVE">Solo activos</option>
+            <option value="">Incluir inactivos</option>
           </select>
         </div>
 
-        {error && (
-          <ErrorMessage message={error} onDismiss={() => setError(null)} />
-        )}
+        {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
 
         {loading ? (
           <div className="flex justify-center py-8">
@@ -154,8 +147,8 @@ export const ResidentsListPage: React.FC = () => {
         ) : residents.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
             {searchQuery || stayStatusFilter
-              ? 'No se encontraron residentes'
-              : 'No hay residentes registrados'}
+              ? 'No se encontraron pacientes'
+              : 'No hay pacientes registrados. Usá «Agregar paciente» para comenzar.'}
           </div>
         ) : (
           <div className="space-y-3">
@@ -178,15 +171,22 @@ export const ResidentsListPage: React.FC = () => {
                     <p className="text-sm text-gray-500 mt-1">
                       Ingreso: {formatDate(resident.admission_date)}
                     </p>
-                    <span
-                      className={`inline-block mt-2 px-2 py-1 text-xs rounded ${
-                        resident.stay_status === 'ACTIVE'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {resident.stay_status === 'ACTIVE' ? 'Activo' : 'Finalizado'}
-                    </span>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <span
+                        className={`inline-block px-2 py-1 text-xs rounded ${
+                          resident.stay_status === 'ACTIVE'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {resident.stay_status === 'ACTIVE' ? 'Estadía activa' : 'Estadía finalizada'}
+                      </span>
+                      {resident.status === 'INACTIVE' && (
+                        <span className="inline-block px-2 py-1 text-xs rounded bg-amber-100 text-amber-800">
+                          Inactivo
+                        </span>
+                      )}
+                    </div>
                   </button>
                   <div className="flex gap-2 ml-2">
                     {canEdit && (
@@ -207,9 +207,9 @@ export const ResidentsListPage: React.FC = () => {
                         window.open(`/residents/${resident.id}/print`, '_blank');
                       }}
                       className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-                      title="Imprimir datos del paciente"
+                      title="Imprimir ficha"
                     >
-                      Imprimir datos
+                      Imprimir
                     </button>
                   </div>
                 </div>
@@ -218,11 +218,12 @@ export const ResidentsListPage: React.FC = () => {
           </div>
         )}
 
-        {facility && (isDoctor || activeRole === 'MEDICO') && (
-          <div className="fixed bottom-24 right-4 z-30">
+        {facility && canEdit && (
+          <div className="fixed bottom-24 right-4 z-30 md:hidden">
             <button
               onClick={() => setShowCreateModal(true)}
               className="bg-primary-600 text-white rounded-full p-4 shadow-lg hover:bg-primary-700 transition-colors"
+              aria-label="Agregar paciente"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -235,7 +236,7 @@ export const ResidentsListPage: React.FC = () => {
       <Modal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        title="Nuevo Residente"
+        title="Nuevo paciente"
         size="lg"
       >
         {facility && (
@@ -253,7 +254,7 @@ export const ResidentsListPage: React.FC = () => {
           setShowEditModal(false);
           setEditingResident(null);
         }}
-        title="Editar Residente"
+        title="Editar paciente"
         size="lg"
       >
         {editingResident && facility && (

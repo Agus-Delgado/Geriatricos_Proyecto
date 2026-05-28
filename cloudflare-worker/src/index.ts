@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { createCorsMiddleware } from "./middleware/cors";
 import { authRouter } from "./modules/auth";
 import { facilitiesRouter } from "./modules/facilities";
+import { certificatesRouter } from "./modules/certificates";
 import {
   medicationPlansRouter,
   medicationTimesRouter
@@ -25,6 +26,7 @@ app.get("/health", (c) => {
 
 app.route("/auth", authRouter);
 app.route("/facilities", facilitiesRouter);
+app.route("/certificates", certificatesRouter);
 app.route("/residents", residentsRouter);
 app.route("/medication-plans", medicationPlansRouter);
 app.route("/medication-times", medicationTimesRouter);

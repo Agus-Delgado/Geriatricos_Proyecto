@@ -4,6 +4,7 @@ import type {
   ClinicalSummaryUpdate,
   ClinicalNote,
   ClinicalNoteCreate,
+  ClinicalReport,
 } from '../types/clinical';
 
 export const clinicalApi = {
@@ -39,7 +40,15 @@ export const clinicalApi = {
     );
   },
 
-  downloadHistoryPdf: async (residentId: string): Promise<Blob> => {
-    return apiClient.getBlob(`/residents/${residentId}/clinical-history.pdf`);
+  getClinicalReport: async (residentId: string): Promise<ClinicalReport> => {
+    return apiClient.get<ClinicalReport>(
+      `/residents/${residentId}/clinical-report`
+    );
+  },
+
+  /** Ruta interna para vista imprimible (guardar como PDF vía diálogo del navegador). */
+  getPrintPath: (residentId: string, autoPrint = false): string => {
+    const suffix = autoPrint ? '?auto=1' : '';
+    return `/clinical-history/${residentId}/print${suffix}`;
   },
 };

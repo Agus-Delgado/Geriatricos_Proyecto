@@ -42,3 +42,28 @@ export async function canAccessFacility(
   }
   return hasFacilityMembership(db, userId, facilityId);
 }
+
+export async function listAccessibleFacilityIds(
+  db: D1Database,
+  userId: string,
+  userRole?: string | null
+): Promise<string[]> {
+  const role = userRole ?? (await getUserRole(db, userId));
+  if (isPlatformAdmin(role)) {
+    const result = await db
+      .prepare(`SELECT id FROM facilities WHERE is_active = 1`)
+      .all<{ id: string }>();
+    return (result.results ?? []).map((row) => row.id);
+  }
+
+  const result = await db
+    .prepare(
+      `SELECT facility_id
+       FROM facility_users
+       WHERE user_id = ?1 AND is_active = 1`
+    )
+    .bind(userId)
+    .all<{ facility_id: string }>();
+
+  return (result.results ?? []).map((row) => row.facility_id);
+}

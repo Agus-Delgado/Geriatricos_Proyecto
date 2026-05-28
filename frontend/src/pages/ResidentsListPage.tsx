@@ -9,6 +9,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { Modal } from '../components/ui/Modal';
 import { ResidentForm } from '../components/forms/ResidentForm';
+import { ResidentFormModalFooter } from '../components/forms/ResidentFormModalFooter';
 import type { Resident, ResidentCreate, ResidentUpdate } from '../types/residents';
 import type { ApiError } from '../api/client';
 import { RESIDENT_HOME_LABELS } from '../config/residentHomeLabels';
@@ -24,6 +25,10 @@ export const ResidentsListPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingResident, setEditingResident] = useState<Resident | null>(null);
+  const [createFormLoading, setCreateFormLoading] = useState(false);
+  const [editFormLoading, setEditFormLoading] = useState(false);
+  const CREATE_FORM_ID = 'resident-create-form';
+  const EDIT_FORM_ID = 'resident-edit-form';
   const { facility } = useFacility();
   const { isDoctor, isOwner, isPlatformAdmin, getActiveRole } = useAuth();
   const navigate = useNavigate();
@@ -256,10 +261,23 @@ export const ResidentsListPage: React.FC = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         title="Nuevo paciente"
-        size="lg"
+        size="xl"
+        footer={
+          facility ? (
+            <ResidentFormModalFooter
+              formId={CREATE_FORM_ID}
+              loading={createFormLoading}
+              isEdit={false}
+              onCancel={() => setShowCreateModal(false)}
+            />
+          ) : undefined
+        }
       >
         {facility && (
           <ResidentForm
+            formId={CREATE_FORM_ID}
+            showFooterButtons={false}
+            onLoadingChange={setCreateFormLoading}
             onSubmit={handleCreateResident}
             onCancel={() => setShowCreateModal(false)}
             facilityId={facility.id}
@@ -274,10 +292,26 @@ export const ResidentsListPage: React.FC = () => {
           setEditingResident(null);
         }}
         title="Editar paciente"
-        size="lg"
+        size="xl"
+        footer={
+          editingResident && facility ? (
+            <ResidentFormModalFooter
+              formId={EDIT_FORM_ID}
+              loading={editFormLoading}
+              isEdit
+              onCancel={() => {
+                setShowEditModal(false);
+                setEditingResident(null);
+              }}
+            />
+          ) : undefined
+        }
       >
         {editingResident && facility && (
           <ResidentForm
+            formId={EDIT_FORM_ID}
+            showFooterButtons={false}
+            onLoadingChange={setEditFormLoading}
             resident={editingResident}
             onSubmit={handleUpdateResident}
             onCancel={() => {

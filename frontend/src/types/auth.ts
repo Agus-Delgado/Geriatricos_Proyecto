@@ -141,9 +141,19 @@ export interface UpdateUserStatusRequest {
 export interface UpdateProfileRequest {
   first_name?: string;
   last_name?: string;
+  full_name?: string;
   email?: string;
   dni?: string;
-  current_password?: string; // Requerido solo si se cambia DNI
+  current_password?: string; // Requerido solo si se cambia DNI existente
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
+export interface ChangePasswordResponse {
+  message: string;
 }
 
 export interface PasswordResetRequest {

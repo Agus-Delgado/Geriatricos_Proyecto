@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { ErrorMessage } from '../ui/ErrorMessage';
 import { Modal } from '../ui/Modal';
 import { ResidentForm } from '../forms/ResidentForm';
+import { ResidentFormModalFooter } from '../forms/ResidentFormModalFooter';
 import type { ApiError } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { RESIDENT_HOME_LABELS } from '../../config/residentHomeLabels';
@@ -25,6 +26,10 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Resident | null>(null);
   const [visibleCount, setVisibleCount] = useState(20);
+  const [createFormLoading, setCreateFormLoading] = useState(false);
+  const [editFormLoading, setEditFormLoading] = useState(false);
+  const CREATE_FORM_ID = 'patient-create-form';
+  const EDIT_FORM_ID = 'patient-edit-form';
   const { getActiveRole } = useAuth();
   const canEdit = getActiveRole() === 'MEDICO' || getActiveRole() === 'ADMIN';
 
@@ -212,9 +217,20 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         title="Agregar Paciente"
-        size="lg"
+        size="xl"
+        footer={
+          <ResidentFormModalFooter
+            formId={CREATE_FORM_ID}
+            loading={createFormLoading}
+            isEdit={false}
+            onCancel={() => setShowCreateModal(false)}
+          />
+        }
       >
         <ResidentForm
+          formId={CREATE_FORM_ID}
+          showFooterButtons={false}
+          onLoadingChange={setCreateFormLoading}
           onSubmit={handleCreatePatient}
           onCancel={() => setShowCreateModal(false)}
           facilityId={facilityId}
@@ -228,10 +244,26 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
           setEditingPatient(null);
         }}
         title="Editar Paciente"
-        size="lg"
+        size="xl"
+        footer={
+          editingPatient ? (
+            <ResidentFormModalFooter
+              formId={EDIT_FORM_ID}
+              loading={editFormLoading}
+              isEdit
+              onCancel={() => {
+                setShowEditModal(false);
+                setEditingPatient(null);
+              }}
+            />
+          ) : undefined
+        }
       >
         {editingPatient && (
           <ResidentForm
+            formId={EDIT_FORM_ID}
+            showFooterButtons={false}
+            onLoadingChange={setEditFormLoading}
             resident={editingPatient}
             onSubmit={handleUpdatePatient}
             onCancel={() => {

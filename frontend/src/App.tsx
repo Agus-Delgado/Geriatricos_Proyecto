@@ -67,6 +67,7 @@ function AppContent() {
                    location.pathname.startsWith('/reset-password');
 
   useEffect(() => {
+    if (isMedicalAppMode()) return;
     if (isPublic) return;
     if (!user) return;
     if (!activeFacilityId) return;
@@ -101,11 +102,13 @@ function AppContent() {
       <UnauthorizedHandler />
       <SessionExpiredHandler />
       <ImpersonationBanner />
-      <ReleaseNotesModal
-        isOpen={isReleaseNotesOpen}
-        onClose={handleCloseReleaseNotes}
-        notes={CURRENT_RELEASE_NOTES}
-      />
+      {!isMedicalAppMode() && (
+        <ReleaseNotesModal
+          isOpen={isReleaseNotesOpen}
+          onClose={handleCloseReleaseNotes}
+          notes={CURRENT_RELEASE_NOTES}
+        />
+      )}
       {!isPublic && <Header />}
       <Routes>
         {/* Rutas públicas */}
@@ -486,6 +489,10 @@ function AppWithWatcher() {
 
   // Solo mostrar el watcher cuando hay token (usuario logueado)
   if (!token) {
+    return null;
+  }
+
+  if (isMedicalAppMode()) {
     return null;
   }
 

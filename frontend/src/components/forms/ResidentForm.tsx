@@ -11,6 +11,9 @@ interface ResidentFormProps {
   onSubmit: (data: ResidentCreate | ResidentUpdate) => Promise<Resident | void>;
   onCancel: () => void;
   facilityId: string;
+  formId?: string;
+  showFooterButtons?: boolean;
+  onLoadingChange?: (loading: boolean) => void;
 }
 
 export const ResidentForm: React.FC<ResidentFormProps> = ({
@@ -18,6 +21,9 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
   onSubmit,
   onCancel,
   facilityId,
+  formId = 'resident-form',
+  showFooterButtons = true,
+  onLoadingChange,
 }) => {
   const [formData, setFormData] = useState({
     first_name: resident?.first_name || '',
@@ -176,6 +182,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
       e.preventDefault();
       if (!validate()) return;
       setLoading(true);
+      onLoadingChange?.(true);
       setErrors({});
       try {
         if (resident) {
@@ -205,9 +212,10 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
         console.error('Error al guardar residente:', error);
       } finally {
         setLoading(false);
+        onLoadingChange?.(false);
       }
-    }} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+    }} id={formId} className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
           label="Nombre *"
           value={formData.first_name}
@@ -228,12 +236,10 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
         label="Hogar / institución *"
         value={formData.home_label}
         onChange={(e) => setFormData({ ...formData, home_label: e.target.value })}
-        options={[
-          { value: '', label: 'Seleccionar...' },
-          ...RESIDENT_HOME_LABELS.map((label) => ({ value: label, label })),
-        ]}
+        options={RESIDENT_HOME_LABELS.map((label) => ({ value: label, label }))}
         error={errors.home_label}
         disabled={loading}
+        className="min-w-0 max-w-full"
       />
 
       <Input
@@ -339,7 +345,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
           {contacts.map((contact, index) => (
             <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
               <h4 className="font-medium text-gray-700 mb-3">Contacto {index + 1}</h4>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
                   label="Nombre"
                   value={contact.first_name}
@@ -354,7 +360,7 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
                   disabled={loading}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                 <Input
                   label="Teléfono"
                   value={contact.phone}
@@ -417,14 +423,16 @@ export const ResidentForm: React.FC<ResidentFormProps> = ({
         <div className="text-sm text-red-600">{errors.submit}</div>
       )}
 
-      <div className="flex space-x-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel} fullWidth disabled={loading}>
-          Cancelar
-        </Button>
-        <Button type="submit" fullWidth disabled={loading}>
-          {loading ? 'Guardando...' : resident ? 'Actualizar paciente' : 'Crear paciente'}
-        </Button>
-      </div>
+      {showFooterButtons && (
+        <div className="flex space-x-3 pt-4">
+          <Button type="button" variant="secondary" onClick={onCancel} fullWidth disabled={loading}>
+            Cancelar
+          </Button>
+          <Button type="submit" fullWidth disabled={loading}>
+            {loading ? 'Guardando...' : resident ? 'Actualizar paciente' : 'Crear paciente'}
+          </Button>
+        </div>
+      )}
     </form>
 
     {/* Modal de confirmación para cambios de estado eliminado (no más acción rápida DECEASED) */}

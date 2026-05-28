@@ -2,6 +2,10 @@ import { useMemo, useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { PatientList } from '../components/medical/PatientList';
 import { DoctorBanner } from '../components/dashboard/DoctorBanner';
+import {
+  MedicalWelcomeCard,
+  isMedicalWelcomeVisible,
+} from '../components/medical/MedicalWelcomeCard';
 import { MedicalExternalLinksPanel } from '../components/medical/MedicalExternalLinksPanel';
 import { BottomNav } from '../components/layout/BottomNav';
 import { getRandomMedicalQuote } from '../data/medicalQuotes';
@@ -20,6 +24,13 @@ export default function GeriatricMedicalPage() {
   const facilityName = activeMembership?.facility_name ?? facilityId;
 
   const [medicalQuote, setMedicalQuote] = useState(getRandomMedicalQuote());
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    if (user?.id) {
+      setShowWelcome(isMedicalWelcomeVisible(user.id, user.dni));
+    }
+  }, [user?.id, user?.dni]);
   const patientsViewedToday = useMemo(() => {
     const fid = activeFacilityId ?? facilityId;
     if (!fid) return 0;
@@ -122,6 +133,14 @@ export default function GeriatricMedicalPage() {
             facilityName={facilityName}
             medicalQuote={medicalQuote}
           />
+
+          {showWelcome && user?.id && (
+            <MedicalWelcomeCard
+              userId={user.id}
+              dni={user.dni}
+              onDismiss={() => setShowWelcome(false)}
+            />
+          )}
 
           {patientsViewedToday > 0 && (
             <p className="text-sm text-gray-600 mb-4 rounded-lg bg-white/80 shadow px-4 py-3 border border-gray-100">

@@ -8,6 +8,7 @@ import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { BottomNav } from '../components/layout/BottomNav';
 import { Modal } from '../components/ui/Modal';
 import { ResidentForm } from '../components/forms/ResidentForm';
+import { ResidentFormModalFooter } from '../components/forms/ResidentFormModalFooter';
 import { ResidentSummaryTab } from '../components/resident/ResidentSummaryTab';
 import { ResidentNotesTab } from '../components/resident/ResidentNotesTab';
 import { ResidentMedicationsTab } from '../components/resident/ResidentMedicationsTab';
@@ -36,6 +37,8 @@ export const ResidentDetailPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('summary');
   const [deleting, setDeleting] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormLoading, setEditFormLoading] = useState(false);
+  const EDIT_FORM_ID = 'resident-detail-edit-form';
 
   const activeRole = getActiveRole();
   const isClinicalUser =
@@ -215,10 +218,23 @@ export const ResidentDetailPage: React.FC = () => {
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         title="Editar paciente"
-        size="lg"
+        size="xl"
+        footer={
+          facility ? (
+            <ResidentFormModalFooter
+              formId={EDIT_FORM_ID}
+              loading={editFormLoading}
+              isEdit
+              onCancel={() => setShowEditModal(false)}
+            />
+          ) : undefined
+        }
       >
         {facility && (
           <ResidentForm
+            formId={EDIT_FORM_ID}
+            showFooterButtons={false}
+            onLoadingChange={setEditFormLoading}
             resident={resident}
             onSubmit={handleUpdateResident}
             onCancel={() => setShowEditModal(false)}

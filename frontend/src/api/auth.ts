@@ -4,7 +4,8 @@ import type {
   RegisterRequest, RegisterResponse, VerifyEmailRequest, VerifyEmailResponse,
   ResendVerificationRequest, ResendVerificationResponse,
   ImpersonateRequest, ImpersonateResponse, AdminUsersListResponse,
-  UpdateUserStatusRequest, UpdateProfileRequest
+  UpdateUserStatusRequest, UpdateProfileRequest,
+  ChangePasswordRequest, ChangePasswordResponse
 } from '../types/auth';
 
 export const authApi = {
@@ -52,6 +53,10 @@ export const authApi = {
   // Profile management
   updateProfile: async (data: UpdateProfileRequest): Promise<User> => {
     return apiClient.put<User>('/auth/me', data);
+  },
+
+  changePassword: async (data: ChangePasswordRequest): Promise<ChangePasswordResponse> => {
+    return apiClient.post<ChangePasswordResponse>('/auth/change-password', data);
   },
 
   requestPasswordReset: async (email: string): Promise<void> => {

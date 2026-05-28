@@ -5,7 +5,8 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg';
+  footer?: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -13,6 +14,7 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   children,
+  footer,
   size = 'md',
 }) => {
   useEffect(() => {
@@ -32,6 +34,7 @@ export const Modal: React.FC<ModalProps> = ({
     sm: 'max-w-sm',
     md: 'max-w-md',
     lg: 'max-w-lg',
+    xl: 'max-w-2xl',
   };
 
   return (
@@ -44,17 +47,22 @@ export const Modal: React.FC<ModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white">
-            <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 shrink-0 bg-white">
+            <h2 className="text-lg font-semibold text-gray-900 pr-4">{title}</h2>
             <button
+              type="button"
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              className="text-gray-400 hover:text-gray-600 text-2xl leading-none shrink-0"
+              aria-label="Cerrar"
             >
               ×
             </button>
           </div>
         )}
-        <div className="p-4 overflow-y-auto">{children}</div>
+        <div className="p-4 overflow-y-auto flex-1 min-h-0">{children}</div>
+        {footer ? (
+          <div className="p-4 border-t border-gray-200 shrink-0 bg-white">{footer}</div>
+        ) : null}
       </div>
     </div>
   );

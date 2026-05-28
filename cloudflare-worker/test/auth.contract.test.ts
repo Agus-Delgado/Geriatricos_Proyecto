@@ -1,10 +1,14 @@
 import { env } from "cloudflare:workers";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { SELF } from "cloudflare:test";
 
 const DEMO_USERNAME = "00000000";
 const DEMO_PASSWORD = "AdminDemo123!";
 const WRONG_PASSWORD = "WrongPassword!";
+const DEMO_USER_ID = "usr-admin-demo-001";
+const DEMO_PASSWORD_HASH =
+  "scrypt$v1$16384$8$1$6SmRSRPUeU0c3Esw5lSesQ==$+h43zkkVyGMXdA0m4Ov9h2HUZZc3A6XJMc0mvVMz9Oo=";
+const SLOW_TEST_TIMEOUT_MS = 30_000;
 
 type LoginResponse = {
   access_token: string;
@@ -45,6 +49,31 @@ async function loginAndGetToken(): Promise<string> {
   return body.access_token;
 }
 
+async function putMe(token: string, body: Record<string, unknown>): Promise<Response> {
+  return SELF.fetch("http://localhost/auth/me", {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+}
+
+async function postChangePassword(
+  token: string,
+  body: Record<string, string>
+): Promise<Response> {
+  return SELF.fetch("http://localhost/auth/change-password", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+}
+
 async function postActiveFacility(
   token: string | undefined,
   facilityId: string
@@ -61,6 +90,16 @@ async function postActiveFacility(
 }
 
 describe("auth contract", () => {
+  afterEach(async () => {
+    await env.DB.prepare(
+      `UPDATE users
+       SET dni = ?1, password_hash = ?2, updated_at = ?3
+       WHERE id = ?4`
+    )
+      .bind(DEMO_USERNAME, DEMO_PASSWORD_HASH, new Date().toISOString(), DEMO_USER_ID)
+      .run();
+  });
+
   it("POST /auth/login returns bearer token for valid demo credentials", async () => {
     const response = await postLogin(DEMO_USERNAME, DEMO_PASSWORD);
 
@@ -144,6 +183,123 @@ describe("auth contract", () => {
     const body = (await response.json()) as ErrorResponse;
     expect(body.detail).toBe("Geriátrico no encontrado");
   });
+
+  it("PUT /auth/me allows first DNI without current_password", async () => {
+    await env.DB.prepare(
+      `INSERT OR REPLACE INTO users (
+        id, dni, email, full_name, password_hash, role, active_facility_id, is_active, created_at, updated_at
+      ) VALUES (
+        'usr-test-no-dni',
+        NULL,
+        'test.nodni@local.invalid',
+        'Test Sin DNI',
+        ?1,
+        'doctor',
+        'fac-demo-001',
+        1,
+        '2026-01-01T00:00:00Z',
+        '2026-01-01T00:00:00Z'
+      )`
+    )
+      .bind(DEMO_PASSWORD_HASH)
+      .run();
+
+    const loginResponse = await postLogin("test.nodni@local.invalid", DEMO_PASSWORD);
+    expect(loginResponse.status).toBe(200);
+    const loginBody = (await loginResponse.json()) as LoginResponse;
+
+    const updateResponse = await putMe(loginBody.access_token, { dni: "12345678" });
+    expect(updateResponse.status).toBe(200);
+    const meBody = (await updateResponse.json()) as MeResponse;
+    expect(meBody.dni).toBe("12345678");
+
+    await env.DB.prepare(`DELETE FROM users WHERE id = 'usr-test-no-dni'`).run();
+  });
+
+  it("PUT /auth/me rejects duplicate DNI", async () => {
+    await env.DB.prepare(
+      `INSERT OR REPLACE INTO users (
+        id, dni, email, full_name, password_hash, role, active_facility_id, is_active, created_at, updated_at
+      ) VALUES (
+        'usr-test-dup-dni',
+        '99999999',
+        'test.dup@local.invalid',
+        'Test Dup DNI',
+        ?1,
+        'doctor',
+        'fac-demo-001',
+        1,
+        '2026-01-01T00:00:00Z',
+        '2026-01-01T00:00:00Z'
+      )`
+    )
+      .bind(DEMO_PASSWORD_HASH)
+      .run();
+
+    const token = await loginAndGetToken();
+    const response = await putMe(token, {
+      dni: "99999999",
+      current_password: DEMO_PASSWORD
+    });
+
+    expect(response.status).toBe(409);
+    const body = (await response.json()) as ErrorResponse;
+    expect(body.detail).toBe("DNI ya registrado");
+
+    await env.DB.prepare(`DELETE FROM users WHERE id = 'usr-test-dup-dni'`).run();
+  });
+
+  it("PUT /auth/me updates DNI when current_password is valid", async () => {
+    const token = await loginAndGetToken();
+    const newDni = "87654321";
+
+    const updateResponse = await putMe(token, {
+      dni: newDni,
+      current_password: DEMO_PASSWORD
+    });
+    expect(updateResponse.status).toBe(200);
+    const updated = (await updateResponse.json()) as MeResponse;
+    expect(updated.dni).toBe(newDni);
+
+    const loginWithNewDni = await postLogin(newDni, DEMO_PASSWORD);
+    expect(loginWithNewDni.status).toBe(200);
+
+    const restoreToken = (await loginWithNewDni.json()) as LoginResponse;
+    const restoreResponse = await putMe(restoreToken.access_token, {
+      dni: DEMO_USERNAME,
+      current_password: DEMO_PASSWORD
+    });
+    expect(restoreResponse.status).toBe(200);
+    const restored = (await restoreResponse.json()) as MeResponse;
+    expect(restored.dni).toBe(DEMO_USERNAME);
+  }, SLOW_TEST_TIMEOUT_MS);
+
+  it("POST /auth/change-password changes password and invalidates old one", async () => {
+    const token = await loginAndGetToken();
+    const newPassword = "NewPass123!";
+
+    const changeResponse = await postChangePassword(token, {
+      current_password: DEMO_PASSWORD,
+      new_password: newPassword
+    });
+    expect(changeResponse.status).toBe(200);
+
+    const loginNew = await postLogin(DEMO_USERNAME, newPassword);
+    expect(loginNew.status).toBe(200);
+
+    const loginOld = await postLogin(DEMO_USERNAME, DEMO_PASSWORD);
+    expect(loginOld.status).toBe(401);
+
+    const newToken = (await loginNew.json()) as LoginResponse;
+    const restoreResponse = await postChangePassword(newToken.access_token, {
+      current_password: newPassword,
+      new_password: DEMO_PASSWORD
+    });
+    expect(restoreResponse.status).toBe(200);
+
+    const loginRestored = await postLogin(DEMO_USERNAME, DEMO_PASSWORD);
+    expect(loginRestored.status).toBe(200);
+  }, SLOW_TEST_TIMEOUT_MS);
 
   it("POST /auth/active-facility returns 403 without membership", async () => {
     await env.DB.prepare(

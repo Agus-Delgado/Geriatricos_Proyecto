@@ -10,6 +10,21 @@ import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { BackHeader } from '../components/ui/BackHeader';
 import type { UpdateProfileRequest } from '../types/auth';
 import type { ApiError } from '../api/client';
+import { isMedicalAppMode } from '../config/appMode';
+
+const MIN_PASSWORD_LENGTH = 8;
+
+function validateDniFormat(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return 'El DNI no puede estar vacío';
+  if (trimmed.length < 7 || trimmed.length > 16) {
+    return 'El DNI debe tener entre 7 y 16 dígitos';
+  }
+  if (!/^\d+$/.test(trimmed)) {
+    return 'El DNI debe contener solo números';
+  }
+  return null;
+}
 
 export default function MyAccountPage() {
   const navigate = useNavigate();
@@ -33,6 +48,11 @@ export default function MyAccountPage() {
   const [dni, setDni] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [dniChanged, setDniChanged] = useState(false);
+  const [passwordCurrent, setPasswordCurrent] = useState('');
+  const [passwordNew, setPasswordNew] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const medicalMode = isMedicalAppMode();
 
   useEffect(() => {
     if (user) {
@@ -204,22 +224,25 @@ export default function MyAccountPage() {
         updateData.email = email.trim();
       }
 
-      // Manejar cambio de DNI
       const currentDni = (user?.dni || '').trim();
       const newDni = dni.trim();
+      const hadDni = currentDni.length > 0;
       if (newDni !== currentDni) {
-        if (!newDni) {
-          setError('El DNI no puede estar vacío');
+        const dniError = validateDniFormat(newDni);
+        if (dniError) {
+          setError(dniError);
           setSaving(false);
           return;
         }
-        if (!currentPassword.trim()) {
+        if (hadDni && !currentPassword.trim()) {
           setError('Se requiere contraseña actual para cambiar el DNI');
           setSaving(false);
           return;
         }
         updateData.dni = newDni;
-        updateData.current_password = currentPassword;
+        if (hadDni) {
+          updateData.current_password = currentPassword;
+        }
       }
 
       if (Object.keys(updateData).length === 0) {
@@ -376,6 +399,42 @@ export default function MyAccountPage() {
     }
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (!passwordCurrent.trim()) {
+      setError('Ingresá tu contraseña actual');
+      return;
+    }
+    if (passwordNew.length < MIN_PASSWORD_LENGTH) {
+      setError(`La nueva contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`);
+      return;
+    }
+    if (passwordNew !== passwordConfirm) {
+      setError('La confirmación de contraseña no coincide');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await authApi.changePassword({
+        current_password: passwordCurrent,
+        new_password: passwordNew,
+      });
+      setSuccess('Contraseña actualizada correctamente');
+      setPasswordCurrent('');
+      setPasswordNew('');
+      setPasswordConfirm('');
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.detail || 'Error al cambiar la contraseña');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   const handleRequestPasswordReset = async () => {
     if (!email || !email.trim()) {
       setError('Para cambiar contraseña, primero registrá tu email');
@@ -463,12 +522,17 @@ export default function MyAccountPage() {
           <Input
             label="DNI"
             value={dni}
-            onChange={(e) => setDni(e.target.value)}
+            onChange={(e) => setDni(e.target.value.replace(/\D/g, ''))}
             disabled={saving}
             placeholder="Ingrese su DNI"
+            inputMode="numeric"
           />
 
-          {dniChanged && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg text-sm">
+            Luego de guardar tu DNI, también vas a poder iniciar sesión con DNI o email + contraseña.
+          </div>
+
+          {dniChanged && (user?.dni || '').trim().length > 0 && (
             <Input
               label="Contraseña actual"
               type="password"
@@ -480,17 +544,11 @@ export default function MyAccountPage() {
             />
           )}
 
-          {dniChanged && (
-            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg text-sm">
+          {dniChanged && (user?.dni || '').trim().length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-sm">
               Al cambiar el DNI, deberás volver a iniciar sesión con tu nuevo DNI.
             </div>
           )}
-
-          {!email || !email.trim() ? (
-            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg text-sm">
-              Para cambiar contraseña, primero registrá tu email.
-            </div>
-          ) : null}
 
           <div className="flex space-x-3 pt-4">
             <Button type="submit" fullWidth disabled={saving}>
@@ -586,16 +644,51 @@ export default function MyAccountPage() {
         <h2 className="text-xl font-semibold text-gray-900 mb-4" style={{ color: 'var(--facility-accent, #667eea)' }}>
           Cambiar contraseña
         </h2>
-        <p className="text-sm text-gray-600 mb-4">
-          Te enviaremos un enlace por email para restablecer tu contraseña.
-        </p>
-        <Button
-          onClick={handleRequestPasswordReset}
-          disabled={requestingReset || !email || !email.trim()}
-          fullWidth
-        >
-          {requestingReset ? 'Enviando...' : 'Cambiar contraseña'}
-        </Button>
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          <Input
+            label="Contraseña actual"
+            type="password"
+            value={passwordCurrent}
+            onChange={(e) => setPasswordCurrent(e.target.value)}
+            disabled={changingPassword}
+            autoComplete="current-password"
+          />
+          <Input
+            label="Nueva contraseña"
+            type="password"
+            value={passwordNew}
+            onChange={(e) => setPasswordNew(e.target.value)}
+            disabled={changingPassword}
+            autoComplete="new-password"
+          />
+          <Input
+            label="Repetir nueva contraseña"
+            type="password"
+            value={passwordConfirm}
+            onChange={(e) => setPasswordConfirm(e.target.value)}
+            disabled={changingPassword}
+            autoComplete="new-password"
+          />
+          <Button type="submit" fullWidth disabled={changingPassword}>
+            {changingPassword ? 'Guardando...' : 'Cambiar contraseña'}
+          </Button>
+        </form>
+        {!medicalMode && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-sm text-gray-600 mb-4">
+              También podés restablecer por email:
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleRequestPasswordReset}
+              disabled={requestingReset || !email || !email.trim()}
+              fullWidth
+            >
+              {requestingReset ? 'Enviando...' : 'Enviar enlace por email'}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

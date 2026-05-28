@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { usePWA } from '../../contexts/PWAContext';
+import { shouldSuppressMedicalDistractions } from '../../utils/medicalExperience';
 
 export const UpdateBanner: React.FC = () => {
+  const suppress = shouldSuppressMedicalDistractions();
   const { needRefresh, updateServiceWorker } = usePWA();
   const [isUpdating, setIsUpdating] = useState(false);
   const DISMISS_UNTIL_KEY = 'pwa_update_banner_dismissed_until';
@@ -57,7 +59,7 @@ export const UpdateBanner: React.FC = () => {
     }, 600);
   };
 
-  if (!needRefresh || !updateServiceWorker || hidden) {
+  if (suppress || !needRefresh || !updateServiceWorker || hidden) {
     return null;
   }
 

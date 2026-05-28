@@ -53,6 +53,7 @@ import { OwnerDashboardPage } from './pages/OwnerDashboardPage';
 import { useAuth } from './contexts/AuthContext';
 import { VersionUpdateWatcher } from './components/app/VersionUpdateWatcher';
 import { isMedicalAppMode } from './config/appMode';
+import { shouldSuppressMedicalDistractions } from './utils/medicalExperience';
 import { LegacyModuleRedirect } from './components/navigation/LegacyModuleRedirect';
 
 const CLINICAL_ROLES = ['MEDICO', 'ADMIN'] as const;
@@ -67,7 +68,7 @@ function AppContent() {
                    location.pathname.startsWith('/reset-password');
 
   useEffect(() => {
-    if (isMedicalAppMode()) return;
+    if (shouldSuppressMedicalDistractions()) return;
     if (isPublic) return;
     if (!user) return;
     if (!activeFacilityId) return;
@@ -102,7 +103,7 @@ function AppContent() {
       <UnauthorizedHandler />
       <SessionExpiredHandler />
       <ImpersonationBanner />
-      {!isMedicalAppMode() && (
+      {!shouldSuppressMedicalDistractions() && (
         <ReleaseNotesModal
           isOpen={isReleaseNotesOpen}
           onClose={handleCloseReleaseNotes}
@@ -492,7 +493,7 @@ function AppWithWatcher() {
     return null;
   }
 
-  if (isMedicalAppMode()) {
+  if (shouldSuppressMedicalDistractions()) {
     return null;
   }
 

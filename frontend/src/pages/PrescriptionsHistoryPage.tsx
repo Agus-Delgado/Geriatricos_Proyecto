@@ -13,6 +13,9 @@ import { openExternal } from '../utils/externalLinks';
 import { parseMedicationInstructions } from '../utils/medicationInstructions';
 import { trackPatientView } from '../utils/patientTracking';
 import { useAuth } from '../contexts/AuthContext';
+import { MedicalPageShell } from '../components/layout/MedicalPageShell';
+import { isMedicalAppMode } from '../config/appMode';
+import { getMedicalHubPath } from '../utils/medicalNavigation';
 import type { Resident } from '../types/residents';
 import type { MedicationPlan, MedicationPlanCreate } from '../types/medications';
 import type { ApiError } from '../api/client';
@@ -112,45 +115,57 @@ export default function PrescriptionsHistoryPage() {
     return age;
   };
 
+  const hubFallback =
+    activeFacilityId && isMedicalAppMode()
+      ? getMedicalHubPath(activeFacilityId)
+      : '/prescriptions-history/search';
+
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <div className="flex justify-center py-12">
-          <LoadingSpinner />
+      <MedicalPageShell>
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <div className="flex justify-center py-12">
+            <LoadingSpinner />
+          </div>
         </div>
-      </div>
+      </MedicalPageShell>
     );
   }
 
   if (error && !patient) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <ErrorMessage
-          message={error}
-          onDismiss={() => navigate('/prescriptions-history/search')}
-        />
-      </div>
+      <MedicalPageShell>
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <ErrorMessage
+            message={error}
+            onDismiss={() => navigate('/prescriptions-history/search')}
+          />
+        </div>
+      </MedicalPageShell>
     );
   }
 
   if (!patient) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <ErrorMessage
-          message="Paciente no encontrado"
-          onDismiss={() => navigate('/prescriptions-history/search')}
-        />
-      </div>
+      <MedicalPageShell>
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <ErrorMessage
+            message="Paciente no encontrado"
+            onDismiss={() => navigate('/prescriptions-history/search')}
+          />
+        </div>
+      </MedicalPageShell>
     );
   }
 
   const age = calculateAge(patient.birth_date);
 
   return (
+    <MedicalPageShell>
     <div className="container mx-auto px-4 py-6 max-w-6xl">
       <BackHeader
         title={`${patient.last_name}, ${patient.first_name}`}
-        fallbackPath="/prescriptions-history/search"
+        fallbackPath={hubFallback}
       />
 
       {error && (
@@ -346,5 +361,6 @@ export default function PrescriptionsHistoryPage() {
         />
       </Modal>
     </div>
+    </MedicalPageShell>
   );
 }

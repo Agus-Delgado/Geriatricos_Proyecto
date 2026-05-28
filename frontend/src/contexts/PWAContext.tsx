@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { shouldSuppressMedicalDistractions } from '../utils/medicalExperience';
 
 interface PWAContextType {
   needRefresh: boolean;
@@ -22,6 +23,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Escuchar eventos de actualización del PWA
     const handleUpdateAvailable = () => {
+      if (shouldSuppressMedicalDistractions()) return;
       setNeedRefresh(true);
     };
 

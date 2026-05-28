@@ -11,6 +11,9 @@ import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { Modal } from '../components/ui/Modal';
+import { MedicalPageShell } from '../components/layout/MedicalPageShell';
+import { isMedicalAppMode } from '../config/appMode';
+import { getMedicalHubPath } from '../utils/medicalNavigation';
 import type { Resident } from '../types/residents';
 import type { ClinicalNote, ClinicalNoteCreate, ClinicalSummary } from '../types/clinical';
 import type { ApiError } from '../api/client';
@@ -147,34 +150,44 @@ export default function ClinicalHistoryPage() {
     setModalError(null);
   };
 
+  const hubFallback =
+    activeFacilityId && isMedicalAppMode()
+      ? getMedicalHubPath(activeFacilityId)
+      : '/clinical-history/search';
+
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <div className="flex justify-center py-12">
-          <LoadingSpinner />
+      <MedicalPageShell>
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <div className="flex justify-center py-12">
+            <LoadingSpinner />
+          </div>
         </div>
-      </div>
+      </MedicalPageShell>
     );
   }
 
   if (pageError || !patient) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <ErrorMessage
-          message={pageError || 'Paciente no encontrado'}
-          onDismiss={() => navigate('/clinical-history/search')}
-        />
-      </div>
+      <MedicalPageShell>
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <ErrorMessage
+            message={pageError || 'Paciente no encontrado'}
+            onDismiss={() => navigate('/clinical-history/search')}
+          />
+        </div>
+      </MedicalPageShell>
     );
   }
 
   const age = calculateAge(patient.birth_date);
 
   return (
+    <MedicalPageShell>
     <div className="container mx-auto px-4 py-6 max-w-6xl">
       <BackHeader
         title={`${patient.last_name}, ${patient.first_name}`}
-        fallbackPath="/clinical-history/search"
+        fallbackPath={hubFallback}
         rightActions={
           <>
             <Button
@@ -305,5 +318,6 @@ export default function ClinicalHistoryPage() {
         </div>
       </Modal>
     </div>
+    </MedicalPageShell>
   );
 };

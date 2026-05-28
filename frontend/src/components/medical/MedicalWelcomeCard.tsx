@@ -39,9 +39,9 @@ export function MedicalWelcomeCard({ userId, dni, onDismiss }: MedicalWelcomeCar
   };
 
   return (
-    <div className="mb-6 rounded-xl border border-indigo-100 bg-white/90 shadow-sm p-5">
-      <h2 className="text-lg font-semibold text-gray-900 mb-1">Bienvenido — Inicio médico</h2>
-      <p className="text-sm text-gray-600 mb-4">
+    <div className="mb-4 rounded-lg border border-indigo-100/80 bg-white/90 shadow-sm p-4">
+      <h2 className="text-base font-semibold text-gray-900 mb-0.5">Bienvenido — Inicio médico</h2>
+      <p className="text-xs text-gray-600 mb-3">
         Resumen de las secciones principales:
       </p>
       {!hasDni && (
@@ -53,9 +53,9 @@ export function MedicalWelcomeCard({ userId, dni, onDismiss }: MedicalWelcomeCar
           para poder iniciar sesión con DNI además de email.
         </div>
       )}
-      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
         {WELCOME_ITEMS.map((item) => (
-          <li key={item.title} className="text-sm">
+          <li key={item.title} className="text-xs sm:text-sm">
             <span className="font-medium text-gray-900">{item.title}:</span>{' '}
             <span className="text-gray-600">{item.description}</span>
           </li>

@@ -2,42 +2,37 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { PatientSearchSelect } from '../components/patients/PatientSearchSelect';
 import { BackHeader } from '../components/ui/BackHeader';
+import { MedicalPageShell } from '../components/layout/MedicalPageShell';
+import { isMedicalAppMode } from '../config/appMode';
+import { getMedicalHubPath } from '../utils/medicalNavigation';
 import type { Resident } from '../types/residents';
 
 export default function ClinicalHistorySearchPage() {
   const navigate = useNavigate();
-  const { activeFacilityId, getActiveRole } = useAuth();
+  const { activeFacilityId } = useAuth();
 
   const handleSelectPatient = (patient: Resident) => {
     navigate(`/clinical-history/${patient.id}`);
   };
 
-  // Determinar fallback según rol y facility
   const getFallbackPath = () => {
-    if (activeFacilityId) {
-      const role = getActiveRole();
-      if (role === 'MEDICO' || role === 'ADMIN') {
-        return `/g/${activeFacilityId}/medical`;
-      }
+    if (activeFacilityId && isMedicalAppMode()) {
+      return getMedicalHubPath(activeFacilityId);
     }
     return '/select-facility';
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
-      <BackHeader
-        title="Historia Clínica"
-        fallbackPath={getFallbackPath()}
-      />
-      <div
-        className="rounded-xl shadow-lg p-6 mb-6"
-        style={{ backgroundColor: 'var(--facility-card, white)' }}
-      >
-        <p className="text-gray-600 mb-6">
-          Busque un paciente para ver su historia clínica y evoluciones.
-        </p>
-        <PatientSearchSelect onSelect={handleSelectPatient} />
+    <MedicalPageShell>
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <BackHeader title="Historia Clínica" fallbackPath={getFallbackPath()} />
+        <div className="rounded-xl shadow-lg p-6 mb-6 bg-white/95 border border-white/80">
+          <p className="text-gray-600 mb-6">
+            Busque un paciente para ver su historia clínica y evoluciones.
+          </p>
+          <PatientSearchSelect onSelect={handleSelectPatient} />
+        </div>
       </div>
-    </div>
+    </MedicalPageShell>
   );
 }

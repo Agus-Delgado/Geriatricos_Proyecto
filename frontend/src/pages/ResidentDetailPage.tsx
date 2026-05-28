@@ -6,6 +6,8 @@ import { Tabs } from '../components/ui/Tabs';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { BottomNav } from '../components/layout/BottomNav';
+import { MedicalPageShell } from '../components/layout/MedicalPageShell';
+import { isMedicalAppMode } from '../config/appMode';
 import { Modal } from '../components/ui/Modal';
 import { ResidentForm } from '../components/forms/ResidentForm';
 import { ResidentFormModalFooter } from '../components/forms/ResidentFormModalFooter';
@@ -109,31 +111,36 @@ export const ResidentDetailPage: React.FC = () => {
     await loadResident();
   };
 
+  const PageWrap = isMedicalAppMode() ? MedicalPageShell : 'div';
+  const pageWrapProps = isMedicalAppMode()
+    ? {}
+    : { className: 'min-h-screen bg-gray-50 pb-20' };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <PageWrap {...(isMedicalAppMode() ? {} : { className: 'min-h-screen bg-gray-50' })}>
         <div className="flex justify-center py-8">
           <LoadingSpinner />
         </div>
-      </div>
+      </PageWrap>
     );
   }
 
   if (error || !resident) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <PageWrap {...(isMedicalAppMode() ? {} : { className: 'min-h-screen bg-gray-50' })}>
         <div className="px-4 py-8">
           <ErrorMessage
             message={error || 'Paciente no encontrado'}
             onDismiss={() => navigate('/residents')}
           />
         </div>
-      </div>
+      </PageWrap>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <PageWrap {...pageWrapProps}>
       <div className="px-4 py-4">
         <div className="mb-3">
           <h1 className="text-xl font-semibold text-gray-900">
@@ -244,6 +251,6 @@ export const ResidentDetailPage: React.FC = () => {
       </Modal>
 
       <BottomNav />
-    </div>
+    </PageWrap>
   );
 };

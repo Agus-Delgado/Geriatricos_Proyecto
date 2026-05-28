@@ -30,8 +30,14 @@ export const PatientList: React.FC<PatientListProps> = ({ facilityId }) => {
   const [editFormLoading, setEditFormLoading] = useState(false);
   const CREATE_FORM_ID = 'patient-create-form';
   const EDIT_FORM_ID = 'patient-edit-form';
-  const { getActiveRole } = useAuth();
-  const canEdit = getActiveRole() === 'MEDICO' || getActiveRole() === 'ADMIN';
+  const { isDoctor, isOwner, isPlatformAdmin, getActiveRole } = useAuth();
+  const activeRole = getActiveRole();
+  const canEdit =
+    isPlatformAdmin ||
+    isOwner ||
+    isDoctor ||
+    activeRole === 'ADMIN' ||
+    activeRole === 'MEDICO';
 
   useEffect(() => {
     loadPatients();

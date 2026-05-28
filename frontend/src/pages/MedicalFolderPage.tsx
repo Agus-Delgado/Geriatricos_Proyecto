@@ -17,6 +17,7 @@ import type { MedicationPlan } from '../types/medications';
 import type { ApiError } from '../api/client';
 import { getCertificateTypeLabel } from '../utils/certificateLabels';
 import { useAuth } from '../contexts/AuthContext';
+import { MedicalPageShell } from '../components/layout/MedicalPageShell';
 
 export default function MedicalFolderPage() {
   const { patientId } = useParams<{ patientId: string }>();
@@ -101,22 +102,26 @@ export default function MedicalFolderPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <div className="flex justify-center py-12">
-          <LoadingSpinner />
+      <MedicalPageShell>
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <div className="flex justify-center py-12">
+            <LoadingSpinner />
+          </div>
         </div>
-      </div>
+      </MedicalPageShell>
     );
   }
 
   if (error || !patient) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <ErrorMessage
-          message={error || 'Paciente no encontrado'}
-          onDismiss={() => navigate('/medical-folder/search')}
-        />
-      </div>
+      <MedicalPageShell>
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <ErrorMessage
+            message={error || 'Paciente no encontrado'}
+            onDismiss={() => navigate('/medical-folder/search')}
+          />
+        </div>
+      </MedicalPageShell>
     );
   }
 
@@ -125,6 +130,7 @@ export default function MedicalFolderPage() {
   const lastCertificates = certificates.slice(0, 5);
 
   return (
+    <MedicalPageShell>
     <div className="container mx-auto px-4 py-6 max-w-6xl">
       <BackHeader
         title={`${patient.last_name}, ${patient.first_name}`}
@@ -229,5 +235,6 @@ export default function MedicalFolderPage() {
         )}
       />
     </div>
+    </MedicalPageShell>
   );
 }

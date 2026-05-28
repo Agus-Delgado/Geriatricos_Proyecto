@@ -20,6 +20,7 @@ import {
   getCertificateTypeLabel,
 } from '../utils/certificateLabels';
 import type { ApiError } from '../api/client';
+import { MedicalPageShell } from '../components/layout/MedicalPageShell';
 
 function buildDraftFromCertificate(
   cert: Certificate,
@@ -253,7 +254,7 @@ export default function CertificatesPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--facility-bg, #f9fafb)' }}>
+    <MedicalPageShell>
       <div className="p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           <div
@@ -440,6 +441,6 @@ export default function CertificatesPage() {
           />
         </Modal>
       )}
-    </div>
+    </MedicalPageShell>
   );
 }

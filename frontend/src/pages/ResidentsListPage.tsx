@@ -4,6 +4,7 @@ import { useFacility } from '../contexts/FacilityContext';
 import { useAuth } from '../contexts/AuthContext';
 import { residentsApi } from '../api/residents';
 import { BottomNav } from '../components/layout/BottomNav';
+import { MedicalPageShell } from '../components/layout/MedicalPageShell';
 import { SearchBar } from '../components/ui/SearchBar';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
@@ -106,7 +107,7 @@ export const ResidentsListPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <MedicalPageShell>
       <div className="px-4 py-4 space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-xl font-semibold text-gray-900">Pacientes</h1>
@@ -324,6 +325,6 @@ export const ResidentsListPage: React.FC = () => {
       </Modal>
 
       <BottomNav />
-    </div>
+    </MedicalPageShell>
   );
 };

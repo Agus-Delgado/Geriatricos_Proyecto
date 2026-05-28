@@ -5,6 +5,7 @@ import { getRoleLabel } from '../../types/auth';
 import { BugReportButton } from '../support/BugReportButton';
 import { isMedicalAppMode } from '../../config/appMode';
 import { getMedicalHubPath } from '../../utils/medicalNavigation';
+import { isOnMedicalUiRoute } from '../../utils/medicalExperience';
 import { needsFacilityPicker } from '../../utils/facilitySelection';
 
 interface HeaderProps {
@@ -25,11 +26,7 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
   // Detectar si estamos en una ruta /g/* para mostrar botón "Volver"
   const isGeriatricRoute = location.pathname.startsWith('/g/');
   
-  // Detectar rutas médicas que necesitan botón volver
-  const isMedicalRoute = 
-    location.pathname.startsWith('/medical-folder') ||
-    location.pathname.startsWith('/clinical-history') ||
-    location.pathname.startsWith('/prescriptions-history');
+  const isMedicalRoute = isOnMedicalUiRoute(location.pathname);
   
   // Detectar si estamos en una ruta interna (no login, no select-facility)
   const isInternalRoute = !location.pathname.startsWith('/login') && location.pathname !== '/select-facility';

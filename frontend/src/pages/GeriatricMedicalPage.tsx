@@ -8,8 +8,8 @@ import {
 } from '../components/medical/MedicalWelcomeCard';
 import { MedicalExternalLinksPanel } from '../components/medical/MedicalExternalLinksPanel';
 import { BottomNav } from '../components/layout/BottomNav';
+import { MedicalPageShell } from '../components/layout/MedicalPageShell';
 import { getRandomMedicalQuote } from '../data/medicalQuotes';
-import { getPatientsViewedCount } from '../utils/patientTracking';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function GeriatricMedicalPage() {
@@ -31,13 +31,6 @@ export default function GeriatricMedicalPage() {
       setShowWelcome(isMedicalWelcomeVisible(user.id, user.dni));
     }
   }, [user?.id, user?.dni]);
-  const patientsViewedToday = useMemo(() => {
-    const fid = activeFacilityId ?? facilityId;
-    if (!fid) return 0;
-    const today = new Date().toISOString().split('T')[0];
-    return getPatientsViewedCount(fid, today);
-  }, [activeFacilityId, facilityId, location.pathname]);
-
   useEffect(() => {
     if (location.pathname.includes(`/g/${facilityId}/medical`)) {
       setMedicalQuote(getRandomMedicalQuote());
@@ -117,17 +110,9 @@ export default function GeriatricMedicalPage() {
   ];
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: 'var(--facility-bg, #f9fafb)' }}>
-      <div className="p-4 md:p-8 relative" style={{ background: 'var(--facility-bg, #f9fafb)' }}>
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
-          }}
-        />
-
-        <div className="max-w-6xl mx-auto relative z-10">
+    <MedicalPageShell>
+      <div className="p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
           <DoctorBanner
             userName={user?.full_name}
             facilityName={facilityName}
@@ -143,12 +128,6 @@ export default function GeriatricMedicalPage() {
             />
           )}
 
-          {patientsViewedToday > 0 && (
-            <p className="text-sm text-gray-600 mb-4 rounded-lg bg-white/80 shadow px-4 py-3 border border-gray-100">
-              Pacientes vistos hoy: {patientsViewedToday}
-            </p>
-          )}
-
           <MedicalExternalLinksPanel />
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -157,8 +136,7 @@ export default function GeriatricMedicalPage() {
                 key={item.id}
                 type="button"
                 onClick={() => handleQuickAction(item.action)}
-                className="group relative rounded-xl shadow-lg p-6 text-left hover:shadow-xl transition-all duration-300 border border-gray-200"
-                style={{ backgroundColor: 'var(--facility-card, white)' }}
+                className="group relative rounded-xl shadow-lg p-6 text-left hover:shadow-xl transition-all duration-300 border border-gray-200/80 bg-white/95"
               >
                 <div className="text-4xl mb-3">{item.emoji}</div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
@@ -174,6 +152,6 @@ export default function GeriatricMedicalPage() {
         </div>
       </div>
       <BottomNav />
-    </div>
+    </MedicalPageShell>
   );
 }

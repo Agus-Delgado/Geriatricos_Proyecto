@@ -201,14 +201,14 @@
   - Respuesta esperada: `ClinicalNote`
   - Criterio de done: notas nuevas quedan registradas y visibles
 
-- [ ] Endpoint: `/residents/{residentId}/medication-plans`
+- [x] Endpoint: `/residents/{residentId}/medication-plans`
   - Metodo: `GET`
-  - Tabla D1 requerida: `medication_plans`, `medication_schedule_times`
+  - Tabla D1 requerida: `medication_plans`
   - Archivo frontend consumidor: `frontend/src/api/medications.ts`
   - Respuesta esperada: `MedicationPlan[]`
-  - Criterio de done: planes listan correctamente con horarios
+  - Criterio de done: planes listan correctamente (`active_only`, orden `created_at DESC`)
 
-- [ ] Endpoint: `/residents/{residentId}/medication-plans`
+- [x] Endpoint: `/residents/{residentId}/medication-plans`
   - Metodo: `POST`
   - Tabla D1 requerida: `medication_plans`
   - Archivo frontend consumidor: `frontend/src/api/medications.ts`
@@ -218,18 +218,18 @@
 - [ ] Endpoint: `/medication-plans/{planId}`
   - Metodo: `PATCH`
   - Tabla D1 requerida: `medication_plans`
-  - Archivo frontend consumidor: `frontend/src/api/medications.ts`
+  - Archivo frontend consumidor: `frontend/src/api/medications.ts` (definido, no usado por UI actual)
   - Respuesta esperada: `MedicationPlan`
   - Criterio de done: edicion parcial estable
 
-- [ ] Endpoint: `/medication-plans/{planId}/times`
+- [x] Endpoint: `/medication-plans/{planId}/times`
   - Metodo: `POST`
   - Tabla D1 requerida: `medication_schedule_times`
   - Archivo frontend consumidor: `frontend/src/api/medications.ts`
   - Respuesta esperada: `MedicationScheduleTime`
-  - Criterio de done: horario agregado y visible en plan
+  - Criterio de done: horario agregado (`time`, `day_of_week`)
 
-- [ ] Endpoint: `/medication-times/{timeId}`
+- [x] Endpoint: `/medication-times/{timeId}`
   - Metodo: `DELETE`
   - Tabla D1 requerida: `medication_schedule_times`
   - Archivo frontend consumidor: `frontend/src/api/medications.ts`
@@ -239,21 +239,21 @@
 - [ ] Endpoint: `/residents/{residentId}/medication-administrations`
   - Metodo: `POST`
   - Tabla D1 requerida: `medication_administrations`
-  - Archivo frontend consumidor: `frontend/src/api/medications.ts`
+  - Archivo frontend consumidor: `frontend/src/api/medications.ts` (no consumido por UI actual)
   - Respuesta esperada: `MedicationAdministration`
   - Criterio de done: registro de administracion persistido
 
 - [ ] Endpoint: `/residents/{residentId}/medication-administrations`
   - Metodo: `GET`
   - Tabla D1 requerida: `medication_administrations`
-  - Archivo frontend consumidor: `frontend/src/api/medications.ts`
+  - Archivo frontend consumidor: `frontend/src/api/medications.ts` (no consumido por UI actual)
   - Respuesta esperada: `MedicationAdministration[]`
   - Criterio de done: historial diario consultable
 
 - [ ] Endpoint: `/facilities/{facilityId}/medication-due`
   - Metodo: `GET`
   - Tabla D1 requerida: `medication_plans`, `medication_schedule_times`, `medication_administrations`
-  - Archivo frontend consumidor: `frontend/src/api/medications.ts`
+  - Archivo frontend consumidor: `frontend/src/api/medications.ts` (no consumido por UI actual; `MedicationDuePage` redirige)
   - Respuesta esperada: lista de pendientes
   - Criterio de done: pendientes correctos por fecha/facility
 

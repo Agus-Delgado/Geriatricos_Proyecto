@@ -168,3 +168,77 @@ INSERT OR REPLACE INTO clinical_notes (
   '2026-01-15T10:00:00Z',
   '2026-01-15T10:00:00Z'
 );
+
+INSERT OR REPLACE INTO medication_plans (
+  id,
+  resident_id,
+  facility_id,
+  med_name,
+  dose,
+  route,
+  instructions,
+  start_date,
+  end_date,
+  is_active,
+  prescribed_by_user_id,
+  created_at,
+  updated_at
+) VALUES (
+  'mp-demo-001',
+  'res-demo-001',
+  'fac-demo-001',
+  'Metformina',
+  '500mg',
+  'VO',
+  'Tomar con las comidas',
+  '2026-01-01',
+  NULL,
+  1,
+  'usr-admin-demo-001',
+  '2026-01-01T00:00:00Z',
+  '2026-01-01T00:00:00Z'
+);
+
+INSERT OR REPLACE INTO medication_plans (
+  id,
+  resident_id,
+  facility_id,
+  med_name,
+  dose,
+  route,
+  instructions,
+  start_date,
+  end_date,
+  is_active,
+  prescribed_by_user_id,
+  created_at,
+  updated_at
+) VALUES (
+  'mp-demo-inactive',
+  'res-demo-001',
+  'fac-demo-001',
+  'Plan inactivo demo',
+  '10mg',
+  NULL,
+  NULL,
+  '2025-01-01',
+  '2025-12-31',
+  0,
+  'usr-admin-demo-001',
+  '2026-01-01T00:00:00Z',
+  '2026-01-01T00:00:00Z'
+);
+
+INSERT OR REPLACE INTO medication_schedule_times (
+  id,
+  medication_plan_id,
+  time,
+  day_of_week,
+  created_at
+) VALUES (
+  'mst-demo-001',
+  'mp-demo-001',
+  '08:00',
+  -1,
+  '2026-01-01T00:00:00Z'
+);

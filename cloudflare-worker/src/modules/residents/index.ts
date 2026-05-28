@@ -4,6 +4,7 @@ import type { AppContext } from "../../types/env";
 import { insertResidentContact } from "../contacts/db";
 import { clinicalRouter } from "../clinical";
 import { contactsRouter } from "../contacts";
+import { medicationsResidentRouter } from "../medications";
 import { assertFacilityAccess, canMutateResidents } from "./access";
 import {
   RESIDENT_SELECT_COLUMNS,
@@ -58,6 +59,7 @@ residentsRouter.use("*", requireAuth);
 
 residentsRouter.route("/:residentId/contacts", contactsRouter);
 residentsRouter.route("/:residentId", clinicalRouter);
+residentsRouter.route("/:residentId", medicationsResidentRouter);
 
 function validateCoverageOther(
   coverageType: string | null | undefined,

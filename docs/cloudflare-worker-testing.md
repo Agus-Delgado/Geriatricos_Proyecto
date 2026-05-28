@@ -1,4 +1,4 @@
-# Cloudflare Worker — Tests de contrato (Bloques 8–13)
+# Cloudflare Worker — Tests de contrato (Bloques 8–14)
 
 Tests mínimos de contrato HTTP en `cloudflare-worker/`, ejecutados con **Vitest** y **`@cloudflare/vitest-pool-workers`** (runtime Workers + D1 aislado).
 
@@ -66,6 +66,21 @@ No se asserta el JWT completo ni timestamps dinámicos.
 | Notes con token | `GET .../clinical-notes` | `200`, incluye `cn-demo-001` |
 | Alta nota | `POST .../clinical-notes` | `201`, nota creada |
 
+## Alcance — Medications (Bloque 14)
+
+| Caso | Endpoint | Esperado |
+|------|----------|----------|
+| Plans sin token | `GET /residents/res-demo-001/medication-plans` | `401`, `detail: Not authenticated` |
+| Plans residente inexistente | `GET /residents/res-does-not-exist/medication-plans` | `404`, `Residente no encontrado` |
+| Plans con token | `GET .../medication-plans` | `200`, incluye `mp-demo-001` |
+| Plans active_only | `GET ...?active_only=true` | `200`, solo `is_active: true` |
+| Alta plan | `POST .../medication-plans` | `201`, plan creado |
+| Plan sin med_name | `POST .../medication-plans` | `422`, `med_name es requerido` |
+| Alta horario | `POST /medication-plans/mp-demo-001/times` | `201`, horario creado |
+| Horario inválido | `POST .../times` con `time: 8am` | `422`, formato HH:MM |
+| Delete horario | `DELETE /medication-times/mst-demo-001` | `204` |
+| Delete horario inexistente | `DELETE /medication-times/mst-does-not-exist` | `404`, `Horario no encontrado` |
+
 ## Prerrequisitos
 
 Desde `cloudflare-worker/`:
@@ -113,8 +128,9 @@ No usar credenciales reales ni este seed en producción.
 - `test/residents.contract.test.ts` — 7 casos de contrato residents
 - `test/contacts.contract.test.ts` — 6 casos de contrato contacts
 - `test/clinical.contract.test.ts` — 7 casos de contrato clinical
+- `test/medications.contract.test.ts` — 10 casos de contrato medications
 
-Contratos documentados en [cloudflare-worker-auth.md](./cloudflare-worker-auth.md), [cloudflare-worker-facilities.md](./cloudflare-worker-facilities.md), [cloudflare-worker-residents.md](./cloudflare-worker-residents.md), [cloudflare-worker-contacts.md](./cloudflare-worker-contacts.md) y [cloudflare-worker-clinical.md](./cloudflare-worker-clinical.md).
+Contratos documentados en [cloudflare-worker-auth.md](./cloudflare-worker-auth.md), [cloudflare-worker-facilities.md](./cloudflare-worker-facilities.md), [cloudflare-worker-residents.md](./cloudflare-worker-residents.md), [cloudflare-worker-contacts.md](./cloudflare-worker-contacts.md), [cloudflare-worker-clinical.md](./cloudflare-worker-clinical.md) y [cloudflare-worker-medications.md](./cloudflare-worker-medications.md).
 
 ## Troubleshooting
 

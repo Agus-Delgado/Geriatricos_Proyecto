@@ -2,6 +2,10 @@ import { Hono } from "hono";
 import { createCorsMiddleware } from "./middleware/cors";
 import { authRouter } from "./modules/auth";
 import { facilitiesRouter } from "./modules/facilities";
+import {
+  medicationPlansRouter,
+  medicationTimesRouter
+} from "./modules/medications";
 import { residentsRouter } from "./modules/residents";
 import type { AppContext } from "./types/env";
 
@@ -22,5 +26,7 @@ app.get("/health", (c) => {
 app.route("/auth", authRouter);
 app.route("/facilities", facilitiesRouter);
 app.route("/residents", residentsRouter);
+app.route("/medication-plans", medicationPlansRouter);
+app.route("/medication-times", medicationTimesRouter);
 
 export default app;

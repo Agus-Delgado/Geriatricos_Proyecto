@@ -8,8 +8,10 @@ compatibility_date = "2026-05-28"
 CORS_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 ENVIRONMENT = "development"
 
-# D1 placeholder (keep commented until D1 is created):
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "geriatricos_d1_dev"
-# database_id = "REPLACE_WITH_REAL_D1_DATABASE_ID"
+# D1 local/dev binding only.
+# Replace database_id only after creating the remote D1 database.
+# Do not use real production or personal data in this environment.
+[[d1_databases]]
+binding = "DB"
+database_name = "geriatricos_d1_dev"
+database_id = "REPLACE_WITH_REAL_D1_DATABASE_ID"

@@ -24,8 +24,8 @@ Revisión técnica previa a desplegar el Worker en Cloudflare con D1 remota. **S
 | Frontend (Vercel) | Activo; API vía `VITE_API_BASE_URL` → Render |
 | Backend FastAPI (Render) | Activo; fuente de verdad en producción |
 | Worker local | Funcional (`npm run dev`, D1 local) |
-| D1 remota | **No creada** en este bloque |
-| Worker remoto | **No desplegado** en este bloque |
+| D1 remota staging | **No creada** hasta ETAPA 2 ([runbook staging](./cloudflare-worker-staging-remote.md)) |
+| Worker remoto staging | **No desplegado** hasta ETAPA 2; repo listo con `[env.staging]` |
 
 Referencias: [backend-migration-inventory.md](./backend-migration-inventory.md), [backend-migration-checklist.md](./backend-migration-checklist.md), docs `cloudflare-worker-*.md`, [cloudflare-d1-local-dev.md](./cloudflare-d1-local-dev.md).
 
@@ -571,6 +571,7 @@ Hasta entonces: **mantener Render** como backend de producción.
 | [backend-migration-checklist.md](./backend-migration-checklist.md) | Fases y criterio Render |
 | [cloudflare-worker-testing.md](./cloudflare-worker-testing.md) | 42 tests de contrato |
 | [cloudflare-d1-local-dev.md](./cloudflare-d1-local-dev.md) | D1 local y pasos remotos base |
+| [cloudflare-worker-staging-remote.md](./cloudflare-worker-staging-remote.md) | Runbook Bloque 16: D1 staging + deploy `--env staging` |
 | [cloudflare-worker-auth.md](./cloudflare-worker-auth.md) | Auth, seed demo local |
 | [cloudflare-worker-local-dev.md](./cloudflare-worker-local-dev.md) | `npm run dev`, health |
 

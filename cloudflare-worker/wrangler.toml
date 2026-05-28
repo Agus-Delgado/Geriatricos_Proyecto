@@ -2,6 +2,7 @@ name = "geriatricos-worker"
 main = "src/index.ts"
 compatibility_date = "2026-05-28"
 
+# Default environment: local development only (wrangler dev, vitest).
 [vars]
 # Comma-separated list. Example:
 # CORS_ORIGINS = "http://localhost:5173,https://my-frontend.vercel.app"
@@ -19,3 +20,19 @@ JWT_EXPIRES_IN_SECONDS = "28800"
 binding = "DB"
 database_name = "geriatricos_d1_dev"
 database_id = "REPLACE_WITH_REAL_D1_DATABASE_ID"
+
+# Remote staging (Bloque 16). Deploy: wrangler deploy --env staging
+# JWT_SECRET for staging: wrangler secret put JWT_SECRET --env staging (never in this file).
+[env.staging]
+name = "geriatricos-worker-staging"
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+# Local origins for optional UI smoke; add Vercel preview URL only before cutover.
+CORS_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+JWT_EXPIRES_IN_SECONDS = "28800"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "geriatricos_d1_staging"
+database_id = "REPLACE_WITH_STAGING_D1_DATABASE_ID"

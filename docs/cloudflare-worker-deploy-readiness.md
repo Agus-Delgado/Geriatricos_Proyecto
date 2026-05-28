@@ -1,5 +1,9 @@
 # Cloudflare Worker — Deploy readiness (Bloque 15)
 
+> **Estado actual (app médica, B6):** Render es **legacy/histórico** para producción. La fuente de verdad operativa está en [medical-app-roadmap.md](./medical-app-roadmap.md). La baja de Render se guía con [render-shutdown-checklist.md](./render-shutdown-checklist.md).
+>
+> Este documento sigue siendo útil como **inventario técnico de endpoints** y criterios de una migración **completa** (plataforma hogar con staff, finanzas, etc.). Esos criterios **no** aplican para cerrar la app médica mínima.
+
 Revisión técnica previa a desplegar el Worker en Cloudflare con D1 remota. **Solo documentación:** no implica deploy, creación de D1 remota, cambios en Vercel/Render, frontend ni FastAPI.
 
 **Fecha de revisión:** 2026-05-28  
@@ -9,23 +13,25 @@ Revisión técnica previa a desplegar el Worker en Cloudflare con D1 remota. **S
 
 ## Conclusión ejecutiva
 
-| Pregunta | Respuesta |
-|----------|-----------|
-| ¿Listo para **staging remoto** y smoke tests del MVP clínico/residentes? | **Sí.** Auth, sede activa, facilities, residents, contacts, clinical y medication plans/times están implementados y cubiertos por tests de contrato. |
-| ¿Listo para **apagar Render** de forma conservadora? | **No.** Faltan endpoints bloqueantes (staff, shifts, attendance, agenda, activity; y otros usados por flujos OWNER/médico). |
-| ¿Qué hacer con Render y Vercel ahora? | **Render** sigue como backend de producción. **Vercel** sigue con `VITE_API_BASE_URL` apuntando a Render. El Worker remoto se valida por `curl` antes de cualquier cutover. |
+| Pregunta | Respuesta (revisión Bloque 15) | App médica actual (B6) |
+|----------|-------------------------------|-------------------------|
+| ¿Listo para **staging remoto** y smoke tests del MVP clínico/residentes? | **Sí.** | Staging/prod Worker validados para alcance médico. |
+| ¿Listo para **apagar Render** migrando **toda** la plataforma? | **No** — faltan staff, shifts, attendance, agenda, etc. | **Sí** para alcance médico: Render fuera del flujo; ver [render-shutdown-checklist.md](./render-shutdown-checklist.md). |
+| ¿Backend de producción? | Render + Vercel (al redactar Bloque 15) | **Vercel → Worker → D1** — ver [medical-app-roadmap.md](./medical-app-roadmap.md). |
 
 ---
 
 ## Contexto operativo actual
 
+> Tabla actualizada en B6. Para detalle de alcance, ver [medical-app-roadmap.md](./medical-app-roadmap.md).
+
 | Componente | Estado |
 |--------------|--------|
-| Frontend (Vercel) | Activo; API vía `VITE_API_BASE_URL` → Render |
-| Backend FastAPI (Render) | Activo; fuente de verdad en producción |
-| Worker local | Funcional (`npm run dev`, D1 local) |
-| D1 remota staging | **No creada** hasta ETAPA 2 ([runbook staging](./cloudflare-worker-staging-remote.md)) |
-| Worker remoto staging | **No desplegado** hasta ETAPA 2; repo listo con `[env.staging]` |
+| Frontend (Vercel) | Producción app médica; `VITE_API_BASE_URL` → Worker production |
+| Backend operativo | Cloudflare Worker (`geriatricos-worker-production`) |
+| Base de datos operativa | D1 `geriatricos_d1_prod` (sin migración desde Render) |
+| Backend FastAPI (Render) | **Legacy** — pendiente de baja operativa |
+| Worker local / staging | Dev y staging según [cloudflare-worker-staging-remote.md](./cloudflare-worker-staging-remote.md) |
 
 Referencias: [backend-migration-inventory.md](./backend-migration-inventory.md), [backend-migration-checklist.md](./backend-migration-checklist.md), docs `cloudflare-worker-*.md`, [cloudflare-d1-local-dev.md](./cloudflare-d1-local-dev.md).
 
@@ -582,3 +588,4 @@ Hasta entonces: **mantener Render** como backend de producción.
 | Bloque | Acción |
 |--------|--------|
 | 15 | Creación de este documento de readiness; sin deploy ni D1 remota |
+| B6 (2026-05-28) | Banner estado app médica; enlaces a [medical-app-roadmap.md](./medical-app-roadmap.md) y [render-shutdown-checklist.md](./render-shutdown-checklist.md) |

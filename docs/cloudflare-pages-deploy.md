@@ -1,6 +1,8 @@
 # Deploy del frontend en Cloudflare Pages
 
-Guía para desplegar el frontend React + Vite en **Cloudflare Pages**, manteniendo el backend en **Render**. Este documento cubre solo el frontend; no modifica el backend.
+> **Estado actual:** el frontend de la **app médica** está en **Vercel** y consume el **Cloudflare Worker** ([medical-app-roadmap.md](./medical-app-roadmap.md)). **Render** es legacy. Esta guía describe una alternativa histórica (Pages + API Render); no es el camino de producción actual.
+
+Guía para desplegar el frontend React + Vite en **Cloudflare Pages**, manteniendo el backend en **Render** (enfoque descartado para la app médica). Este documento cubre solo el frontend; no modifica el backend.
 
 ## Configuración del proyecto en Cloudflare
 

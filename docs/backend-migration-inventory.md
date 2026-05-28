@@ -1,5 +1,7 @@
 # Backend migration inventory (Render -> Cloudflare Workers + D1)
 
+> **Histórico / relevamiento:** inventario de la API FastAPI en Render para planificar migración completa. **No** describe el estado operativo de la app médica. Ver [medical-app-roadmap.md](./medical-app-roadmap.md). Baja de Render: [render-shutdown-checklist.md](./render-shutdown-checklist.md).
+
 ## Objetivo de este documento
 
 Este bloque es solo de relevamiento para decidir el backend minimo que hay que construir en Cloudflare y poder apagar Render mas adelante sin improvisar.

@@ -1,6 +1,8 @@
 # Cloudflare Worker local dev (Bloque 4)
 
-Este documento explica como correr localmente el scaffold inicial de `cloudflare-worker/` sin tocar Render, Vercel, frontend ni backend actual.
+> **Estado actual:** desarrollo local del Worker/D1 para la app médica; producción en Vercel + Worker remoto ([medical-app-roadmap.md](./medical-app-roadmap.md)). Render es legacy y no es necesario para `npm run dev` en `cloudflare-worker/`.
+
+Este documento explica como correr localmente el scaffold inicial de `cloudflare-worker/` sin tocar Render, Vercel, frontend ni backend FastAPI legacy.
 
 ## Requisitos
 

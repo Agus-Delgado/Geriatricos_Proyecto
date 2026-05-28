@@ -1,14 +1,30 @@
 # Cutover Render → Cloudflare (producción)
 
+> **Histórico / cancelado para el enfoque actual (B6, 2026-05-28).**
+>
+> - La **migración de datos Render/PostgreSQL → D1 fue descartada**.
+> - La **app médica** opera con **D1 production limpia** (bootstrap manual; sin export desde Render).
+> - **Producción actual:** Vercel → Cloudflare Worker → D1. Render queda **fuera del flujo**.
+>
+> **Documentación vigente:**
+> - Estado y alcance: [medical-app-roadmap.md](./medical-app-roadmap.md)
+> - Apagar Render: [render-shutdown-checklist.md](./render-shutdown-checklist.md)
+>
+> El contenido debajo se conserva como **referencia histórica** del runbook de cutover clásico (incluye fases con bootstrap desde PostgreSQL, ya no aplicables).
+
+---
+
 Checklist y runbook para preparar **Worker production** + **D1 `geriatricos_d1_prod`** sin cambiar Vercel ni Render hasta validar el Worker. Staging remoto ya está validado (incl. certificados y `clinical-report`).
 
 Referencias: [`cloudflare-worker/wrangler.toml`](../cloudflare-worker/wrangler.toml) (`[env.production]`), [cloudflare-worker-staging-remote.md](./cloudflare-worker-staging-remote.md), [cloudflare-worker-deploy-readiness.md](./cloudflare-worker-deploy-readiness.md).
 
 ---
 
-## Estado actual
+## Estado actual (snapshot histórico del documento)
 
-| Componente | Estado |
+> **Nota:** esta tabla refleja el estado **al redactar** el runbook, no el estado operativo actual. Ver [medical-app-roadmap.md](./medical-app-roadmap.md).
+
+| Componente | Estado (histórico) |
 |------------|--------|
 | Backend FastAPI (Render) | Activo — producción real (`VITE_API_BASE_URL` en Vercel apunta aquí) |
 | Frontend (Vercel production) | Activo — API vía Render |
@@ -16,7 +32,7 @@ Referencias: [`cloudflare-worker/wrangler.toml`](../cloudflare-worker/wrangler.t
 | Worker production + D1 production | **Pendiente** — configuración en repo; ejecución manual |
 | `[env.production]` en `wrangler.toml` | Placeholders `database_id` y `CORS_ORIGINS` |
 
-**Render y Vercel production no se modifican** hasta completar Fase A y Fase B (y bootstrap de datos reales en D1).
+**Render y Vercel production no se modifican** hasta completar Fase A y Fase B (y bootstrap de datos reales en D1) — criterio del runbook original; el equipo adoptó después **D1 limpia sin migración desde Render**.
 
 ---
 
@@ -381,3 +397,4 @@ Si solo se migró el **alcance médico mínimo**, apagar Render dejará de atend
 |-------|--------|
 | 6 (repo) | `[env.production]`, este checklist; sin D1 remota prod ni deploy |
 | 6 (manual) | Fases A–F según secciones anteriores |
+| B6 (2026-05-28) | Documento marcado histórico; migración Render→D1 descartada; ver [medical-app-roadmap.md](./medical-app-roadmap.md) y [render-shutdown-checklist.md](./render-shutdown-checklist.md) |

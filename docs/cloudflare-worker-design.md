@@ -1,5 +1,7 @@
 # Cloudflare Worker backend design (Bloque 3)
 
+> **Estado actual:** diseño inicial de migración desde Render. Producción app médica: [medical-app-roadmap.md](./medical-app-roadmap.md). Baja de Render: [render-shutdown-checklist.md](./render-shutdown-checklist.md).
+
 ## Objetivo y alcance de este documento
 
 Definir la arquitectura minima del nuevo backend en Cloudflare para iniciar la migracion desde Render de forma controlada.

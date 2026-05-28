@@ -1,5 +1,7 @@
 # Notas de Despliegue
 
+> **Legacy — Render / FastAPI:** estas notas aplican al backend histórico en Render (upload Cloudinary, PostgreSQL). La **app médica en producción** usa Worker + D1 ([docs/medical-app-roadmap.md](docs/medical-app-roadmap.md)). Para apagar Render: [docs/render-shutdown-checklist.md](docs/render-shutdown-checklist.md).
+
 ## Variables de Entorno Requeridas
 
 ### Cloudinary (Storage para Documentos de Residentes)

@@ -2,6 +2,15 @@
 
 Sistema completo de gestión para hogares desarrollado con arquitectura moderna, incluyendo backend API REST y frontend Progressive Web App (PWA) mobile-first.
 
+> ### Estado actual de la app médica (producción)
+>
+> - **Frontend:** Vercel  
+> - **Backend:** Cloudflare Worker (`geriatricos-worker-production`)  
+> - **Base de datos:** Cloudflare D1 (`geriatricos_d1_prod`)  
+> - **Render (FastAPI + PostgreSQL):** fuera del flujo; sin migración de datos hacia D1  
+>
+> Detalle de alcance, bloques completados y documentación: **[docs/medical-app-roadmap.md](docs/medical-app-roadmap.md)** · Apagar Render: **[docs/render-shutdown-checklist.md](docs/render-shutdown-checklist.md)**
+
 ## Índice
 
 - [Características principales](#-características-principales)

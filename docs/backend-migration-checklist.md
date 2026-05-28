@@ -1,11 +1,13 @@
 # Backend migration checklist (ejecutable)
 
+> **Histórico / migración completa:** checklist para reemplazar **toda** la API Render por Worker + D1. La **app médica en producción** ya usa Worker + D1; Render es legacy. Estado vigente: [medical-app-roadmap.md](./medical-app-roadmap.md). Baja de Render: [render-shutdown-checklist.md](./render-shutdown-checklist.md).
+
 ## 1) Estado actual resumido
 
-- Frontend queda en Vercel.
-- Backend actual sigue en Render hasta terminar la migracion.
-- Nuevo backend objetivo: Cloudflare Workers + D1.
-- No apagar Render hasta validar el Worker completo.
+- Frontend en **Vercel** (app médica).
+- Backend de producción de la app médica: **Cloudflare Workers + D1**.
+- **Render:** fuera del flujo; apagado según [render-shutdown-checklist.md](./render-shutdown-checklist.md).
+- Este checklist (fases 0–9) aplica si en el futuro se migran módulos **fuera de alcance médico** (staff, finanzas, etc.).
 
 ---
 

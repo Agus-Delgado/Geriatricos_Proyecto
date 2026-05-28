@@ -1,6 +1,8 @@
 # Cloudflare Worker — Staging remoto (Bloque 16)
 
-Runbook para D1 remota `geriatricos_d1_staging` y Worker `geriatricos-worker-staging`. **No toca Vercel ni Render.** Validación inicial por `curl`.
+> **Producción app médica:** Vercel → Worker production → D1 prod ([medical-app-roadmap.md](./medical-app-roadmap.md)). **Render** es legacy; este runbook de staging no depende de Render.
+
+Runbook para D1 remota `geriatricos_d1_staging` y Worker `geriatricos-worker-staging`. Validación inicial por `curl`. Staging es entorno de prueba aislado de producción médica.
 
 **ETAPA 1 (repo):** `[env.staging]` en [`cloudflare-worker/wrangler.toml`](../cloudflare-worker/wrangler.toml), [`seed/staging_seed.sql`](../cloudflare-worker/seed/staging_seed.sql) — sin crear D1 ni deploy.
 
@@ -285,7 +287,7 @@ curl -s -X POST "$WORKER_URL/auth/login" \
 | Deploy malo | Rollback de deployment en dashboard Cloudflare o `wrangler deployments` |
 | Abandonar staging | Ignorar URL; opcional borrar Worker env / D1 en dashboard |
 
-**Producción:** Render permanece backend; **no** cambiar `VITE_API_BASE_URL` en Vercel hasta cumplir [cloudflare-worker-deploy-readiness.md](./cloudflare-worker-deploy-readiness.md) §7.
+**Producción (histórico al redactar Bloque 16):** se indicaba mantener Render como backend. **Estado B6:** producción médica en Worker — ver [medical-app-roadmap.md](./medical-app-roadmap.md). Staging sigue siendo entorno aislado; fallos en staging no afectan usuarios en Vercel production.
 
 ---
 
@@ -298,7 +300,7 @@ curl -s -X POST "$WORKER_URL/auth/login" \
 - [ ] `wrangler deploy --env staging` OK.
 - [ ] `/health` 200; login, `/auth/me`, residents, contacts, clinical, medications OK por curl.
 - [ ] `npm test` local sigue en verde tras cambios de configuración.
-- [ ] Vercel y Render sin cambios.
+- [ ] Staging no altera `VITE_API_BASE_URL` de Vercel production (producción médica apunta al Worker prod).
 
 ---
 
